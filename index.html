@@ -4101,6 +4101,13 @@ var APP_VERSION = "2026.09.05.1";
 // caches, remove service workers antigos e recarrega com cache-buster.
 (function autoUpdater() {
   var CHECK_INTERVAL = 10 * 60 * 1000; // 10 min
+
+  // —— Atualização do APK nativo (Android) ——
+  var APK_VERSION = "1.0.1";
+  var apkBannerShown = false;
+  function isRunningInNativeApp() {
+    return /MIMIApp\//.test(navigator.userAgent || "");
+  }
   var lastCheck = 0;
   var updating = false;
 
@@ -4191,6 +4198,39 @@ var APP_VERSION = "2026.09.05.1";
     }
   }
 
+  function maybeCheckApkUpdate(text) {
+    if (apkBannerShown || !isRunningInNativeApp()) return;
+    try {
+      var obj = JSON.parse(text || "");
+      var apkVersion = obj && obj.apkVersion ? String(obj.apkVersion) : null;
+      var apkUrl = obj && obj.apkUrl ? String(obj.apkUrl) : null;
+      if (apkVersion && apkUrl && apkVersion !== APK_VERSION) {
+        showApkUpdateBanner(apkUrl);
+      }
+    } catch (e) {}
+  }
+
+  function showApkUpdateBanner(apkUrl) {
+    if (apkBannerShown || document.getElementById("mimi-apk-update-banner")) return;
+    apkBannerShown = true;
+    var b = document.createElement("div");
+    b.id = "mimi-apk-update-banner";
+    b.style.cssText = "position:fixed;left:12px;right:12px;top:12px;z-index:2147483647;" +
+      "background:#ff6fa5;color:#fff;padding:12px 16px;border-radius:14px;" +
+      "font-size:14px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.25);" +
+      "display:flex;align-items:center;justify-content:space-between;gap:10px;";
+    var span = document.createElement("span");
+    span.textContent = "Nova versão do app disponível";
+    var a = document.createElement("a");
+    a.href = apkUrl;
+    a.textContent = "Baixar";
+    a.style.cssText = "background:#fff;color:#ff2d78;padding:6px 14px;border-radius:999px;" +
+      "text-decoration:none;font-weight:700;white-space:nowrap;";
+    b.appendChild(span);
+    b.appendChild(a);
+    document.body.appendChild(b);
+  }
+
   function checkForUpdate(force) {
     var now = Date.now();
     if (!force && now - lastCheck < CHECK_INTERVAL) return;
@@ -4209,6 +4249,7 @@ var APP_VERSION = "2026.09.05.1";
       .then(function (r) { return r.ok ? r.text() : null; })
       .then(function (text) {
         var remote = readRemoteVersion(text);
+        maybeCheckApkUpdate(text);
         if (!remote) return;
         if (remote !== APP_VERSION) applyUpdate(remote);
       })
