@@ -1393,6 +1393,27 @@
   .viewers-plus-banner .vpb-txt span { font-size:10px; color:var(--sub); }
   .viewers-plus-banner .vpb-go { font-size:10.5px; font-weight:800; color:var(--pink); white-space:nowrap; flex-shrink:0; }
 
+  /* ── Faixa "Saiba mais" dos anúncios (estilo Feed do Instagram) ── */
+  .ad-cta-bar { display:flex; align-items:center; gap:10px; padding:11px 14px; background:#f2fbf7; border-top:1px solid #d8f2e7; border-bottom:1px solid #d8f2e7; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .ad-cta-bar:active { background:#e6f7ef; }
+  .ad-cta-bar .ad-cta-txt { flex:1; min-width:0; }
+  .ad-cta-bar .ad-cta-txt b { display:block; font-size:13.5px; font-weight:800; color:#0f9c82; }
+  .ad-cta-bar .ad-cta-txt span { display:block; font-size:11px; color:var(--sub); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  /* ── Anúncio em tela cheia (exclusivo do dono do app) ─────── */
+  .ad-takeover { position:fixed; inset:0; z-index:900; background:#000; display:flex; flex-direction:column; max-width:480px; margin:0 auto; animation:fadeIn .2s ease; }
+  .ad-takeover-media { flex:1; min-height:0; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .ad-takeover-media img, .ad-takeover-media video { width:100%; height:100%; object-fit:contain; }
+  .ad-takeover-top { position:absolute; top:calc(10px + env(safe-area-inset-top)); left:12px; right:12px; display:flex; align-items:center; gap:8px; z-index:2; }
+  .ad-takeover-close { width:26px; height:26px; border-radius:50%; border:none; background:rgba(0,0,0,.5); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; flex-shrink:0; margin-left:auto; }
+  .ad-takeover-info { padding:14px 16px calc(16px + env(safe-area-inset-bottom)); background:#0d0d0d; }
+  .ad-takeover-info p { margin:6px 0 10px; font-size:13.5px; color:#f2eef0; line-height:1.5; }
+  .ad-takeover .ad-cta-bar { border-radius:14px; border:none; background:#1abc9c; }
+  .ad-takeover .ad-cta-bar .ad-cta-txt b { color:#fff; }
+  .ad-takeover .ad-cta-bar .ad-cta-txt span { color:rgba(255,255,255,.75); }
+  .ad-takeover .ad-cta-bar svg { stroke:#fff; }
+
+
   /* ── post detail (focused) ─────────────────────────────── */
   .post-detail-header { display:flex; align-items:center; gap:12px; padding:12px 16px; border-bottom:1px solid var(--border); background:var(--bg); position:sticky; top:0; z-index:10; }
 
@@ -2319,9 +2340,60 @@ function isAppOwner(u) {
 }
 function adPlacesOf(p) {
   var d = (p && p.adPlaces) || null;
-  if (!d) return { feed:true, profile:true, search:true, banner:false, stories:false, vibes:false };
-  return { feed: d.feed !== false, profile: d.profile !== false, search: d.search !== false, banner: !!d.banner, stories: !!d.stories, vibes: !!d.vibes };
+  if (!d) return { feed:true, profile:true, search:true, banner:false, stories:false, vibes:false, takeover:false };
+  return { feed: d.feed !== false, profile: d.profile !== false, search: d.search !== false, banner: !!d.banner, stories: !!d.stories, vibes: !!d.vibes, takeover: !!d.takeover };
 }
+
+// ── Link do anúncio (botão "Saiba mais" estilo Feed do Instagram) ──
+var AD_CTA_LABELS = { saiba: "Saiba mais", mais: "Mais informações", info: "Informações" };
+function adCtaLabel(p) {
+  return AD_CTA_LABELS[(p && p.adCta) || "saiba"] || AD_CTA_LABELS.saiba;
+}
+// Normaliza o endereço digitado pelo anunciante (aceita "site.com").
+function normalizeAdLink(url) {
+  url = String(url || "").trim();
+  if (!url) return "";
+  if (!/^https?:\/\//i.test(url)) url = "https://" + url.replace(/^\/+/, "");
+  try { var u = new URL(url); if (!u.hostname || u.hostname.indexOf(".") === -1) return ""; return u.href; }
+  catch (e) { return ""; }
+}
+function adLinkOf(p) { return p && p.isAd ? normalizeAdLink(p.adLink) : ""; }
+function adLinkHost(url) {
+  try { return new URL(url).hostname.replace(/^www\./, ""); } catch (e) { return ""; }
+}
+function openAdLink(url) {
+  url = normalizeAdLink(url);
+  if (!url) return;
+  try { window.open(url, "_blank", "noopener,noreferrer"); }
+  catch (e) { window.location.href = url; }
+}
+// Faixa clicável embaixo da mídia do anúncio.
+function adCtaBarHtml(p) {
+  var url = adLinkOf(p);
+  if (!url) return "";
+  var host = adLinkHost(url);
+  return '<div class="ad-cta-bar" data-ad-link="'+esc(url)+'">' +
+      '<div class="ad-cta-txt">' +
+        '<b>'+esc(adCtaLabel(p))+'</b>' +
+        (host ? '<span>'+esc(host)+'</span>' : "") +
+      '</div>' +
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1abc9c" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>' +
+    '</div>';
+}
+// Liga o clique da faixa em qualquer trecho de DOM já renderizado.
+function bindAdCtaBars(root) {
+  root = root || appEl;
+  if (!root) return;
+  root.querySelectorAll("[data-ad-link]").forEach(function(el) {
+    if (el._adLinkBound) return;
+    el._adLinkBound = true;
+    el.addEventListener("click", function(ev) {
+      ev.stopPropagation();
+      openAdLink(el.getAttribute("data-ad-link"));
+    });
+  });
+}
+
 
 // Selo "Anúncio" reutilizado em Feed, Stories, Vibes e Banner.
 function adBadgeHtml(marginTop) {
@@ -4090,7 +4162,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.06.1";
+var APP_VERSION = "2026.09.05.1";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -4101,13 +4173,6 @@ var APP_VERSION = "2026.09.06.1";
 // caches, remove service workers antigos e recarrega com cache-buster.
 (function autoUpdater() {
   var CHECK_INTERVAL = 10 * 60 * 1000; // 10 min
-
-  // —— Atualização do APK nativo (Android) ——
-  var APK_VERSION = "1.0.1";
-  var apkBannerShown = false;
-  function isRunningInNativeApp() {
-    return /MIMIApp\//.test(navigator.userAgent || "");
-  }
   var lastCheck = 0;
   var updating = false;
 
@@ -4198,39 +4263,6 @@ var APP_VERSION = "2026.09.06.1";
     }
   }
 
-  function maybeCheckApkUpdate(text) {
-    if (apkBannerShown || !isRunningInNativeApp()) return;
-    try {
-      var obj = JSON.parse(text || "");
-      var apkVersion = obj && obj.apkVersion ? String(obj.apkVersion) : null;
-      var apkUrl = obj && obj.apkUrl ? String(obj.apkUrl) : null;
-      if (apkVersion && apkUrl && apkVersion !== APK_VERSION) {
-        showApkUpdateBanner(apkUrl);
-      }
-    } catch (e) {}
-  }
-
-  function showApkUpdateBanner(apkUrl) {
-    if (apkBannerShown || document.getElementById("mimi-apk-update-banner")) return;
-    apkBannerShown = true;
-    var b = document.createElement("div");
-    b.id = "mimi-apk-update-banner";
-    b.style.cssText = "position:fixed;left:12px;right:12px;top:12px;z-index:2147483647;" +
-      "background:#ff6fa5;color:#fff;padding:12px 16px;border-radius:14px;" +
-      "font-size:14px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.25);" +
-      "display:flex;align-items:center;justify-content:space-between;gap:10px;";
-    var span = document.createElement("span");
-    span.textContent = "Nova versão do app disponível";
-    var a = document.createElement("a");
-    a.href = apkUrl;
-    a.textContent = "Baixar";
-    a.style.cssText = "background:#fff;color:#ff2d78;padding:6px 14px;border-radius:999px;" +
-      "text-decoration:none;font-weight:700;white-space:nowrap;";
-    b.appendChild(span);
-    b.appendChild(a);
-    document.body.appendChild(b);
-  }
-
   function checkForUpdate(force) {
     var now = Date.now();
     if (!force && now - lastCheck < CHECK_INTERVAL) return;
@@ -4249,7 +4281,6 @@ var APP_VERSION = "2026.09.06.1";
       .then(function (r) { return r.ok ? r.text() : null; })
       .then(function (text) {
         var remote = readRemoteVersion(text);
-        maybeCheckApkUpdate(text);
         if (!remote) return;
         if (remote !== APP_VERSION) applyUpdate(remote);
       })
@@ -6848,6 +6879,8 @@ var FB = {
       adVisible: postData.adVisible !== false,
       commentsEnabled: postData.commentsEnabled !== false,
       adPlaces:  postData.adPlaces || null,
+      adLink:    postData.adLink || null,
+      adCta:     postData.adCta || null,
       likedBy:   [],
       fireTotal: 0,
       // Estado de moderação (3.1): todo post nasce "published". Denúncias
@@ -10046,7 +10079,7 @@ var state = {
   photoViewerUrl: null, // url da foto de perfil aberta em tela cheia
 };
 
-var compose = { media:null, mediaType:null, loc:null, audioMeta:null, isAd:false, adVisible:false, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false } };
+var compose = { media:null, mediaType:null, loc:null, audioMeta:null, isAd:false, adVisible:false, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false, takeover:false }, adLink:"", adCta:"saiba" };
 
 // ─── BUSCA DE MÚSICA (iTunes Search API — prévias oficiais de 30s) ─────
 var musicSearch = { open:false, query:"", results:[], loading:false, error:null, seq:0 };
@@ -10670,6 +10703,8 @@ function _renderImpl() {
   if (state.bookActionFor) bindBookActionSheet();
 
   bindAppAdBanners();
+  bindAdCtaBars(appEl);
+  maybeShowTakeoverAd();
 
   _restoreFocusedField(_focusedFieldInfo);
   _restorePlayingTrack(_playingTrackInfo);
@@ -12566,6 +12601,7 @@ function renderPostCard(post, opts) {
     '<p class="post-text" '+(opts.noOpenText?"":'data-open-post="'+post.id+'" style="cursor:pointer;"')+'>'+renderTextWithHashtags(post.text)+'</p>' +
     locHtml +
     mediaHtml +
+    adCtaBarHtml(post) +
     '<div class="post-actions">' +
       '<button class="act-btn '+(liked?"liked":"")+'" data-like="'+post.id+'">'+cuteFaceSvg(24,liked?C.pink:"var(--sub)",liked)+' <span data-like-count="'+post.id+'">'+fmtNum(postLikeCount(post))+'</span></button>' +
       (post.isAd ? "" : '<button class="act-btn '+(fired?"fired":"")+'" data-fire="'+post.id+'">'+fireSvg(24,"var(--sub)",fired)+' <span data-fire-count="'+post.id+'">'+fmtNum(postFireCount(post))+'</span></button>') +
@@ -12739,6 +12775,7 @@ function bindFeedPage() {
 }
 
 function bindPostCardEvents(root) {
+  bindAdCtaBars(root);
   root = root || appEl;
   bindTrackPlayers();
   root.querySelectorAll("[data-open-author]").forEach(function(el) {
@@ -13951,6 +13988,63 @@ function renderAppAdBanner(slot) {
     '</div>';
 }
 // Liga os cliques do banner em qualquer tela, depois de cada render.
+// ── Anúncio em tela cheia (exclusivo do dono do app) ──────────
+// Cobre o app inteiro assim que abre, com um "x" pequeno no topo pra
+// fechar. Aceita imagem ou vídeo e usa o mesmo botão de link dos
+// anúncios do feed. Aparece no máximo 1x por sessão e respeita o
+// limite diário de impressões do motor de anúncios.
+var _takeoverShown = false;
+function takeoverAdToShow() {
+  // Só o dono do app consegue marcar o local "takeover" ao criar o anúncio.
+  var list = adsForPlace("takeover").filter(function(p) { return !adHitDailyCap(p.id); });
+  return list.length ? list[Math.floor(Math.random() * list.length)] : null;
+}
+function adHitDailyCap(adId) {
+  try { return typeof adImpressionsToday === "function" && adImpressionsToday(adId) >= AD_MAX_IMPRESSIONS_DAY; }
+  catch (e) { return false; }
+}
+function closeTakeoverAd() {
+  var el = document.querySelector(".ad-takeover");
+  if (!el) return;
+  var vid = el.querySelector("video");
+  if (vid) { try { vid.pause(); } catch (e) {} }
+  if (el.parentNode) el.parentNode.removeChild(el);
+  document.body.style.overflow = "";
+}
+function maybeShowTakeoverAd() {
+  if (_takeoverShown) return;
+  if (typeof ME === "undefined" || !ME || !ME_ID) return;
+  if (typeof state !== "undefined" && (state.creating || state.viewingStoryIdx !== null)) return;
+  var ad = takeoverAdToShow();
+  if (!ad) return;
+  _takeoverShown = true;
+  try { if (typeof noteAdImpression === "function") noteAdImpression(ad.id); } catch (e) {}
+
+  var media = ad.video
+    ? '<video src="' + esc(ad.video) + '" autoplay muted loop playsinline></video>'
+    : '<img ' + imageTagAttrs(ad.img) + ' alt="">';
+
+  var el = document.createElement("div");
+  el.className = "ad-takeover";
+  el.innerHTML =
+    '<div class="ad-takeover-top">' +
+      adBadgeHtml(0) +
+      '<button class="ad-takeover-close" data-close-takeover aria-label="Fechar anúncio">' + icoSvg("close", 15, "#fff") + '</button>' +
+    '</div>' +
+    '<div class="ad-takeover-media">' + media + '</div>' +
+    '<div class="ad-takeover-info">' +
+      (ad.text ? '<p>' + esc(ad.text) + '</p>' : "") +
+      adCtaBarHtml(ad) +
+    '</div>';
+  document.body.appendChild(el);
+  document.body.style.overflow = "hidden";
+  el.querySelector("[data-close-takeover]").addEventListener("click", closeTakeoverAd);
+  bindAdCtaBars(el);
+  var v = el.querySelector("video");
+  if (v) { v.muted = true; try { v.play(); } catch (e) {} }
+  hydrateImages();
+}
+
 function bindAppAdBanners() {
   appEl.querySelectorAll("[data-open-app-ad]").forEach(function(el) {
     el.addEventListener("click", function(e) {
@@ -19075,6 +19169,7 @@ function renderMyAdsPage() {
             if (pl.stories) names.push("Stories");
             if (pl.vibes) names.push("Vibes");
             if (pl.banner) names.push("Banner do app");
+            if (pl.takeover) names.push("Tela cheia");
             return names.length ? ("Visível em: " + names.join(", ")) : "Nenhum local selecionado";
           })() : "Oculto de tudo")+'</div>' +
         '</div>' +
@@ -19113,6 +19208,7 @@ function bindMyAdsPage() {
         if (pl.stories) names.push("Stories");
         if (pl.vibes) names.push("Vibes");
         if (pl.banner) names.push("Banner do app");
+        if (pl.takeover) names.push("Tela cheia");
         subEl.textContent = post.adVisible ? (names.length ? ("Visível em: " + names.join(", ")) : "Nenhum local selecionado") : "Oculto de tudo";
       }
       if (_idToken) fsSet("posts/"+pid, { adVisible: post.adVisible }).catch(function(err){
@@ -19769,12 +19865,12 @@ function bindPublishMenu() {
       var type = btn.getAttribute("data-publish-type");
       if (type === "post") {
         state.publishMenu = false;
-        compose = { media:null, mediaType:null, loc:null, audioMeta:null, isAd:false, adVisible:false, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false } };
+        compose = { media:null, mediaType:null, loc:null, audioMeta:null, isAd:false, adVisible:false, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false, takeover:false }, adLink:"", adCta:"saiba" };
         state.creating = true;
         render();
       } else if (type === "ad") {
         state.publishMenu = false;
-        compose = { media:null, mediaType:null, loc:null, audioMeta:null, isAd:true, adVisible:true, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false } };
+        compose = { media:null, mediaType:null, loc:null, audioMeta:null, isAd:true, adVisible:true, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false, takeover:false }, adLink:"", adCta:"saiba" };
         state.creating = true;
         render();
       } else if (type === "vibe") {
@@ -20116,6 +20212,23 @@ function renderCreatePost() {
         adPlaceRow("stories", "Stories", "Entra na barra de stories, com o selo \"Anúncio\"") +
         adPlaceRow("vibes", "Vibes", "Aparece entre os vídeos, sem fogo nem download") +
         (isAppOwner() ? adPlaceRow("banner", "Banner do app (só dono)", "Faixa discreta em Mensagens, Notificações e Explorar") : "") +
+        (isAppOwner() ? adPlaceRow("takeover", "Tela cheia (só dono)", "Cobre o app inteiro ao abrir, com um \"x\" pra fechar") : "") +
+      '</div>' +
+      // Link do anúncio: botão clicável embaixo da mídia (tipo Instagram).
+      '<div style="background:var(--bg);border-radius:12px;padding:12px;margin-top:10px;">' +
+        '<div class="row" style="gap:8px;align-items:center;margin-bottom:4px;">' +
+          icoSvg("globe",16,"#1abc9c") +
+          '<span style="font-weight:800;font-size:13px;">Link do anúncio (opcional)</span>' +
+        '</div>' +
+        '<div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-bottom:8px;">Cria um botão clicável embaixo do anúncio que leva pro seu site.</div>' +
+        '<input type="url" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" data-ad-link-input placeholder="www.seusite.com" value="'+esc(compose.adLink||"")+'" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);font-size:13.5px;color:var(--text);">' +
+        '<div style="font-size:11.5px;color:var(--muted);margin:10px 0 6px;font-weight:700;">Texto do botão</div>' +
+        '<div class="row" style="gap:6px;flex-wrap:wrap;">' +
+          Object.keys(AD_CTA_LABELS).map(function(k) {
+            var on = (compose.adCta || "saiba") === k;
+            return '<button type="button" data-ad-cta="'+k+'" style="padding:7px 12px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid '+(on?"#1abc9c":"var(--border)")+';background:'+(on?"#e9fbf3":"var(--surface)")+';color:'+(on?"#0f9c82":"var(--sub)")+';">'+AD_CTA_LABELS[k]+'</button>';
+          }).join("") +
+        '</div>' +
       '</div>'
     : "";
 
@@ -20299,6 +20412,26 @@ function bindCreatePost() {
     });
   });
 
+  var adLinkInput = appEl.querySelector("[data-ad-link-input]");
+  if (adLinkInput) {
+    adLinkInput.addEventListener("input", function() { compose.adLink = adLinkInput.value; });
+    adLinkInput.addEventListener("focus", function() { _editingPostField = true; });
+    adLinkInput.addEventListener("blur", function() { _editingPostField = false; });
+  }
+  appEl.querySelectorAll("[data-ad-cta]").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      compose.adCta = btn.getAttribute("data-ad-cta");
+      appEl.querySelectorAll("[data-ad-cta]").forEach(function(b) {
+        var on = b === btn;
+        b.style.border = "1px solid " + (on ? "#1abc9c" : "var(--border)");
+        b.style.background = on ? "#e9fbf3" : "var(--surface)";
+        b.style.color = on ? "#0f9c82" : "var(--sub)";
+      });
+    });
+  });
+
+
+
   var commentsAllowedRow = appEl.querySelector("[data-toggle-comments-allowed]");
   if (commentsAllowedRow) {
     commentsAllowedRow.addEventListener("click", function() {
@@ -20315,6 +20448,11 @@ function bindCreatePost() {
       // Anúncio precisa de imagem ou vídeo — não faz sentido um anúncio só de texto.
       if (compose.isAd && compose.mediaType !== "image" && compose.mediaType !== "video") {
         showToast(toastWithIcon("Adicione uma imagem ou vídeo para o anúncio.", "warning", "before"), true);
+        return;
+      }
+      // Endereço digitado precisa ser válido (senão o botão não levaria a nada).
+      if (compose.isAd && String(compose.adLink || "").trim() && !normalizeAdLink(compose.adLink)) {
+        showToast(toastWithIcon("Confira o endereço do link do anúncio.", "warning", "before"), true);
         return;
       }
       var newPost = {
@@ -20334,8 +20472,11 @@ function bindCreatePost() {
           search: !!compose.adPlaces.search,
           stories: !!compose.adPlaces.stories,
           vibes: !!compose.adPlaces.vibes,
-          banner: isAppOwner() ? !!compose.adPlaces.banner : false
+          banner: isAppOwner() ? !!compose.adPlaces.banner : false,
+          takeover: isAppOwner() ? !!compose.adPlaces.takeover : false
         } : null,
+        adLink: compose.isAd ? (normalizeAdLink(compose.adLink) || null) : null,
+        adCta: compose.isAd ? (compose.adCta || "saiba") : null,
         likedBy:[], saved:false, time:"agora",
       };
       posts.unshift(newPost);
@@ -20356,7 +20497,7 @@ function bindCreatePost() {
         state.viewProfileId = null;
         state.profileStack.length = 0;
         state.postDetailId = null;
-        compose = { media:null, mediaType:null, loc:null, audioMeta:null, isAd:false, adVisible:false, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false } };
+        compose = { media:null, mediaType:null, loc:null, audioMeta:null, isAd:false, adVisible:false, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false, takeover:false }, adLink:"", adCta:"saiba" };
         state.page = "feed";
         var feedList = appEl.querySelector("[data-feed-posts]");
         if (feedList) {
@@ -20390,7 +20531,7 @@ function bindCreatePost() {
   }
   if (closeBtn) closeBtn.addEventListener("click", function() {
     state.creating = false;
-    compose = { media:null, mediaType:null, loc:null, audioMeta:null, isAd:false, adVisible:false, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false } };
+    compose = { media:null, mediaType:null, loc:null, audioMeta:null, isAd:false, adVisible:false, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false, takeover:false }, adLink:"", adCta:"saiba" };
     render();
   });
 }
@@ -23114,6 +23255,7 @@ var VibesModule = {
           '</div>' +
         '</div>' +
         '<div class="cap">'+esc(ad.text || "")+'</div>' +
+        (adLinkOf(ad) ? '<div style="margin-top:8px;max-width:280px;">'+adCtaBarHtml(ad)+'</div>' : "") +
       '</div>' +
       '<div class="vibe-side">' +
         '<button class="vibe-like-btn" data-ad-vibe-like="'+ad.id+'">' +
