@@ -4164,7 +4164,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.23.1";
+var APP_VERSION = "2026.09.23.2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -11711,7 +11711,7 @@ function setFeedSoundOn(on) {
 // Ícone de som do Feed: agora fica na barra de ações do post (entre baixar e
 // salvar), com o mesmo tamanho/cor dos outros ícones da barra.
 function feedSoundIcon(soundOn) {
-  return sparkleIcon(soundOn ? "soundOn" : "soundOff", 30, "var(--sub)");
+  return sparkleIcon(soundOn ? "soundOn" : "soundOff", 26, "var(--sub)");
 }
 function applyFeedSoundToAllVideos(soundOn) {
   document.querySelectorAll('.advanced-player video').forEach(function(v) {
@@ -12614,11 +12614,11 @@ function renderPostCard(post, opts) {
       '<button class="act-btn" data-toggle-comments="'+post.id+'" style="'+(post.commentsEnabled===false?"opacity:.45;":"")+'">'+sparkleIcon("comment",30,"var(--sub)")+' '+(post.commentsEnabled===false?"":fmtNum(commentCount))+'</button>' +
       '<button class="act-btn" data-share-post="'+post.id+'">'+sparkleIcon("share",30,"var(--sub)")+' '+fmtNum(postShareCount(post))+'</button>' +
       ((post.img || post.video || post.audio) ?
-        '<div style="margin-left:auto;display:flex;align-items:center;gap:14px;">' +
+        '<div style="margin-left:auto;display:flex;align-items:center;gap:'+(post.video ? 0 : 14)+'px;">' +
           ((post.img || post.video) && !post.isAd ?
             '<button class="act-btn" data-download-post="'+post.id+'" title="Baixar">'+icoSvg("download",22,"var(--sub)")+'</button>'
             : "") +
-          (post.video ? '<button class="act-btn" id="muteBtn-'+post.id+'" title="Som"><span id="muteIcon-'+post.id+'" style="display:flex;">'+feedSoundIcon(true)+'</span></button>' : "") +
+          (post.video ? '<button class="act-btn" id="muteBtn-'+post.id+'" title="Som" style="padding:8px 3px;"><span id="muteIcon-'+post.id+'" style="display:flex;">'+feedSoundIcon(true)+'</span></button>' : "") +
           '<button class="act-btn '+(post.saved?"saved":"")+'" data-save="'+post.id+'">'+sparkleIcon("save",30,post.saved?C.accent:"var(--sub)",post.saved)+'</button>' +
         '</div>' : "") +
     '</div>' +
