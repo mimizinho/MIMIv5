@@ -2019,6 +2019,8 @@ function icoSvg(name, size, color, fill) {
 var SPARKLE_ICONS = {
   volumeOn: '<path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.2 8.8a5 5 0 010 6.4"/><path d="M18.6 6.2a8.5 8.5 0 010 11.6"/>',
   volumeOff:'<path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 9.5l5 5m0-5l-5 5"/>',
+  soundOn:  '<path d="M4 9.6C4 8.72 4.72 8 5.6 8h2.6c.3 0 .58-.1.8-.3l3.6-3.1c.8-.7 2-.1 2 .9v13c0 1-1.2 1.6-2 .9L9 16.3a1.2 1.2 0 00-.8-.3H5.6c-.88 0-1.6-.72-1.6-1.6V9.6z"/><path d="M17.6 9.3c1 1.5 1 3.9 0 5.4"/><path d="M20 6.9c2.2 2.8 2.2 7.4 0 10.2"/>',
+  soundOff: '<path d="M4 9.6C4 8.72 4.72 8 5.6 8h2.6c.3 0 .58-.1.8-.3l3.6-3.1c.8-.7 2-.1 2 .9v13c0 1-1.2 1.6-2 .9L9 16.3a1.2 1.2 0 00-.8-.3H5.6c-.88 0-1.6-.72-1.6-1.6V9.6z"/><path d="M17.8 9.8l3.8 4.4"/><path d="M21.6 9.8l-3.8 4.4"/>',
   loc:      '<path d="M12 2C7.6 2 4 5.6 4 10c0 6 8 12 8 12s8-6 8-12c0-4.4-3.6-8-8-8z"/><circle cx="12" cy="10" r="3"/>',
   like:     '<path d="'+ICONS.heart+'"/>',
   comment:  '<path d="M2.4 12a9.6 9.6 0 1 1 5.4 8.64L3.36 22.2 4.92 17.88A9.6 9.6 0 0 1 2.4 12z"/>',
@@ -2031,9 +2033,9 @@ var SPARKLE_FILLED = { loc:1, like:1 };
 
 // Espessura de traço específica por ícone (padrão 1.8px); "comment" usa 1.5px
 // conforme escolhido no protótipo, pra ficar igual à foto de referência.
-var SPARKLE_STROKE_WIDTH = { comment: 1.5, save: 1.5 };
+var SPARKLE_STROKE_WIDTH = { comment: 1.5, save: 1.5, soundOn: 1.5, soundOff: 1.5 };
 // Ícones que NÃO devem ter os brilhinhos decorativos ao redor
-var SPARKLE_NO_GLOW = { comment: 1, share: 1, save: 1 };
+var SPARKLE_NO_GLOW = { comment: 1, share: 1, save: 1, soundOn: 1, soundOff: 1 };
 
 function sparkleIcon(name, size, color, active) {
   size = size || 24;
@@ -4162,7 +4164,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.18.1";
+var APP_VERSION = "2026.09.23.1";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -11668,7 +11670,6 @@ function renderMimiPlayer(src, postId) {
     '<div class="loading-spinner" id="loader-'+postId+'"></div>' +
     '<div class="error-message" id="error-'+postId+'"></div>' +
     '<button class="center-play-btn" id="centerPlayBtn-'+postId+'" title="Play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>' +
-    '<button class="mute-btn" id="muteBtn-'+postId+'" title="Som"><span id="muteIcon-'+postId+'">'+sparkleIcon("volumeOn",26)+'</span></button>' +
     '<div class="player-overlay" id="overlay-'+postId+'">' +
       '<div class="top-bar"></div>' +
       '<div class="bottom-bar">' +
@@ -11707,12 +11708,17 @@ function getFeedSoundOn() {
 function setFeedSoundOn(on) {
   try { localStorage.setItem("mimi_feed_sound_on", on ? "1" : "0"); } catch(e) {}
 }
+// Ícone de som do Feed: agora fica na barra de ações do post (entre baixar e
+// salvar), com o mesmo tamanho/cor dos outros ícones da barra.
+function feedSoundIcon(soundOn) {
+  return sparkleIcon(soundOn ? "soundOn" : "soundOff", 30, "var(--sub)");
+}
 function applyFeedSoundToAllVideos(soundOn) {
   document.querySelectorAll('.advanced-player video').forEach(function(v) {
     v.muted = !soundOn;
     var pid = v.id.replace('video-', '');
     var iconEl = document.getElementById('muteIcon-'+pid);
-    if (iconEl) iconEl.innerHTML = sparkleIcon(soundOn ? "volumeOn" : "volumeOff", 26);
+    if (iconEl) iconEl.innerHTML = feedSoundIcon(soundOn);
   });
 }
 
@@ -11806,7 +11812,7 @@ function electActiveFeedVideo() {
     if (pid === winnerId) {
       p.video.muted = !getFeedSoundOn();
       var iconEl = document.getElementById('muteIcon-'+pid);
-      if (iconEl) iconEl.innerHTML = sparkleIcon(p.video.muted ? "volumeOff" : "volumeOn", 26);
+      if (iconEl) iconEl.innerHTML = feedSoundIcon(!p.video.muted);
       if (p.video.paused) {
         var pr = p.video.play();
         if (pr && pr.catch) pr.catch(function(){});
@@ -12162,7 +12168,7 @@ function _mimiUnlockAudio() {
       if (playP && playP.catch) playP.catch(function(){});
       var postId = v.id.replace('video-','');
       var iconEl = document.getElementById('muteIcon-'+postId);
-      if (iconEl) iconEl.innerHTML = sparkleIcon("volumeOn", 26);
+      if (iconEl) iconEl.innerHTML = feedSoundIcon(true);
     }
   });
 }
@@ -12612,6 +12618,7 @@ function renderPostCard(post, opts) {
           ((post.img || post.video) && !post.isAd ?
             '<button class="act-btn" data-download-post="'+post.id+'" title="Baixar">'+icoSvg("download",22,"var(--sub)")+'</button>'
             : "") +
+          (post.video ? '<button class="act-btn" id="muteBtn-'+post.id+'" title="Som"><span id="muteIcon-'+post.id+'" style="display:flex;">'+feedSoundIcon(true)+'</span></button>' : "") +
           '<button class="act-btn '+(post.saved?"saved":"")+'" data-save="'+post.id+'">'+sparkleIcon("save",30,post.saved?C.accent:"var(--sub)",post.saved)+'</button>' +
         '</div>' : "") +
     '</div>' +
