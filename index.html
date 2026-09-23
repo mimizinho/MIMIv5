@@ -190,6 +190,13 @@
   .story { display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer; flex-shrink:0; }
   .story-ring { padding:2.5px; border-radius:50%; background:var(--muted); }
   .story-ring.unseen { background:linear-gradient(135deg,var(--accent),var(--accentL),#ffd6e8); }
+  /* O próprio perfil mantém um aro forte enquanto houver story publicado,
+     mesmo que todos os itens já tenham sido vistos pelo autor. */
+  .story-ring.own-active {
+    padding:3px;
+    background:linear-gradient(135deg,var(--accent),#ff2e7a,var(--accentL));
+    box-shadow:0 0 0 1px rgba(255,46,122,.18),0 3px 10px rgba(255,46,122,.24);
+  }
   .story-ring-inner { padding:2px; border-radius:50%; background:var(--bg); }
   .story-name { font-size:11px; color:var(--sub); max-width:62px; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .story-name.seen { color:var(--muted); }
@@ -11054,8 +11061,11 @@ function renderStories() {
     var totalItems = entry ? entry.items.length : 0;
     var fullySeen = entry ? entry.seenCount >= totalItems && totalItems > 0 : false;
     var hasFrame = !!getUserFrame(u);
+    var storyRingClass = s.own && totalItems > 0
+      ? "own-active"
+      : ((fullySeen || hasFrame) ? "" : "unseen");
     html += '<div class="story" data-story-ring="'+idx+'">' +
-      '<div class="story-ring '+((fullySeen||hasFrame)?"":"unseen")+'">' +
+      '<div class="story-ring '+storyRingClass+'">' +
         '<div class="story-ring-inner">'+avatarHtml(u.avatar, 56, false, false, false, null, null, getUserFrame(u))+'</div>' +
       '</div>';
     if (s.own) {
