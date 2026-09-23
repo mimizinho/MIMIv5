@@ -1216,7 +1216,13 @@
   .story-viewer-bar { position:absolute; top:12px; left:0; right:0; height:2px; background:rgba(255,255,255,.2); border-radius:0; z-index:2; overflow:hidden; }
   .story-viewer-bar-fill { height:100%; background:#fff; width:0%; }
   .story-viewer-head { position:absolute; top:24px; left:20px; right:20px; display:flex; align-items:center; gap:12px; z-index:2; }
-  .story-viewer-media { flex:1; display:flex; align-items:center; justify-content:center; overflow:hidden; background:#000; }
+  .story-viewer-media { flex:1; display:flex; align-items:center; justify-content:center; overflow:hidden; background:#000;
+    -webkit-touch-callout:none; -webkit-user-select:none; -moz-user-select:none; user-select:none;
+    -webkit-user-drag:none; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+  .story-viewer-media img, .story-viewer-media video { -webkit-touch-callout:none; -webkit-user-drag:none; user-select:none; pointer-events:none; }
+  .story-viewer.is-paused .story-segments { opacity:0; }
+  .story-viewer .story-segments { transition:opacity .18s ease; }
+  .story-viewer.is-paused .story-viewer-head, .story-viewer.is-paused .story-reply-row { opacity:0; transition:opacity .18s ease; pointer-events:none; }
   .story-viewer-media img, .story-viewer-media video { width:100%; height:100%; object-fit:cover; }
   .story-add-fab { position:absolute; bottom:24px; left:50%; transform:translateX(-50%); background:rgba(255,255,255,.2); border:2px solid #fff; border-radius:50%; width:54px; height:54px; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:2; }
 
@@ -4164,7 +4170,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.23.2";
+var APP_VERSION = "2026.09.23.3";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -11192,11 +11198,11 @@ function renderStoryViewer() {
   // frame, o que faz parecer que é uma foto estática para quem está vendo o
   // story de outra pessoa. O botão de som permite desmutar manualmente.
   var mediaHtml = item.type === "video"
-    ? '<video src="'+esc(item.src)+'" autoplay playsinline muted data-story-media ' +
+    ? '<video src="'+esc(item.src)+'" autoplay playsinline muted data-story-media draggable="false" oncontextmenu="return false;" ' +
       'style="max-width:100%;max-height:100%;object-fit:contain;" ' +
       'onerror="console.error(\'Erro ao carregar video\')"></video>' +
       '<button class="icon-btn" data-story-mute-toggle style="position:absolute;bottom:78px;right:12px;color:#fff;background:rgba(0,0,0,.35);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;z-index:3;">'+icoSvg("micOff",18,"#fff")+'</button>'
-    : '<img '+imageTagAttrs(item.src)+' alt="" data-story-media ' +
+    : '<img '+imageTagAttrs(item.src)+' alt="" data-story-media draggable="false" oncontextmenu="return false;" ' +
       'style="max-width:100%;max-height:100%;object-fit:contain;" ' +
       'onerror="console.error(\'Erro ao carregar imagem\')">';
 
@@ -11269,16 +11275,69 @@ function bindStoryViewer() {
   if (closeBtn) closeBtn.addEventListener("click", closeStoryViewer);
 
   var tapArea = appEl.querySelector("[data-story-tap]");
-  if (tapArea) tapArea.addEventListener("click", function(e) {
-    // Antes isso ignorava o clique quando o alvo era o <video>, o que
-    // impedia de avançar/voltar o story tocando na tela enquanto um vídeo
-    // estava tocando. O botão de mudo já usa stopPropagation, então é
-    // seguro deixar o toque no vídeo também navegar entre os stories.
-    if (e.target.closest("[data-story-mute-toggle]")) return;
-    var rect = tapArea.getBoundingClientRect();
-    var x = e.clientX - rect.left;
-    if (x < rect.width/2) goToPrevStoryItem(); else goToNextStoryItem();
-  });
+  if (tapArea) {
+    // Toque e segure = pausa o story (imagem ou vídeo) e esconde a interface,
+    // como no Instagram. Ao soltar, volta a rolar de onde parou. O toque
+    // rápido continua navegando (esquerda = anterior, direita = próximo).
+    var LONG_PRESS_MS = 220;
+    var pressTimer = null;
+    var longPressed = false;
+    var startX = 0, startY = 0;
+    var viewerEl = tapArea.closest(".story-viewer");
+
+    function cancelPressTimer() {
+      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+    }
+    function beginLongPress() {
+      longPressed = true;
+      pauseStoryTimer();
+      if (viewerEl) viewerEl.classList.add("is-paused");
+    }
+    function endPress() {
+      cancelPressTimer();
+      if (longPressed) {
+        if (viewerEl) viewerEl.classList.remove("is-paused");
+        // Só retoma se nada mais estiver pausando o story (painel/diálogo aberto).
+        if (!document.querySelector("[data-story-comments-panel]") && !state.confirmDialog) {
+          resumeStoryTimerIfNeeded();
+        }
+      }
+    }
+
+    tapArea.addEventListener("pointerdown", function(e) {
+      if (e.target.closest("[data-story-mute-toggle]")) return;
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      longPressed = false;
+      startX = e.clientX; startY = e.clientY;
+      cancelPressTimer();
+      pressTimer = setTimeout(beginLongPress, LONG_PRESS_MS);
+    });
+    tapArea.addEventListener("pointermove", function(e) {
+      if (!pressTimer || longPressed) return;
+      if (Math.abs(e.clientX - startX) > 12 || Math.abs(e.clientY - startY) > 12) cancelPressTimer();
+    });
+    tapArea.addEventListener("pointerup", endPress);
+    tapArea.addEventListener("pointercancel", endPress);
+    tapArea.addEventListener("pointerleave", endPress);
+
+    // Remove o menu nativo do navegador (copiar imagem / salvar / abrir) que
+    // aparecia ao segurar o dedo na tela — agora segurar só pausa.
+    tapArea.addEventListener("contextmenu", function(e) { e.preventDefault(); });
+    tapArea.addEventListener("dragstart", function(e) { e.preventDefault(); });
+    tapArea.addEventListener("selectstart", function(e) { e.preventDefault(); });
+
+    tapArea.addEventListener("click", function(e) {
+      // Antes isso ignorava o clique quando o alvo era o <video>, o que
+      // impedia de avançar/voltar o story tocando na tela enquanto um vídeo
+      // estava tocando. O botão de mudo já usa stopPropagation, então é
+      // seguro deixar o toque no vídeo também navegar entre os stories.
+      if (e.target.closest("[data-story-mute-toggle]")) return;
+      if (longPressed) { longPressed = false; return; } // foi "segurar", não toque
+      var rect = tapArea.getBoundingClientRect();
+      var x = e.clientX - rect.left;
+      if (x < rect.width/2) goToPrevStoryItem(); else goToNextStoryItem();
+    });
+  }
 
   var likeBtn = appEl.querySelector("[data-like-story]");
   if (likeBtn) likeBtn.addEventListener("click", function() {
