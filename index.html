@@ -4199,7 +4199,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.24.7";
+var APP_VERSION = "2026.09.24.8";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -9916,6 +9916,7 @@ function attachRealtimeConvoList() {
       .collection("convos")
       .where("members", "array-contains", ME_ID)
       .onSnapshot(function(snapshot) {
+        try { MIMIApp.show("DEBUG4", "snap " + snapshot.docChanges().length + (snapshot.metadata.fromCache ? " cache" : " servidor")); } catch (e) {}
         var myId = ME_ID;
         var changed = false;
         // 🩹 FIX (pisca residual + "visto" atrasado): enquanto o chat está
@@ -9965,6 +9966,7 @@ function attachRealtimeConvoList() {
         // Erro do listener (ex.: Rules bloqueando, rede) — desliga só o
         // tempo real; volta pro polling REST, que cobre o resto sozinho.
         console.warn("⚠️ Listener de convos falhou, caindo pro polling REST:", err && err.code);
+        try { MIMIApp.show("DEBUG4", "erro " + (err ? err.code : "")); } catch (e) {}
         _rtConvoUnsub = null;
         startConvoListPolling();
       });
