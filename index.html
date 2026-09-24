@@ -11832,7 +11832,7 @@ var _feedPlayersById = {};   // postId -> instância do AdvancedVideoPlayer
 var _feedActiveVideoId = null;
 var _feedSharedObserver = null;
 var FEED_VIDEO_ENTER_RATIO = 0.65;
-var FEED_VIDEO_EXIT_RATIO  = 0.35;
+var FEED_VIDEO_EXIT_RATIO  = 0.5;
 
 function getFeedSharedObserver() {
   if (_feedSharedObserver || !('IntersectionObserver' in window)) return _feedSharedObserver;
