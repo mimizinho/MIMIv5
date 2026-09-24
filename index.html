@@ -4199,7 +4199,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.24.10";
+var APP_VERSION = "2026.09.24.11";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -14873,8 +14873,8 @@ function bindMsgsPage() {
         // FIX: isto faltava — sem atualizar o doc da conversa, a pré-visualização
         // da última mensagem (📷 Foto / 🎥 Vídeo) nunca aparecia pro OUTRO
         // utilizador, nem em tempo real nem depois de recarregar a página.
-        if (doc && doc.name) {
-          msgObj._firestoreId = doc.name.split("/").pop();
+        if (doc) {
+          msgObj._firestoreId = (doc.name||doc.path||"").split("/").pop();
           var _conv = _mediaConv;
           var _members = _mediaMembers;
           fsSet("convos/"+ state.activeConvoId, {
@@ -14927,8 +14927,8 @@ function bindMsgsPage() {
       FB.sendMessage(state.activeConvoId, {
         id: msgId, type: "sticker", content: sticker.src, senderId: ME_ID, createdAt: createdAt, members: _stkMembers
       }).then(function(doc) {
-        if (doc && doc.name) {
-          msgObj._firestoreId = doc.name.split("/").pop();
+        if (doc) {
+          msgObj._firestoreId = (doc.name||doc.path||"").split("/").pop();
           fsSet("convos/"+ state.activeConvoId, {
             lastMsg: "🧩 Figurinha",
             lastTime: new Date().toISOString(),
@@ -15632,8 +15632,8 @@ function sendLoveLetter(text) {
     var _letterConv = CONVOS.find(function(c){ return c.id === state.activeConvoId; });
     var _letterMembers = _letterConv && _letterConv.userId ? [ME_ID, _letterConv.userId] : [ME_ID];
     FB.sendMessage(state.activeConvoId, { id:msgId, type:"letter", text:text, createdAt:createdAt, members:_letterMembers }).then(function(doc){
-      if (doc && doc.name) {
-        var fsId = doc.name.split("/").pop();
+      if (doc) {
+        var fsId = (doc.name||doc.path||"").split("/").pop();
         msgObj._firestoreId = fsId;
         var _sentCard = appEl.querySelector('[data-msg-id="'+msgId+'"] .msg-time');
         if (_sentCard) _sentCard.innerHTML = esc(msgObj.time) + renderMsgStatusIcon("sent");
@@ -17054,8 +17054,8 @@ function beginAudioRecording(stream) {
 
       var _audioMembers = conv && conv.userId ? [ME_ID, conv.userId] : [ME_ID];
       FB.sendMessage(_targetConvoId, { id:msgObj.id, type:"audio", audio:fileName, createdAt:_audioCreatedAt, members:_audioMembers, duration:duration }).then(function(doc){
-        if (doc && doc.name) {
-          var fsId = doc.name.split("/").pop();
+        if (doc) {
+          var fsId = (doc.name||doc.path||"").split("/").pop();
           msgObj._firestoreId = fsId;
           var _conv = CONVOS.find(function(c){ return c.id === _targetConvoId; });
           var _members = _conv && _conv.userId ? [ME_ID, _conv.userId] : [ME_ID];
