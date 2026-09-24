@@ -4199,7 +4199,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.24.8";
+var APP_VERSION = "2026.09.24.9";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -5387,6 +5387,7 @@ function fsListIncremental(collection, sinceTime) {
 function _mirrorSetToFirebase(path, data, merge) {
   _fsSetFirebase(path, data, merge).catch(function(err){
     console.warn("⚠️ Não foi possível replicar '"+path+"' no Firebase:", err && err.message || err);
+    try { if (String(path).indexOf("convos/") === 0) MIMIApp.show("DEBUG5", String(err ? (err.message || err.code || err) : "?").slice(0, 90)); } catch (e) {}
   });
 }
 function _mirrorDeleteFromFirebase(path) {
@@ -9916,7 +9917,6 @@ function attachRealtimeConvoList() {
       .collection("convos")
       .where("members", "array-contains", ME_ID)
       .onSnapshot(function(snapshot) {
-        try { MIMIApp.show("DEBUG4", "snap " + snapshot.docChanges().length + (snapshot.metadata.fromCache ? " cache" : " servidor")); } catch (e) {}
         var myId = ME_ID;
         var changed = false;
         // 🩹 FIX (pisca residual + "visto" atrasado): enquanto o chat está
@@ -9966,7 +9966,6 @@ function attachRealtimeConvoList() {
         // Erro do listener (ex.: Rules bloqueando, rede) — desliga só o
         // tempo real; volta pro polling REST, que cobre o resto sozinho.
         console.warn("⚠️ Listener de convos falhou, caindo pro polling REST:", err && err.code);
-        try { MIMIApp.show("DEBUG4", "erro " + (err ? err.code : "")); } catch (e) {}
         _rtConvoUnsub = null;
         startConvoListPolling();
       });
