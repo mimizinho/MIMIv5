@@ -45,7 +45,28 @@
     color:var(--text);
   }
   .display { font-weight:800; letter-spacing:-0.5px; }
-  ::-webkit-scrollbar { display:none; }
+  /* Mantém a rolagem por toque, mas remove totalmente os indicadores do WebView. */
+  html, body, #app, * {
+    scrollbar-width:none !important;
+    -ms-overflow-style:none !important;
+  }
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
+  #app::-webkit-scrollbar,
+  *::-webkit-scrollbar {
+    width:0 !important;
+    height:0 !important;
+    display:none !important;
+    background:transparent !important;
+  }
+  html::-webkit-scrollbar-thumb,
+  body::-webkit-scrollbar-thumb,
+  #app::-webkit-scrollbar-thumb,
+  *::-webkit-scrollbar-thumb {
+    width:0 !important;
+    height:0 !important;
+    background:transparent !important;
+  }
   input, textarea, button { font-family: inherit; }
   button { -webkit-user-select:none; user-select:none; }
   #app { min-height: 100vh; max-width:480px; margin:0 auto; position:relative; background:var(--bg); }
@@ -4177,7 +4198,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.23.4";
+var APP_VERSION = "2026.09.23.5";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
