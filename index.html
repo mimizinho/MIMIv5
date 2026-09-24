@@ -4199,7 +4199,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.24.4";
+var APP_VERSION = "2026.09.24.5";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -8822,6 +8822,7 @@ function _applyConvoDoc(doc, myId) {
     var isFromOther = doc.lastSenderId && doc.lastSenderId !== myId && doc.lastSenderId !== _fbUid;
     var myLastRead = doc["lastRead_" + myId] || null;
     var alreadyRead = myLastRead && myLastRead >= doc.lastTime;
+      try { MIMIApp.show("DEBUG", (isFromOther?"outro ":"eu ") + (alreadyRead?"lida ":"naolida ") + (state.activeConvoId===conv.id?"aberta":"fechada")); } catch (e) {}
     // Não marca como não-lida se essa conversa está aberta na tela
     // agora mesmo (o polling do chat já cuida de marcar como vista).
     if (isFromOther && !alreadyRead && state.activeConvoId !== conv.id) {
