@@ -4199,7 +4199,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.24.11";
+var APP_VERSION = "2026.09.24.12";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -14864,7 +14864,7 @@ function bindMsgsPage() {
       FB.sendMessage(state.activeConvoId, {
         id: msgId,
         type: mediaType,
-        content: cloudinaryUrl,  // ✅ URL apenas!
+        content: src,  // ✅ URL apenas!
         senderId: ME_ID,
         createdAt: createdAt,
         members: _mediaMembers
