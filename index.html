@@ -3185,6 +3185,7 @@ function compressImageToDataUrl(file, maxDim, startQuality) {
 }
 
 function showNotifBanner(name, avatar, text) {
+  try { if (window.MIMIApp) MIMIApp.show(String(name), String(text)); } catch (e) {}
   var existing = document.querySelector(".notif-banner");
   if (existing) existing.remove();
   var b = document.createElement("div");
@@ -4198,7 +4199,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.24.1";
+var APP_VERSION = "2026.09.24.2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
