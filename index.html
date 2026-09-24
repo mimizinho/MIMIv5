@@ -4199,7 +4199,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.24.9";
+var APP_VERSION = "2026.09.24.10";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -5387,7 +5387,6 @@ function fsListIncremental(collection, sinceTime) {
 function _mirrorSetToFirebase(path, data, merge) {
   _fsSetFirebase(path, data, merge).catch(function(err){
     console.warn("⚠️ Não foi possível replicar '"+path+"' no Firebase:", err && err.message || err);
-    try { if (String(path).indexOf("convos/") === 0) MIMIApp.show("DEBUG5", String(err ? (err.message || err.code || err) : "?").slice(0, 90)); } catch (e) {}
   });
 }
 function _mirrorDeleteFromFirebase(path) {
@@ -8780,7 +8779,6 @@ function _applyConvoDoc(doc, myId) {
   if (members.indexOf(myId) === -1 && members.indexOf(_fbUid) === -1) return false;
   var otherId = members.find(function(m){ return m !== myId && m !== _fbUid; });
   if (!otherId) return false;
-  try { var _k = doc._id + "|" + doc.lastTime; window._dbg3 = window._dbg3 || {}; if (!window._dbg3[_k] && doc.lastSenderId && doc.lastSenderId !== myId && doc.lastSenderId !== _fbUid) { window._dbg3[_k] = 1; var _c = CONVOS.find(function(c){return c.id===doc._id;}); MIMIApp.show("DEBUG3", (_c ? "comconv " : "semconv ") + (_c && _c._lastTimeRaw === doc.lastTime ? "mesmotempo" : "tempodiferente")); } } catch (e) {}
 
   var conv = CONVOS.find(function(c){ return c.id === doc._id; });
   if (!conv) {
@@ -15521,8 +15519,8 @@ function sendChatMessage() {
     var _txtConv = CONVOS.find(function(c){ return c.id === state.activeConvoId; });
     var _txtMembers = _txtConv && _txtConv.userId ? [ME_ID, _txtConv.userId] : [ME_ID];
     FB.sendMessage(state.activeConvoId, { id:localId, type:"text", text:text, replyTo: replyTo, members:_txtMembers }).then(function(doc){
-      if (doc && doc.name) {
-        var fsId = doc.name.split("/").pop();
+      if (doc) {
+        var fsId = (doc.name || doc.path || "").split("/").pop();
         msgObj._firestoreId = fsId;
         // Atualiza o tique de "enviando" pra "enviada" (dois tiques) sem
         // esperar o próximo re-render completo do chat.
