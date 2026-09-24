@@ -3191,7 +3191,7 @@ function showNotifBanner(name, avatar, text) {
   var b = document.createElement("div");
   b.className = "notif-banner";
   b.innerHTML =
-    '<img src="' + esc(avatar) + '" class="notif-banner-avatar" onerror="this.src=\'' + DEFAULT_AVATAR + '\'">' +
+    '<img src="' + esc(avatar) + '" class="notif-banner-avatar" onerror="this.onerror=null;this.src=DEFAULT_AVATAR">' +
     '<div class="notif-banner-text"><span class="notif-banner-name">' + esc(name) + '</span> <span class="notif-banner-msg">' + esc(text) + '</span></div>' +
     '<button class="notif-banner-close">&#x2715;</button>';
   document.body.appendChild(b);
@@ -4199,7 +4199,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.24.2";
+var APP_VERSION = "2026.09.24.3";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
