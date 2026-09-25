@@ -4199,7 +4199,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.24.14";
+var APP_VERSION = "2026.09.24.15";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -16988,7 +16988,7 @@ function startAudioRecording() {
   }
 
   // Caso contrário, pedir permissão uma vez
-  var permissionOptions = { audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } };
+  var permissionOptions = { audio: true };
   navigator.mediaDevices.getUserMedia(permissionOptions).then(function(stream) {
     // FIX: Cachear stream e marcar que permissão foi concedida
     _cachedAudioStream = stream;
