@@ -4199,7 +4199,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.25.01";
+var APP_VERSION = "2026.09.25.02";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -17011,7 +17011,7 @@ function beginAudioRecording(stream) {
   _recordingPausedDurationMs = 0;
   _recordingPauseBeganAt = null;
   try {
-    mediaRecorder = new MediaRecorder(stream);
+    mediaRecorder = new MediaRecorder(stream, (window.MediaRecorder && MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) ? { mimeType: "audio/webm;codecs=opus", audioBitsPerSecond: 64000 } : { audioBitsPerSecond: 64000 });
   } catch (e) {
     showToast("Gravação de áudio não suportada aqui.");
     stream.getTracks().forEach(function(t){ t.stop(); });
