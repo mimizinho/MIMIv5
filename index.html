@@ -4199,7 +4199,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.25.02";
+var APP_VERSION = "2026.09.25.03";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -17753,7 +17753,7 @@ function _acceptIncomingCall() {
       if (err && err.name === "NotAllowedError") {
         showToast("Microfone bloqueado. Vá em Configurações > Apps > MIMI > Permissões e ative o Microfone.");
       } else {
-        showToast("Não foi possível conectar a chamada.");
+        showToast("Erro chamada: " + (err && err.name) + " - " + (err && err.message));
       }
       fsSet("calls/"+callId, { status:"declined" }, true).catch(function(){});
       _cleanupCallResources();
