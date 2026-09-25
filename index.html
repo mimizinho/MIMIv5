@@ -4199,7 +4199,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.25.03";
+var APP_VERSION = "2026.09.25.04";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -17454,6 +17454,7 @@ function startRealVoiceCall(conv) {
   _callRole = "caller";
   render();
 
+  if (_cachedAudioStream) { try { _cachedAudioStream.getTracks().forEach(function(t){ t.stop(); }); } catch(e){} _cachedAudioStream = null; _audioPermissionGranted = false; }
   navigator.mediaDevices.getUserMedia(CALL_AUDIO_CONSTRAINTS)
     .then(function(stream) {
       _localCallStream = stream;
@@ -17721,6 +17722,7 @@ function _acceptIncomingCall() {
   activeCall = { conv:conv, type:"audio", status:"connected", seconds:0, muted:false, simulated:false, callId:callId };
   render();
 
+    if (_cachedAudioStream) { try { _cachedAudioStream.getTracks().forEach(function(t){ t.stop(); }); } catch(e){} _cachedAudioStream = null; _audioPermissionGranted = false; }
   navigator.mediaDevices.getUserMedia(CALL_AUDIO_CONSTRAINTS)
     .then(function(stream) {
       _localCallStream = stream;
@@ -17753,7 +17755,7 @@ function _acceptIncomingCall() {
       if (err && err.name === "NotAllowedError") {
         showToast("Microfone bloqueado. Vá em Configurações > Apps > MIMI > Permissões e ative o Microfone.");
       } else {
-        showToast("Erro chamada: " + (err && err.name) + " - " + (err && err.message));
+        showToast("Não foi possível conectar a chamada.");
       }
       fsSet("calls/"+callId, { status:"declined" }, true).catch(function(){});
       _cleanupCallResources();
