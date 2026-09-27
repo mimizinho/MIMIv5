@@ -4199,7 +4199,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.25.04";
+var APP_VERSION = "2026.09.25.05";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -15402,8 +15402,7 @@ function bindAudioPlayback() {
     btn.addEventListener("click", function() {
       if (!audioEl) return;
       if (audioEl.paused) {
-        function startPlayback() {
-          appEl.querySelectorAll("audio").forEach(function(a){ if (a!==audioEl) a.pause(); });
+        function attemptPlay() {
           var ap = audioEl.play();
           // FIX: antes o ícone virava "pause" incondicionalmente, mesmo que a
           // Promise de play() fosse rejeitada (arquivo corrompido, formato não
@@ -15423,6 +15422,23 @@ function bindAudioPlayback() {
           } else {
             btn.innerHTML = icoSvg("pause",14, btn.style.color || C.accent, true);
           }
+        }
+        function startPlayback() {
+          appEl.querySelectorAll("audio").forEach(function(a){ if (a!==audioEl) a.pause(); });
+          // FIX (aviso falso na 1ª reprodução): o play() falhava sempre que
+          // o navegador ainda não tinha dado suficiente carregado
+          // (readyState baixo) — a Promise rejeitava e mostrava "não foi
+          // possível reproduzir" mesmo o áudio estando ok; na 2ª tentativa
+          // já tinha buffer e tocava normal. Agora, se ainda não tem dado
+          // suficiente, espera o evento "canplay" antes de chamar play().
+          if (audioEl.readyState < 3) {
+            audioEl.addEventListener("canplay", function onCanPlay() {
+              audioEl.removeEventListener("canplay", onCanPlay);
+              attemptPlay();
+            });
+            return;
+          }
+          attemptPlay();
         }
         // FIX (áudio no Backblaze): mensagem salva depois da migração pro
         // Backblaze não tem "src" pronto no <audio> — só um caminho
