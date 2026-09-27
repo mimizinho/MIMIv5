@@ -4199,7 +4199,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.25.10";
+var APP_VERSION = "2026.09.25.11";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -15402,7 +15402,7 @@ function bindAudioPlayback() {
     btn._chatPlayBound = true;
     btn.addEventListener("click", function() {
       if (!audioEl) return;
-      showToast("URL audio: " + (audioEl.currentSrc || audioEl.src));
+      navigator.clipboard.writeText(audioEl.currentSrc || audioEl.src).catch(function(){}); showToast("URL do audio copiada!");
       if (audioEl.paused) {
         function attemptPlay() {
           var ap = audioEl.play();
