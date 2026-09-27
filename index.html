@@ -4199,7 +4199,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.25.08";
+var APP_VERSION = "2026.09.25.09";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -15418,7 +15418,7 @@ function bindAudioPlayback() {
               // mostra o aviso se esse áudio já tinha tocado com sucesso
               // antes (uma falha depois dessa é erro de verdade).
               if (audioEl._playedOnce) {
-                showToast(toastWithIcon("Não foi possível reproduzir este áudio.", "warning", "before"), true);
+                showToast("Erro audio: " + (err && err.name) + " - " + (err && err.message) + " | audioEl.error: " + (audioEl.error && audioEl.error.code));
               }
             });
           } else {
