@@ -4206,7 +4206,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.27.01";
+var APP_VERSION = "2026.09.27.02";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -5833,8 +5833,22 @@ function hydrateImages(root) {
       el.setAttribute('data-hydrated', '1');
       if (!filePath) return;
       ImageGateway.getUrl(filePath).then(function (url) {
-        el.src = url;
-        el.removeAttribute('data-image-error');
+        // Pre-carrega fora da tela pra saber a proporcao real da imagem
+        // ANTES de trocar o src do <img> visivel - evita o card mudar de
+        // altura no meio do carregamento (empurrava o scroll/piscava).
+        var _pre = new Image();
+        _pre.onload = function () {
+          if (_pre.naturalWidth && _pre.naturalHeight) {
+            el.style.aspectRatio = _pre.naturalWidth + '/' + _pre.naturalHeight;
+          }
+          el.src = url;
+          el.removeAttribute('data-image-error');
+        };
+        _pre.onerror = function () {
+          el.src = url;
+          el.removeAttribute('data-image-error');
+        };
+        _pre.src = url;
       }).catch(function (err) {
         el.removeAttribute('data-hydrated');
         el.setAttribute('data-image-error', (err && err.message) || 'Falha ao carregar');
