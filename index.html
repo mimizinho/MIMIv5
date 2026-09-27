@@ -4199,7 +4199,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.25.06";
+var APP_VERSION = "2026.09.25.07";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -15352,6 +15352,7 @@ function bindAudioPlayback() {
       audioEl._chatAudioBound = true;
       audioEl.addEventListener("timeupdate", updateAudioProgress);
       audioEl.addEventListener("play", function() {
+        audioEl._playedOnce = true;
         // Marca esse áudio como "tocando agora" pra segurar renders de
         // fundo (poll de mensagens, status visto, presença) até ele parar —
         // ver backgroundRender(). Sem isso, qualquer atualização chegando
@@ -15402,28 +15403,23 @@ function bindAudioPlayback() {
     btn.addEventListener("click", function() {
       if (!audioEl) return;
       if (audioEl.paused) {
-        function attemptPlay(isRetry) {
+        function attemptPlay() {
           var ap = audioEl.play();
           if (ap && ap.then) {
             ap.then(function() {
               btn.innerHTML = icoSvg("pause",14, btn.style.color || C.accent, true);
             }).catch(function(err) {
-              // FIX (aviso falso na 1ª reprodução): a 1ª chamada de play() é
-              // o que dispara o carregamento do áudio, então pode rejeitar
-              // simplesmente por ainda não ter dado suficiente — sem isso,
-              // aparecia erro mesmo o áudio estando ok. Agora, se ainda não
-              // foi retry, espera o "canplay" e tenta de novo sozinho antes
-              // de mostrar qualquer aviso.
-              if (!isRetry) {
-                audioEl.addEventListener("canplay", function onCanPlay() {
-                  audioEl.removeEventListener("canplay", onCanPlay);
-                  attemptPlay(true);
-                });
-                return;
-              }
               console.error("❌ Falha ao reproduzir áudio:", id, err);
               btn.innerHTML = icoSvg("play",14, btn.style.color || C.accent, true);
-              showToast(toastWithIcon("Não foi possível reproduzir este áudio.", "warning", "before"), true);
+              // FIX (aviso falso na 1ª tentativa): a 1ª chamada de play() é
+              // o que dispara o carregamento do áudio (preload="metadata")
+              // e pode rejeitar só por isso, mesmo com o áudio ok — nesse
+              // caso o próximo clique manual do usuário já toca normal. Só
+              // mostra o aviso se esse áudio já tinha tocado com sucesso
+              // antes (uma falha depois dessa é erro de verdade).
+              if (audioEl._playedOnce) {
+                showToast(toastWithIcon("Não foi possível reproduzir este áudio.", "warning", "before"), true);
+              }
             });
           } else {
             btn.innerHTML = icoSvg("pause",14, btn.style.color || C.accent, true);
@@ -15431,7 +15427,7 @@ function bindAudioPlayback() {
         }
         function startPlayback() {
           appEl.querySelectorAll("audio").forEach(function(a){ if (a!==audioEl) a.pause(); });
-          attemptPlay(false);
+          attemptPlay();
         }
         // FIX (áudio no Backblaze): mensagem salva depois da migração pro
         // Backblaze não tem "src" pronto no <audio> — só um caminho
