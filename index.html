@@ -4206,7 +4206,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.27.04";
+var APP_VERSION = "2026.09.27.05";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -20758,7 +20758,7 @@ function fixMyPostsVideoRatio(onProgress) {
     var todos = (docs || []).filter(function(d) {
       return d.video && !d.videoRatio;
     });
-    var total = todos.length, ok = 0, falhas = 0, done = 0;
+    var total = todos.length, ok = 0, falhas = 0, done = 0, _diag = [];
     if (onProgress) onProgress(done, total);
 
     function probeOne(d) {
@@ -20785,13 +20785,14 @@ function fixMyPostsVideoRatio(onProgress) {
         return probeOne(d).then(function(ratio) {
           done++;
           if (onProgress) onProgress(done, total);
-          if (!ratio) { falhas++; return; }
+          if (!ratio) { falhas++; if (_diag.length < 3) _diag.push("probe sem ratio: " + d._id); return; }
           return fsSet("posts/" + d._id, { videoRatio: ratio }, true)
             .then(function() { ok++; })
-            .catch(function() { falhas++; });
+            .catch(function(e) { falhas++; if (_diag.length < 3) _diag.push("fsSet: " + ((e && e.message) || e)); });
         });
       });
     }, Promise.resolve()).then(function() {
+      if (_diag.length) window.alert("DIAG:\n" + _diag.join("\n"));
       return { total: total, ok: ok, falhas: falhas };
     });
   }).then(clearSecret, clearSecretErr);
