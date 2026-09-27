@@ -4199,7 +4199,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.25.05";
+var APP_VERSION = "2026.09.25.06";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -15402,19 +15402,25 @@ function bindAudioPlayback() {
     btn.addEventListener("click", function() {
       if (!audioEl) return;
       if (audioEl.paused) {
-        function attemptPlay() {
+        function attemptPlay(isRetry) {
           var ap = audioEl.play();
-          // FIX: antes o ícone virava "pause" incondicionalmente, mesmo que a
-          // Promise de play() fosse rejeitada (arquivo corrompido, formato não
-          // suportado, falha de rede) — o botão ficava travado em "pause" com
-          // o áudio mudo e sem nenhuma animação, e o erro era engolido em
-          // silêncio por um .catch(function(){}) vazio. Agora só troca o ícone
-          // DEPOIS de confirmar que a reprodução realmente começou, e reverte
-          // com um aviso se ela falhar.
           if (ap && ap.then) {
             ap.then(function() {
               btn.innerHTML = icoSvg("pause",14, btn.style.color || C.accent, true);
             }).catch(function(err) {
+              // FIX (aviso falso na 1ª reprodução): a 1ª chamada de play() é
+              // o que dispara o carregamento do áudio, então pode rejeitar
+              // simplesmente por ainda não ter dado suficiente — sem isso,
+              // aparecia erro mesmo o áudio estando ok. Agora, se ainda não
+              // foi retry, espera o "canplay" e tenta de novo sozinho antes
+              // de mostrar qualquer aviso.
+              if (!isRetry) {
+                audioEl.addEventListener("canplay", function onCanPlay() {
+                  audioEl.removeEventListener("canplay", onCanPlay);
+                  attemptPlay(true);
+                });
+                return;
+              }
               console.error("❌ Falha ao reproduzir áudio:", id, err);
               btn.innerHTML = icoSvg("play",14, btn.style.color || C.accent, true);
               showToast(toastWithIcon("Não foi possível reproduzir este áudio.", "warning", "before"), true);
@@ -15425,20 +15431,7 @@ function bindAudioPlayback() {
         }
         function startPlayback() {
           appEl.querySelectorAll("audio").forEach(function(a){ if (a!==audioEl) a.pause(); });
-          // FIX (aviso falso na 1ª reprodução): o play() falhava sempre que
-          // o navegador ainda não tinha dado suficiente carregado
-          // (readyState baixo) — a Promise rejeitava e mostrava "não foi
-          // possível reproduzir" mesmo o áudio estando ok; na 2ª tentativa
-          // já tinha buffer e tocava normal. Agora, se ainda não tem dado
-          // suficiente, espera o evento "canplay" antes de chamar play().
-          if (audioEl.readyState < 3) {
-            audioEl.addEventListener("canplay", function onCanPlay() {
-              audioEl.removeEventListener("canplay", onCanPlay);
-              attemptPlay();
-            });
-            return;
-          }
-          attemptPlay();
+          attemptPlay(false);
         }
         // FIX (áudio no Backblaze): mensagem salva depois da migração pro
         // Backblaze não tem "src" pronto no <audio> — só um caminho
