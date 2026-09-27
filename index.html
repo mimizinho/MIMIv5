@@ -4206,7 +4206,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.27.03";
+var APP_VERSION = "2026.09.27.04";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -20741,11 +20741,24 @@ function applyTheme(theme) {
 // muda. Pode rodar de novo a toa: post ja com videoRatio e pulado.
 function fixMyPostsVideoRatio(onProgress) {
   if (!_idToken || !ME_ID) return Promise.resolve({ total: 0, ok: 0, falhas: 0 });
+  // Corrige de TODAS as contas, nao so a logada -- precisa do mesmo
+  // ADMIN_BACKFILL_SECRET usado em backfillFirebaseToSupabase(), pois o
+  // fs-gateway so deixa cada uid escrever no que e dele. Pede na hora,
+  // nunca fica salvo em disco, e limpa da memoria assim que termina
+  // (com ou sem erro).
+  if (typeof SupabaseDB === "undefined") return Promise.reject(new Error("SupabaseDB não carregado."));
+  var _secret = window.prompt("Cole aqui o ADMIN_BACKFILL_SECRET pra corrigir os vídeos de TODAS as contas:");
+  if (!_secret) return Promise.reject(new Error("Cancelado — sem o secret nada é corrigido."));
+  SupabaseDB.setAdminSecret(_secret);
+
+  function clearSecret(v) { SupabaseDB.setAdminSecret(null); return v; }
+  function clearSecretErr(err) { SupabaseDB.setAdminSecret(null); return Promise.reject(err); }
+
   return _fsListMerged("posts").then(function(docs) {
-    var mine = (docs || []).filter(function(d) {
-      return d.authorId === ME_ID && d.video && !d.videoRatio;
+    var todos = (docs || []).filter(function(d) {
+      return d.video && !d.videoRatio;
     });
-    var total = mine.length, ok = 0, falhas = 0, done = 0;
+    var total = todos.length, ok = 0, falhas = 0, done = 0;
     if (onProgress) onProgress(done, total);
 
     function probeOne(d) {
@@ -20767,7 +20780,7 @@ function fixMyPostsVideoRatio(onProgress) {
       });
     }
 
-    return mine.reduce(function(chain, d) {
+    return todos.reduce(function(chain, d) {
       return chain.then(function() {
         return probeOne(d).then(function(ratio) {
           done++;
@@ -20781,7 +20794,7 @@ function fixMyPostsVideoRatio(onProgress) {
     }, Promise.resolve()).then(function() {
       return { total: total, ok: ok, falhas: falhas };
     });
-  });
+  }).then(clearSecret, clearSecretErr);
 }
 
 function renderSettingsPage() {
@@ -20918,8 +20931,8 @@ function renderSettingsPage() {
   '<div class="cfg-item" data-fix-video-ratio>' +
     '<div class="cfg-item-icon">'+icoSvg("video",20,"var(--muted)")+'</div>' +
     '<div class="grow">' +
-      '<div class="cfg-item-label">Corrigir proporção de vídeos antigos</div>' +
-      '<div class="cfg-item-sub" data-fix-video-ratio-status>Corrige o carregamento dos seus vídeos no Feed</div>' +
+      '<div class="cfg-item-label">Corrigir proporção de vídeos antigos (todas as contas)</div>' +
+      '<div class="cfg-item-sub" data-fix-video-ratio-status>Vai pedir o admin secret do Supabase</div>' +
     '</div>' +
   '</div>' +
 
