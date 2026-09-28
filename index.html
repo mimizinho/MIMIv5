@@ -4206,7 +4206,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.27.06";
+var APP_VERSION = "2026.09.27.07";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -6370,6 +6370,25 @@ function _bumpAuthorAffinity(authorId, eventType, value) {
 }
 
 // ── FIREBASE SERVICE (REST, sem SDK, funciona em WebView) ─────
+// Debounce de curtidas (posts/vibes): toques rápidos viram UMA gravação
+// (estado final). Grava na hora se o app for pro segundo plano.
+var _likeTimers = {}, _likePending = {};
+function _flushLike(k) {
+  clearTimeout(_likeTimers[k]); delete _likeTimers[k];
+  var q = _likePending[k]; if (!q) return;
+  delete _likePending[k];
+  q.sync(q.liked);
+}
+function _queueLike(kind, id, liked, sync) {
+  var k = kind + ":" + id;
+  _likePending[k] = { liked: liked, sync: sync };
+  clearTimeout(_likeTimers[k]);
+  _likeTimers[k] = setTimeout(function(){ _flushLike(k); }, 1500);
+}
+function _flushAllLikes() { Object.keys(_likePending).forEach(_flushLike); }
+document.addEventListener("visibilitychange", function(){ if (document.hidden) _flushAllLikes(); });
+window.addEventListener("pagehide", _flushAllLikes);
+
 var FB = {
 
   // ── AUTH ──────────────────────────────────────────────────
@@ -7053,6 +7072,9 @@ var FB = {
   },
 
   likePost: function(pid, liked) {
+    _queueLike("post", pid, liked, function(l){ FB._likePostNow(pid, l); });
+  },
+  _likePostNow: function(pid, liked) {
     if (!_idToken) return;
     // atualização otimista já feita na UI; aqui sincronizamos
     fsGet("posts/"+pid).then(function(doc){
@@ -7463,6 +7485,10 @@ var FB = {
   },
 
   likeVibe: function(vibeId, liked) {
+    _queueLike("vibe", vibeId, liked, function(l){ FB._likeVibeNow(vibeId, l); });
+    return Promise.resolve();
+  },
+  _likeVibeNow: function(vibeId, liked) {
     if (!_idToken) return Promise.resolve();
     return fsGet("vibes/"+vibeId).then(function(doc){
       if (!doc) return;
