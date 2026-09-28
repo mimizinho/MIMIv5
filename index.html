@@ -366,7 +366,7 @@
   }
   @media (prefers-reduced-motion: reduce) { .fire-fx { display:none; } }
 
-  .act-btn.like-pop svg { animation:likePop .28s ease; }
+  .act-btn.like-pop svg { animation:none; }
   @keyframes likePop { 0%{transform:scale(1);} 35%{transform:scale(1.35);} 100%{transform:scale(1);} }
   .act-btn.liked { color:var(--pink); }
   .act-btn.saved { color:var(--accent); }
@@ -4206,7 +4206,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.27.08";
+var APP_VERSION = "2026.09.27.09";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
