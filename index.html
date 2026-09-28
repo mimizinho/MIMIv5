@@ -4206,7 +4206,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.27.05";
+var APP_VERSION = "2026.09.27.06";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -20729,75 +20729,6 @@ function applyTheme(theme) {
   try { localStorage.setItem("mimi_theme", theme); } catch(e){}
 }
 
-// MIGRACAO UNICA (fix do piscar/pular no Feed, set/2026): posts antigos
-// de video NAO tem videoRatio salvo (campo novo, so passou a ser gravado
-// em posts publicados a partir de agora). Sem esse dado, o card do post
-// nasce numa caixa 16:9 fixa e so ajusta a proporcao de verdade quando o
-// video termina de carregar os metadados - essa troca no meio do scroll
-// e o que empurra o layout e "pula" a tela.
-// Isto varre os posts DO PROPRIO USUARIO LOGADO que tem video e ainda
-// nao tem videoRatio, descobre a proporcao real (sem baixar o video
-// inteiro, so os metadados) e grava de volta - so isso, nada visual
-// muda. Pode rodar de novo a toa: post ja com videoRatio e pulado.
-function fixMyPostsVideoRatio(onProgress) {
-  if (!_idToken || !ME_ID) return Promise.resolve({ total: 0, ok: 0, falhas: 0 });
-  // Corrige de TODAS as contas, nao so a logada -- precisa do mesmo
-  // ADMIN_BACKFILL_SECRET usado em backfillFirebaseToSupabase(), pois o
-  // fs-gateway so deixa cada uid escrever no que e dele. Pede na hora,
-  // nunca fica salvo em disco, e limpa da memoria assim que termina
-  // (com ou sem erro).
-  if (typeof SupabaseDB === "undefined") return Promise.reject(new Error("SupabaseDB não carregado."));
-  var _secret = window.prompt("Cole aqui o ADMIN_BACKFILL_SECRET pra corrigir os vídeos de TODAS as contas:");
-  if (!_secret) return Promise.reject(new Error("Cancelado — sem o secret nada é corrigido."));
-  SupabaseDB.setAdminSecret(_secret);
-
-  function clearSecret(v) { SupabaseDB.setAdminSecret(null); return v; }
-  function clearSecretErr(err) { SupabaseDB.setAdminSecret(null); return Promise.reject(err); }
-
-  return _fsListMerged("posts").then(function(docs) {
-    var todos = (docs || []).filter(function(d) {
-      return d.video && !d.videoRatio;
-    });
-    var total = todos.length, ok = 0, falhas = 0, done = 0, _diag = [];
-    if (onProgress) onProgress(done, total);
-
-    function probeOne(d) {
-      return new Promise(function(resolve) {
-        var v = document.createElement("video");
-        v.preload = "metadata";
-        var settled = false;
-        function finish(ratio) {
-          if (settled) return;
-          settled = true;
-          resolve(ratio);
-        }
-        v.onloadedmetadata = function() {
-          finish(v.videoWidth && v.videoHeight ? (v.videoWidth + "/" + v.videoHeight) : null);
-        };
-        v.onerror = function() { finish(null); };
-        v.src = optimizeCloudinaryVideoUrl(d.video);
-        setTimeout(function() { finish(null); }, 15000);
-      });
-    }
-
-    return todos.reduce(function(chain, d) {
-      return chain.then(function() {
-        return probeOne(d).then(function(ratio) {
-          done++;
-          if (onProgress) onProgress(done, total);
-          if (!ratio) { falhas++; if (_diag.length < 3) _diag.push("probe sem ratio: " + d._id); return; }
-          return fsSet("posts/" + d._id, { videoRatio: ratio }, true)
-            .then(function() { ok++; })
-            .catch(function(e) { falhas++; if (_diag.length < 3) _diag.push("fsSet: " + ((e && e.message) || e)); });
-        });
-      });
-    }, Promise.resolve()).then(function() {
-      if (_diag.length) window.alert("DIAG:\n" + _diag.join("\n"));
-      return { total: total, ok: ok, falhas: falhas };
-    });
-  }).then(clearSecret, clearSecretErr);
-}
-
 function renderSettingsPage() {
   var me = ME_obj();
   var t = state.appTheme;
@@ -20927,16 +20858,6 @@ function renderSettingsPage() {
     '</div>'
   : "") +
 
-  // Manutencao (temporario - botao removido depois de usado)
-  '<div class="cfg-section-title">Manutenção</div>' +
-  '<div class="cfg-item" data-fix-video-ratio>' +
-    '<div class="cfg-item-icon">'+icoSvg("video",20,"var(--muted)")+'</div>' +
-    '<div class="grow">' +
-      '<div class="cfg-item-label">Corrigir proporção de vídeos antigos (todas as contas)</div>' +
-      '<div class="cfg-item-sub" data-fix-video-ratio-status>Vai pedir o admin secret do Supabase</div>' +
-    '</div>' +
-  '</div>' +
-
   // Conta
   '<div class="cfg-section-title">Conta</div>' +
   '<div class="cfg-item danger" data-delete-account>' +
@@ -20959,31 +20880,6 @@ function renderSettingsPage() {
 }
 
 function bindSettingsPage() {
-  var fixVideoRatioBtn = appEl.querySelector("[data-fix-video-ratio]");
-  var fixVideoRatioStatus = appEl.querySelector("[data-fix-video-ratio-status]");
-  if (fixVideoRatioBtn) fixVideoRatioBtn.addEventListener("click", function() {
-    if (fixVideoRatioBtn.getAttribute("data-running") === "1") return;
-    fixVideoRatioBtn.setAttribute("data-running", "1");
-    fixVideoRatioBtn.style.opacity = "0.6";
-    if (fixVideoRatioStatus) fixVideoRatioStatus.textContent = "Verificando seus vídeos…";
-    fixMyPostsVideoRatio(function(done, total) {
-      if (fixVideoRatioStatus) fixVideoRatioStatus.textContent = "Corrigindo " + done + " de " + total + "…";
-    }).then(function(result) {
-      fixVideoRatioBtn.removeAttribute("data-running");
-      fixVideoRatioBtn.style.opacity = "1";
-      if (fixVideoRatioStatus) {
-        fixVideoRatioStatus.textContent = result.total === 0
-          ? "Nenhum vídeo pendente."
-          : "Concluído: " + result.ok + " corrigido(s) de " + result.total + (result.falhas ? (", " + result.falhas + " falha(s)") : "") + ".";
-      }
-      showToast(toastWithIcon(result.total === 0 ? "Nenhum vídeo pendente." : "Concluído: " + result.ok + " de " + result.total + " vídeos corrigidos.", "success"), true);
-    }).catch(function(err) {
-      fixVideoRatioBtn.removeAttribute("data-running");
-      fixVideoRatioBtn.style.opacity = "1";
-      if (fixVideoRatioStatus) fixVideoRatioStatus.textContent = "Erro: " + ((err && err.message) || "tente novamente.");
-    });
-  });
-
   var mfaEnrollBtn = appEl.querySelector("[data-open-mfa-enroll]");
   if (mfaEnrollBtn) mfaEnrollBtn.addEventListener("click", function() {
     if (!_idToken) { showToast("Faça login novamente para ativar a verificação em duas etapas."); return; }
