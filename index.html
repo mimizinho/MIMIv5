@@ -4206,7 +4206,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.27.07";
+var APP_VERSION = "2026.09.27.08";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -6372,6 +6372,7 @@ function _bumpAuthorAffinity(authorId, eventType, value) {
 // ── FIREBASE SERVICE (REST, sem SDK, funciona em WebView) ─────
 // Debounce de curtidas (posts/vibes): toques rápidos viram UMA gravação
 // (estado final). Grava na hora se o app for pro segundo plano.
+var _likeNotified = {};
 var _likeTimers = {}, _likePending = {};
 function _flushLike(k) {
   clearTimeout(_likeTimers[k]); delete _likeTimers[k];
@@ -13018,7 +13019,8 @@ function bindPostCardEvents(root) {
       if (idx === -1) {
         post.likedBy.push(ME_ID);
         // Notifica o dono do post que alguém curtiu
-        if (post.authorId !== ME_ID) {
+        if (post.authorId !== ME_ID && !_likeNotified[pid]) {
+          _likeNotified[pid] = true;
           addNotif("like", ME_ID, "curtiu sua publicação");
           FB.pushNotif(post.authorId, "like", "curtiu sua publicação");
           
