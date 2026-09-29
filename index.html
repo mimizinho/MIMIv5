@@ -4206,7 +4206,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.27.12";
+var APP_VERSION = "2026.09.27.13";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -7623,9 +7623,15 @@ var FB = {
   loadConvos: function() {
     if (!_idToken || !_fbUid) return Promise.resolve();
     var myId = ME_ID;
-    // Limpa conversas demo (ids c1–c4) antes de carregar as reais
-    CONVOS.length = 0;
     return fsList("convos").then(function(docs) {
+      // FIX (conversas somem da tela): antes CONVOS.length=0 rodava ANTES
+      // do fsList("convos") responder — se a rede falhasse depois disso
+      // (retryPromise esgotado, erro engolido em silêncio pelo .catch de
+      // quem chama), a lista ficava vazia na tela mesmo com as conversas
+      // intactas no servidor. Agora só limpa (pra tirar as demo/antigas)
+      // DEPOIS de já ter os dados novos em mãos — uma falha de rede deixa
+      // a lista antiga como estava, em vez de mostrar "sem conversas".
+      CONVOS.length = 0;
       docs.forEach(function(doc) {
         var members = doc.members || [];
         if (members.indexOf(myId) === -1 && members.indexOf(_fbUid) === -1) return;
