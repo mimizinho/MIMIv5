@@ -4206,7 +4206,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.27.11";
+var APP_VERSION = "2026.09.27.12";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -8655,7 +8655,7 @@ function _flushPendingChatAudioRender() {
 function _flushPendingBackgroundRender() {
   if (_pendingBackgroundRender && !_isTypingInField && !_isChatComposeActive()) {
     _pendingBackgroundRender = false;
-    render();
+    backgroundRender(); // FIX: respeita a mesma blindagem do Feed/Vibes que backgroundRender() já tem, em vez de forçar render() na força
   }
 }
 document.addEventListener("focusin", function(e){
