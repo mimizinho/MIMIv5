@@ -2715,7 +2715,7 @@ function avatarHtml(src, size, online, ring, plusRing, ringColors, themeKey, fra
   // avatar padrão. onerror só dispara uma vez (se o próprio padrão também
   // falhar, não entra em loop) e cobre tanto URL antiga inválida quanto
   // hydrateImages() não ter conseguido buscar a URL assinada a tempo.
-  var onerrAttr = ' onerror="this.onerror=null;this.src=\''+DEFAULT_AVATAR+'\';"';
+  var onerrAttr = ' onerror="this.onerror=null;this.src=DEFAULT_AVATAR;"';
   var html = '<div class="'+wrapClass+'" style="'+themeVar+'position:relative;width:'+size+'px;height:'+size+'px;flex-shrink:0;overflow:visible;">'+
     '<img '+imgAttrs+onerrAttr+' alt="" class="avatar '+ringClass+'" style="width:'+size+'px;height:'+size+'px;">';
   // 🟢 REMOVIDO: pontinho verde de "online" sobre o avatar. A pedido do
@@ -4212,7 +4212,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.05.01";
+var APP_VERSION = "2026.10.05.02";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
