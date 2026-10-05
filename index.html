@@ -2710,8 +2710,14 @@ function avatarHtml(src, size, online, ring, plusRing, ringColors, themeKey, fra
   var imgAttrs = isFp
     ? 'data-imgpath="'+esc(src)+'" src=""'
     : 'src="'+esc(src)+'"';
+  // FIX (foto de perfil quebrada quando a URL/hidratação falha): em vez
+  // de deixar o navegador mostrar o ícone de imagem quebrada, troca pelo
+  // avatar padrão. onerror só dispara uma vez (se o próprio padrão também
+  // falhar, não entra em loop) e cobre tanto URL antiga inválida quanto
+  // hydrateImages() não ter conseguido buscar a URL assinada a tempo.
+  var onerrAttr = ' onerror="this.onerror=null;this.src=\''+DEFAULT_AVATAR+'\';"';
   var html = '<div class="'+wrapClass+'" style="'+themeVar+'position:relative;width:'+size+'px;height:'+size+'px;flex-shrink:0;overflow:visible;">'+
-    '<img '+imgAttrs+' alt="" class="avatar '+ringClass+'" style="width:'+size+'px;height:'+size+'px;">';
+    '<img '+imgAttrs+onerrAttr+' alt="" class="avatar '+ringClass+'" style="width:'+size+'px;height:'+size+'px;">';
   // 🟢 REMOVIDO: pontinho verde de "online" sobre o avatar. A pedido do
   // Igor, o status online agora aparece como texto "Online" (na cor do
   // antigo pontinho) perto das outras infos do contato, em vez de um
@@ -4206,7 +4212,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.09.27.13";
+var APP_VERSION = "2026.10.05.01";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -8501,7 +8507,12 @@ var FB = {
       var msg = (err && err.message) || String(err);
       console.warn("⚠️ Não consegui listar profileViews/"+profileOwnerId+"/viewers:", msg);
       if (typeof showToast === "function") showToast("Erro (lista): " + msg, false);
-      return [];
+      // FIX (visitas de perfil zeravam sozinhas numa falha de rede): antes
+      // devolvia [] igual a "ninguém visitou de verdade", e quem chama usava
+      // esse [] pra REGRAVAR profileViewCount como 0 no servidor, apagando
+      // o contador real. Agora propaga o erro — quem chama decide manter
+      // o que já tinha em vez de tratar falha como lista vazia.
+      throw err;
     });
   }
 };
@@ -19549,6 +19560,7 @@ function renderProfileViewersPage() {
     // atualiza a tela (mesmo truque do renderStoryViewer)
     if (typeof FB !== "undefined" && FB.getProfileViewers) {
       FB.getProfileViewers(ownerId).then(function(list){
+        // (sucesso — segue o fluxo normal abaixo)
         // FIX: pessoas bloqueadas (em qualquer direção — eu bloqueei ou fui
         // bloqueado por elas) continuavam aparecendo em "quem viu meu
         // perfil", mesmo já sumindo de outros lugares do app (feed, busca
@@ -19589,6 +19601,16 @@ function renderProfileViewersPage() {
           if (typeof hydrateImages === "function") hydrateImages(bodyEl);
         } else {
           render();
+        }
+      }).catch(function(err){
+        // FIX (visitas de perfil zeravam sozinhas numa falha de rede): uma
+        // falha aqui antes virava lista vazia silenciosa, que descia pro
+        // fluxo de sucesso e regravava profileViewCount como 0. Agora, se
+        // a tela ainda estiver aberta, mostra erro e permite tentar de novo
+        // (sem mexer no cache nem no contador real do servidor).
+        console.warn("⚠️ getProfileViewers falhou, mantendo estado anterior:", (err && err.message) || err);
+        if (state.profileViewersFor === ownerId && typeof showToast === "function") {
+          showToast("Não foi possível carregar as visitas agora. Tentando de novo em breve...", false);
         }
       });
     }
