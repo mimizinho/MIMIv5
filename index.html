@@ -4212,7 +4212,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.05.02";
+var APP_VERSION = "2026.10.05.03";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -7854,7 +7854,7 @@ var FB = {
       type:      type,
       fromUid:   ME_ID,
       fromName:  (USERS[ME_ID] ? USERS[ME_ID].name  : ""),
-      fromAvatar:(USERS[ME_ID] ? USERS[ME_ID].avatar : ""),
+      fromAvatar:(function(a){return (typeof a==="string" && a.indexOf("data:")!==0) ? a : "";})(USERS[ME_ID] ? USERS[ME_ID].avatar : ""),
       text:      text,
       read:      false,
       createdAt: new Date().toISOString(),
@@ -8361,7 +8361,7 @@ var FB = {
         type: "storyView",
         fromUid: _fbUid,
         fromName: (USERS[_fbUid] || {}).name || "Usuário",
-        fromAvatar: (USERS[_fbUid] || {}).avatar || "",
+        fromAvatar: (function(a){return (typeof a==="string" && a.indexOf("data:")!==0) ? a : "";})((USERS[_fbUid] || {}).avatar || ""),
         text: "visualizou seu story",
         storyOwnerId: storyOwnerId,
         createdAt: new Date().toISOString(),
@@ -13048,7 +13048,7 @@ function bindPostCardEvents(root) {
               type: "like",
               fromUid: ME_ID,
               fromName: (USERS[ME_ID] || {}).name || "Usuário",
-              fromAvatar: (USERS[ME_ID] || {}).avatar || "",
+              fromAvatar: (function(a){return (typeof a==="string" && a.indexOf("data:")!==0) ? a : "";})((USERS[ME_ID] || {}).avatar || ""),
               text: "curtiu sua publicação",
               postId: pid,
               createdAt: createdAt,
