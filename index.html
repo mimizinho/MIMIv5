@@ -4212,7 +4212,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.05.03";
+var APP_VERSION = "2026.10.06.01";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -8198,7 +8198,7 @@ var FB = {
           subscribedUntil: d.subscribedUntil || null,
           ageVerified: !!d.ageVerified,
           followersCount: Array.isArray(d.followers) ? d.followers.length : (d.followerCount || 0),
-          createdAt: d.createdAt || d.joinedAt || null,
+          createdAt: d.createdAt || d.joinedAt || d._createdAt || null,
           lastSeen: d.lastSeen || null
         };
         // Mantém o cache local em dia sem sobrescrever nada que já exista
@@ -19236,7 +19236,7 @@ var UsersPanelModule = {
     this.error = null;
     var self = this;
     FB.loadAllUsers().then(function(list) {
-      self.users = list;
+      self.users = list.filter(function(u){ return u.username || u.email || u.name !== "Sem nome"; });
       self.loaded = true;
       self.loading = false;
       render();
@@ -19283,6 +19283,7 @@ function renderUsersPanelPage() {
   var all = m.users;
   var list = m.filtered();
   var verified = all.filter(function(u){ return u.verified; }).length;
+  var _rank = {}; all.forEach(function(u,i){ _rank[u.uid] = all.length - i; });
 
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">' +
       _modMetricCard("Contas no app", all.length) +
@@ -19295,11 +19296,11 @@ function renderUsersPanelPage() {
   } else {
     var shown = list.slice(0, m.limit);
     shown.forEach(function(u) {
-      var sub = (u.username ? esc(u.username.charAt(0) === "@" ? u.username : "@" + u.username) : "sem @") +
+      var sub = "#" + (_rank[u.uid] || "?") + " · " + (u.username ? esc(u.username.charAt(0) === "@" ? u.username : "@" + u.username) : "sem @") +
         (u.email ? " · " + esc(u.email) : "") +
         (u.createdAt ? " · entrou em " + esc(new Date(u.createdAt).toLocaleDateString("pt-BR")) : "");
       html += '<div class="cfg-item" data-users-open="'+esc(u.uid)+'" style="cursor:pointer;align-items:center;gap:10px;">' +
-        '<img src="'+esc(u.avatar || DEFAULT_AVATAR)+'" alt="" style="width:38px;height:38px;border-radius:50%;object-fit:cover;flex:none;" />' +
+        (function(a){var fp=ImageGateway.isFilePath(a);return '<img '+(fp?'data-imgpath="'+esc(a)+'" src=""':'src="'+esc(a)+'"')+' onerror="this.onerror=null;this.src=DEFAULT_AVATAR;" alt="" style="width:38px;height:38px;border-radius:50%;object-fit:cover;flex:none;" />';})(u.avatar || DEFAULT_AVATAR) +
         '<div class="grow" style="min-width:0;">' +
           '<div class="cfg-item-label" style="display:flex;align-items:center;gap:4px;">'+esc(u.name)+
             (u.verified ? '<span style="display:inline-flex;vertical-align:-2px;">'+icoSvg("check",13,"#2ecc71")+'</span>' : '')+'</div>' +
