@@ -4212,7 +4212,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.08.01";
+var APP_VERSION = "2026.10.08.02";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -15510,6 +15510,7 @@ function bindAudioPlayback() {
       if (!audioEl) return;
       if (audioEl.paused) {
         function attemptPlay() {
+btn.innerHTML = icoSvg("pause",14, btn.style.color || C.accent, true);
           var ap = audioEl.play();
           if (ap && ap.then) {
             ap.then(function() {
@@ -15543,12 +15544,14 @@ function bindAudioPlayback() {
         var b2path = audioEl.getAttribute("data-audio-b2path");
         if (b2path && !audioEl.src) {
           btn.disabled = true;
+btn.innerHTML = icoSvg("pause",14, btn.style.color || C.accent, true);
           AudioGateway.getPlaybackUrl(b2path, state.activeConvoId).then(function(url) {
             audioEl.src = url;
             btn.disabled = false;
             startPlayback();
           }).catch(function(err) {
             console.error("❌ Erro ao buscar URL de áudio no Backblaze:", err);
+btn.innerHTML = icoSvg("play",14, btn.style.color || C.accent, true);
             btn.disabled = false;
             showToast(toastWithIcon("Não foi possível carregar este áudio.", "warning", "before"), true);
           });
