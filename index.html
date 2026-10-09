@@ -4221,7 +4221,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.09.09";
+var APP_VERSION = "2026.10.09.10";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -9945,7 +9945,7 @@ function _updateRtIndicator() {
   var el = appEl && appEl.querySelector("[data-rt-indicator]");
   if (!el) return;
   if (_rtActiveConvoId && _rtActiveConvoId === state.activeConvoId) {
-    el.innerHTML = '<span style="color:#2ecc71;" title="Tempo real conectado">⚡</span>';
+    el.innerHTML = '';
   } else {
     el.innerHTML = '<span style="opacity:.6;" title="Sem tempo real — usando busca periódica">🔄</span>';
   }
