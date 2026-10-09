@@ -4221,7 +4221,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.09.08";
+var APP_VERSION = "2026.10.09.09";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -7742,10 +7742,8 @@ var FB = {
           var byId = {};
           (supaMsgs || []).forEach(function(m){ byId[m._id] = m; });
           (fbMsgs || []).forEach(function(m){ if (!byId[m._id]) byId[m._id] = m; });
-          var _all = Object.keys(byId).map(function(k){ return byId[k]; });
-          if (!_all.length && ME_ID === "TFx29sDBDzLpcTXf9fbqv8sMXuo2") showToast("DIAG sem msgs: Supabase " + (supaMsgs||[]).length + " Firebase " + (fbMsgs||[]).length);
-          return _all;
-        }).catch(function(e){ if (ME_ID === "TFx29sDBDzLpcTXf9fbqv8sMXuo2") showToast("DIAG Firebase falhou: " + (e ? (e.message || e.code || e) : "erro")); return supaMsgs; });
+          return Object.keys(byId).map(function(k){ return byId[k]; });
+        }).catch(function(){ return supaMsgs; });
       });
     }
     return docsPromise.then(function(msgs) {
@@ -24635,8 +24633,6 @@ var BirthdayNotifier = (function () {
 // Roda a checagem depois do primeiro boot (dá tempo do restoreSession/
 // onAuthSuccess preencherem USERS com os dados reais).
 setTimeout(function () { BirthdayNotifier.init(); }, 2000);
-// Gatilho global do diagnóstico: 5 toques rápidos no topo de qualquer tela
-(function(){var t=[];document.addEventListener("click",function(e){if(e.clientY>90)return;var n=Date.now();t=t.filter(function(x){return n-x<3000});t.push(n);if(t.length>=5){t=[];runMimiDiagnostics();}},true);})();
 </script>
 </body>
 </html>
