@@ -4221,7 +4221,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.09.07";
+var APP_VERSION = "2026.10.09.08";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -10742,7 +10742,7 @@ function _renderImpl() {
   meRefresh();
 
   var unreadNotifs = NOTIFS.filter(function(n){ return !n.read; }).length;
-  var unreadMsgs = CONVOS.reduce(function(a,c){ return a + c.unread; }, 0);
+  var unreadMsgs = CONVOS.reduce(function(a,c){ return a + ((c && c.unread) || 0); }, 0);
 
   var pageHtml = "";
   var showBottomNav = true;
