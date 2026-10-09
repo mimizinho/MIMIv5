@@ -4277,7 +4277,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.09.12";
+var APP_VERSION = "2026.10.09.13";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -6673,6 +6673,33 @@ var FB = {
 
   loginGoogle: function() {
     return new Promise(function(resolve, reject) {
+      if (window.MIMIApp && typeof window.MIMIApp.openGoogleLogin !== "undefined") {
+        window.mimiGoogleToken = function(accessToken) {
+          window.mimiGoogleToken = null;
+          fetch(FIRE_AUTH + ":signInWithIdp?key=" + CFG.apiKey, {
+            method: "POST",
+            headers: idpHeaders(),
+            body: JSON.stringify({
+              postBody: "access_token=" + accessToken + "&providerId=google.com",
+              requestUri: window.location.origin || window.location.href,
+              returnSecureToken: true
+            })
+          })
+          .then(function(r){ return r.json(); })
+          .then(function(d){
+            if (d.error) { showToast(translateAuthError(d.error)); reject(d.error); return; }
+            _idToken = d.idToken;
+            _fbUid   = d.localId;
+            _refreshToken = d.refreshToken || null;
+            FB._loadOrCreateUser(d.localId, d.email, d.displayName || (d.email ? d.email.split("@")[0] : "Usuário"))
+              .then(resolve)
+              .catch(reject);
+          })
+          .catch(function(err){ showToast("Erro de rede no login Google."); reject(err); });
+        };
+        window.MIMIApp.openGoogleLogin();
+        return;
+      }
       if (typeof google === "undefined" || !google.accounts || !google.accounts.oauth2) {
         showToast("Login com Google indisponível (script não carregou). Verifique sua conexão.");
         reject("gis-not-loaded");
