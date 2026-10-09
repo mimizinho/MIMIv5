@@ -4212,7 +4212,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.06.01";
+var APP_VERSION = "2026.10.08.01";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -8427,6 +8427,7 @@ var FB = {
     }
 
     setTimeout(function() {
+    if (!profileOwnerId || profileOwnerId === "null" || profileOwnerId === "undefined") return;
       // FIX (total e lista divergindo, ex: "2 visitas" no topo mas só 1
       // visitante na lista): antes essas duas gravações rodavam em paralelo,
       // cada uma com seu próprio retry — se uma travasse e a outra não, o
@@ -11239,9 +11240,7 @@ function bindStoriesEvents() {
           fileInput.value = "";
           return;
         }
-        var reader = new FileReader();
-        reader.onload = function() { publishStoryItem("video", reader.result); };
-        reader.readAsDataURL(file);
+        cloudinaryWidget.uploadDirectFile(file, "video", function(url) { publishStoryItem("video", url); });
       } else {
         compressImageToDataUrl(file, 1280, 0.75).then(function(dataUrl) {
           publishStoryItem("image", dataUrl);
@@ -15524,7 +15523,7 @@ function bindAudioPlayback() {
               // caso o próximo clique manual do usuário já toca normal. Só
               // mostra o aviso se esse áudio já tinha tocado com sucesso
               // antes (uma falha depois dessa é erro de verdade).
-              if (audioEl._playedOnce) {
+              if (audioEl._playedOnce && !(err && err.name === "AbortError")) {
                 showToast("Erro audio: " + (err && err.name) + " - " + (err && err.message) + " | audioEl.error: " + (audioEl.error && audioEl.error.code));
               }
             });
