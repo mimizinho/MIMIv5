@@ -3168,6 +3168,95 @@ function reactToMessage(messageId, type) {
 // por documento do Firestore. Sem isso, fotos de câmera (várias MB em base64)
 // eram salvas só localmente e "desapareciam" ao recarregar, pois a escrita
 // no Firestore falhava silenciosamente por excesso de tamanho.
+// Recorte da foto de perfil: arrasta com 1 dedo; zoom com pinça, slider ou roda do mouse
+function mimiCropImage(file) {
+  return new Promise(function(resolve) {
+    var url = URL.createObjectURL(file);
+    var img = new Image();
+    img.onerror = function() { URL.revokeObjectURL(url); resolve(file); };
+    img.onload = function() {
+      var iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+      var box = Math.max(200, Math.min(window.innerWidth - 48, 340));
+      var MAXZ = 6, minS = box / Math.min(iw, ih), s = minS;
+      var x = (box - iw * s) / 2, y = (box - ih * s) / 2;
+      var ov = document.createElement("div");
+      ov.setAttribute("data-crop-overlay", "1");
+      ov.style.cssText = "position:fixed;inset:0;z-index:100001;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;background:rgba(40,12,34,.94);";
+      ov.innerHTML =
+        '<div style="color:#fff;font-size:17px;font-weight:800;">Ajuste a foto</div>' +
+        '<div style="color:#f3d6ea;font-size:13px;text-align:center;">Arraste e use o zoom. O círculo mostra como a foto aparece no perfil.</div>' +
+        '<div data-crop-vp style="position:relative;width:' + box + 'px;height:' + box + 'px;overflow:hidden;border-radius:22px;background:#000;touch-action:none;">' +
+          '<img data-crop-img alt="" draggable="false" style="position:absolute;left:0;top:0;max-width:none;max-height:none;transform-origin:0 0;user-select:none;pointer-events:none;">' +
+          '<div style="position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 2px rgba(255,255,255,.9),0 0 0 999px rgba(0,0,0,.35);pointer-events:none;"></div>' +
+        '</div>' +
+        '<input data-crop-zoom type="range" min="0" max="100" value="0" style="width:' + box + 'px;">' +
+        '<div style="display:flex;gap:10px;width:' + box + 'px;">' +
+          '<button data-crop-cancel style="flex:1;padding:13px;border:0;border-radius:16px;background:rgba(255,255,255,.18);color:#fff;font-size:15px;font-weight:700;">Cancelar</button>' +
+          '<button data-crop-ok style="flex:1;padding:13px;border:0;border-radius:16px;background:linear-gradient(135deg,#ff5fa8,#c35cff);color:#fff;font-size:15px;font-weight:800;">Usar foto</button>' +
+        '</div>';
+      document.body.appendChild(ov);
+      var vp = ov.querySelector("[data-crop-vp]"), im = ov.querySelector("[data-crop-img]"), zoom = ov.querySelector("[data-crop-zoom]");
+      im.src = url; im.style.width = iw + "px"; im.style.height = ih + "px";
+      function apply() {
+        x = Math.min(0, Math.max(box - iw * s, x));
+        y = Math.min(0, Math.max(box - ih * s, y));
+        im.style.transform = "translate(" + x + "px," + y + "px) scale(" + s + ")";
+        zoom.value = String(Math.round((s / minS - 1) / (MAXZ - 1) * 100));
+      }
+      function setScale(ns, cx, cy) {
+        ns = Math.min(minS * MAXZ, Math.max(minS, ns));
+        var px = (cx - x) / s, py = (cy - y) / s;
+        s = ns; x = cx - px * s; y = cy - py * s; apply();
+      }
+      apply();
+      zoom.addEventListener("input", function() { setScale(minS * (1 + zoom.value / 100 * (MAXZ - 1)), box / 2, box / 2); });
+      vp.addEventListener("wheel", function(e) {
+        e.preventDefault();
+        var r = vp.getBoundingClientRect();
+        setScale(s * (e.deltaY < 0 ? 1.1 : 0.9), e.clientX - r.left, e.clientY - r.top);
+      }, { passive: false });
+      var pts = {}, lastDist = 0;
+      vp.addEventListener("pointerdown", function(e) {
+        try { vp.setPointerCapture(e.pointerId); } catch (err) {}
+        pts[e.pointerId] = { x: e.clientX, y: e.clientY }; lastDist = 0;
+      });
+      vp.addEventListener("pointermove", function(e) {
+        var p = pts[e.pointerId]; if (!p) return;
+        var ids = Object.keys(pts);
+        if (ids.length >= 2) {
+          var dx0 = e.clientX - p.x, dy0 = e.clientY - p.y;
+          p.x = e.clientX; p.y = e.clientY;
+          var a = pts[ids[0]], b = pts[ids[1]];
+          var d = Math.sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
+          if (lastDist) { var r = vp.getBoundingClientRect(); setScale(s * d / lastDist, (a.x + b.x) / 2 - r.left, (a.y + b.y) / 2 - r.top); }
+          lastDist = d;
+        } else {
+          x += e.clientX - p.x; y += e.clientY - p.y;
+          p.x = e.clientX; p.y = e.clientY; apply();
+        }
+      });
+      function up(e) { delete pts[e.pointerId]; lastDist = 0; }
+      vp.addEventListener("pointerup", up);
+      vp.addEventListener("pointercancel", up);
+      function close(result) { try { URL.revokeObjectURL(url); } catch (err) {} ov.remove(); resolve(result); }
+      ov.querySelector("[data-crop-cancel]").addEventListener("click", function() { close(null); });
+      ov.querySelector("[data-crop-ok]").addEventListener("click", function() {
+        var sw = box / s, out = Math.max(256, Math.min(800, Math.round(sw)));
+        var c = document.createElement("canvas"); c.width = out; c.height = out;
+        var ctx = c.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, out, out);
+        ctx.drawImage(img, -x / s, -y / s, sw, sw, 0, 0, out, out);
+        c.toBlob(function(b) {
+          if (!b) { close(file); return; }
+          var name = (file.name || "foto").replace(/\.[^.]+$/, "") + ".jpg", f;
+          try { f = new File([b], name, { type: "image/jpeg" }); } catch (err) { f = b; f.name = name; }
+          close(f);
+        }, "image/jpeg", 0.9);
+      });
+    };
+    img.src = url;
+  });
+}
+
 function compressImageToDataUrl(file, maxDim, startQuality) {
   maxDim = maxDim || 1280;
   startQuality = startQuality || 0.75;
@@ -4277,7 +4366,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.09.14";
+var APP_VERSION = "2026.10.09.15";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -19807,8 +19896,13 @@ function bindEditProfile() {
     var file = avatarInput.files[0]; if (!file) return;
     if (_imgUploadBusy) return;
     _imgUploadBusy = true;
-    showToast("⏳ Enviando foto...");
-    ImageGateway.upload(file, "profile", { fileName: file.name }).then(function(filePath) {
+    avatarInput.value = "";
+    mimiCropImage(file).then(function(cropped) {
+      if (!cropped) return null;
+      showToast("\u23f3 Enviando foto...");
+      return ImageGateway.upload(cropped, "profile", { fileName: cropped.name || file.name });
+    }).then(function(filePath) {
+      if (!filePath) return;
       // Salva na hora (não espera o botão "Salvar" geral) — antes, a troca de
       // foto aqui dentro do modal só ficava em memória até clicar em "Salvar",
       // e se a pessoa fechasse a tela sem notar o botão, a mudança se perdia.
