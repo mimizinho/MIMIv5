@@ -4212,7 +4212,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.08.02";
+var APP_VERSION = "2026.10.08.03";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -15456,6 +15456,17 @@ function bindAudioPlayback() {
     }
     if (audioEl && !audioEl._chatAudioBound) {
       audioEl._chatAudioBound = true;
+      var _pf = audioEl.getAttribute("data-audio-b2path");
+      if (_pf && !audioEl.src) {
+        window._audioUrlCache = window._audioUrlCache || {};
+        var _ce = window._audioUrlCache[_pf];
+        if (!_ce || Date.now() - _ce.t > 50 * 60 * 1000) {
+          _ce = { t: Date.now(), p: AudioGateway.getPlaybackUrl(_pf, state.activeConvoId) };
+          _ce.p.catch(function() { delete window._audioUrlCache[_pf]; });
+          window._audioUrlCache[_pf] = _ce;
+        }
+        _ce.p.then(function(url) { if (!audioEl.src) audioEl.src = url; }).catch(function() {});
+      }
       audioEl.addEventListener("timeupdate", updateAudioProgress);
       audioEl.addEventListener("play", function() {
         audioEl._playedOnce = true;
