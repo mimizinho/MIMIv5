@@ -4221,7 +4221,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.09.06";
+var APP_VERSION = "2026.10.09.07";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -9297,6 +9297,7 @@ function patchChatMessagesInPlace(convoId) {
     });
   });
   bindAudioPlayback();
+  hydrateImages(chatBox);
 
   if (wasNearBottom) scrollChatToBottom();
   // 🩹 FIX (auto-scroll perdido): sem esta linha, o patch rápido (aqui em
