@@ -618,6 +618,9 @@
   .chat-hbtn:active { transform:scale(.92); }
   .chat-hbtn.chat-theme-btn::after { display:none; }
   .chat-wrap-themed .chat-header .chat-hbtn { color:var(--chat-header-fg, var(--text)) !important; }
+  /* Seta de voltar do cabeçalho: mesma cor do nome do contato, pra não sumir no tema escuro */
+  .chat-header [data-back-msgs] { color:var(--chat-header-fg, var(--text)); }
+  .chat-wrap-themed .chat-header [data-back-msgs] { color:var(--chat-header-fg, var(--text)) !important; }
   .chat-theme-btn::after {
     content:""; position:absolute; top:6px; right:6px; width:8px; height:8px;
     border-radius:50%; background:conic-gradient(#ff6fa5,#f7931e,#67e8f9,#a78bfa,#ff6fa5);
@@ -4218,7 +4221,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.09.04";
+var APP_VERSION = "2026.10.09.05";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
