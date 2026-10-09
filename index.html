@@ -612,10 +612,13 @@
 
   /* Botão de tema no header */
   .chat-theme-btn { position:relative; }
-  /* Botões do cabeçalho do chat (tema, voz, vídeo): círculo com gradiente da marca */
-  .chat-hbtn { width:38px; height:38px; padding:0; margin-left:6px; border-radius:50%; justify-content:center; flex-shrink:0; background:linear-gradient(135deg,#ff5fa8,#8a5cf2); box-shadow:0 2px 8px rgba(138,92,242,.45); transition:transform .12s ease; }
+  /* Botões do cabeçalho do chat (tema, voz, vídeo): anel fino, cor do texto do cabeçalho */
+  .chat-hbtn { position:relative; width:38px; height:38px; padding:0; margin-left:6px; border-radius:50%; justify-content:center; flex-shrink:0; color:var(--chat-header-fg, var(--text)); transition:transform .12s ease; }
+  .chat-hbtn::before { content:""; position:absolute; inset:0; border-radius:50%; border:1.5px solid currentColor; opacity:.4; }
+  .chat-hbtn svg { position:relative; }
   .chat-hbtn:active { transform:scale(.92); }
   .chat-hbtn.chat-theme-btn::after { display:none; }
+  .chat-wrap-themed .chat-header .chat-hbtn { color:var(--chat-header-fg, var(--text)) !important; }
   .chat-theme-btn::after {
     content:""; position:absolute; top:6px; right:6px; width:8px; height:8px;
     border-radius:50%; background:conic-gradient(#ff6fa5,#f7931e,#67e8f9,#a78bfa,#ff6fa5);
@@ -4216,7 +4219,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.09.02";
+var APP_VERSION = "2026.10.09.03";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -14641,9 +14644,9 @@ function renderChatView(conv) {
       '<div data-open-author="'+conv.userId+'" style="cursor:pointer;">'+avatarHtml(u.avatar, 38, conv.online, false, false, null, null, getUserFrame(u))+'</div>' +
       '<div class="grow" data-open-author="'+conv.userId+'" style="cursor:pointer;"><div style="font-weight:700;font-size:14px;">'+esc(u.name)+'</div>' +
       '<div style="font-size:11px;opacity:.75;" data-online-indicator>'+(conv.online?"Online agora":"Offline")+'<span data-rt-indicator style="margin-left:6px;"></span></div></div>' +
-      '<button class="icon-btn chat-theme-btn chat-hbtn" data-open-chat-theme title="Tema da conversa"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 2.8a9.2 9.2 0 100 18.4c1.3 0 2.1-1.1 1.7-2.2-.4-1.1.4-2.3 1.6-2.3h2.1a3.6 3.6 0 003.6-3.6C21 6.5 17 2.8 12 2.8z" fill="#fff"/><circle cx="7.9" cy="11.2" r="1.45" fill="#ff5fa8"/><circle cx="10.9" cy="7.1" r="1.45" fill="#ff9f43"/><circle cx="15.3" cy="7.3" r="1.45" fill="#2fc4e0"/><circle cx="17.1" cy="11.4" r="1.45" fill="#8a5cf2"/></svg></button>' +
-      '<button class="icon-btn chat-hbtn" data-call="audio"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.02-.24c1.12.37 2.33.57 3.57.57a1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1.02l-2.2 2.2z" fill="#fff" stroke="#fff" stroke-width=".8" stroke-linejoin="round"/></svg></button>' +
-      '<button class="icon-btn chat-hbtn" data-call="video"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="2" y="6" width="13.5" height="12" rx="3.5" fill="#fff"/><path d="M17 10.4l3.7-2.3a.9.9 0 011.3.8v6.2a.9.9 0 01-1.3.8L17 13.6z" fill="#fff"/></svg></button>' +
+      '<button class="icon-btn chat-theme-btn chat-hbtn" data-open-chat-theme title="Tema da conversa"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 2.8a9.2 9.2 0 100 18.4c1.3 0 2.1-1.1 1.7-2.2-.4-1.1.4-2.3 1.6-2.3h2.1a3.6 3.6 0 003.6-3.6C21 6.5 17 2.8 12 2.8z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7.9" cy="11.2" r="1.45" fill="#ff5fa8"/><circle cx="10.9" cy="7.1" r="1.45" fill="#ff9f43"/><circle cx="15.3" cy="7.3" r="1.45" fill="#2fc4e0"/><circle cx="17.1" cy="11.4" r="1.45" fill="#8a5cf2"/></svg></button>' +
+      '<button class="icon-btn chat-hbtn" data-call="audio"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.02-.24c1.12.37 2.33.57 3.57.57a1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1.02l-2.2 2.2z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
+      '<button class="icon-btn chat-hbtn" data-call="video"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="2" y="6" width="13.5" height="12" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 10.4l3.7-2.3a.9.9 0 011.3.8v6.2a.9.9 0 01-1.3.8L17 13.6z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
     '</div>' +
     '<div class="chat-msgs" data-chat-msgs>' + _particles;
   chat.forEach(function(m) {
