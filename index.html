@@ -4212,7 +4212,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.08.03";
+var APP_VERSION = "2026.10.09.01";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -8664,6 +8664,7 @@ var _chatAudioSafetyTimer = null; // rede de segurança: nunca deixa o guard tra
 function _flushPendingChatAudioRender() {
   if (!_chatAudioPlayingId && _pendingBackgroundRender && !_isTypingInField && !_isChatComposeActive()) {
     _pendingBackgroundRender = false;
+    if (window._lastChatAudioMsgId) _messageIdToPreserve = window._lastChatAudioMsgId;
     render();
   }
 }
@@ -15475,6 +15476,7 @@ function bindAudioPlayback() {
         // ver backgroundRender(). Sem isso, qualquer atualização chegando
         // em segundo plano recriava o <audio> no meio da reprodução.
         _chatAudioPlayingId = id;
+        window._lastChatAudioMsgId = id;
         // Rede de segurança: se por algum motivo "pause"/"ended" nunca
         // disparar (ex.: o elemento sendo removido do DOM de forma abrupta),
         // isso garante que o guard nunca fique travado pra sempre e o chat
