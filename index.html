@@ -3266,6 +3266,62 @@ function ME_obj() { return USERS[ME_ID]; }
 var ME = ME_obj(); // kept for backward-compat reads; refreshed on demand via meRefresh()
 function meRefresh() { ME = USERS[ME_ID]; }
 
+// ─── FOTO DE PERFIL OBRIGATÓRIA ──────────────────────────────
+// Quem está logado sem foto (avatar vazio ou SVG padrão) vê um aviso no
+// meio da tela. "Adicionar foto" leva ao perfil já na edição; o "X" tenta
+// fechar o app e, se o aparelho não deixar, troca o aviso por uma tela
+// fixa que só deixa seguir adicionando a foto.
+var _mimiGateReady = false, _mimiGateTimer = null;
+function mimiNeedsAvatar() {
+  var u = ME_ID && USERS[ME_ID];
+  if (!u || !u.name) return false;
+  var a = u.avatar;
+  return !a || a === DEFAULT_AVATAR || String(a).indexOf("data:image/svg+xml") === 0;
+}
+function mimiAvatarGoAdd() {
+  var g = document.querySelector("[data-avatar-gate]");
+  if (g) g.remove();
+  state.page = "profile";
+  state.editProfileOpen = true;
+  render();
+}
+function mimiAvatarBlock(g) {
+  g.style.background = "#fff0f7";
+  g.innerHTML = '<div style="width:100%;max-width:340px;text-align:center;">' +
+    '<div style="font-size:19px;font-weight:800;color:#4a2a45;margin-bottom:10px;">Foto de perfil necessária</div>' +
+    '<div style="font-size:14px;line-height:1.45;color:#7a5a74;margin-bottom:20px;">Não é possível usar o MIMI sem foto de perfil. Adicione uma foto para continuar.</div>' +
+    '<button data-avatar-gate-add style="width:100%;padding:13px;border:0;border-radius:16px;background:linear-gradient(135deg,#ff5fa8,#c35cff);color:#fff;font-weight:700;font-size:15px;">Adicionar foto</button>' +
+    '</div>';
+  g.querySelector("[data-avatar-gate-add]").addEventListener("click", mimiAvatarGoAdd);
+}
+function mimiAvatarGate() {
+  var old = document.querySelector("[data-avatar-gate]");
+  if (!mimiNeedsAvatar() || state.editProfileOpen) { if (old) old.remove(); return; }
+  if (old) return;
+  // Espera o perfil carregar de verdade antes de cobrar a foto (evita o
+  // aviso aparecer pra quem tem foto mas ainda não terminou de carregar).
+  if (!_mimiGateReady) {
+    if (!_mimiGateTimer) _mimiGateTimer = setTimeout(function() { _mimiGateReady = true; mimiAvatarGate(); }, 3500);
+    return;
+  }
+  var g = document.createElement("div");
+  g.setAttribute("data-avatar-gate", "1");
+  g.style.cssText = "position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(60,20,50,.55);";
+  g.innerHTML = '<div style="position:relative;width:100%;max-width:340px;padding:30px 22px 22px;border-radius:26px;background:#fff;text-align:center;box-shadow:0 14px 44px rgba(0,0,0,.28);">' +
+    '<button data-avatar-gate-x aria-label="Fechar" style="position:absolute;top:12px;right:12px;width:32px;height:32px;border:0;border-radius:50%;background:#fde7f1;color:#d6407f;display:flex;align-items:center;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>' +
+    '<div style="font-size:18px;font-weight:800;color:#4a2a45;margin-bottom:8px;">Adicione uma foto de perfil</div>' +
+    '<div style="font-size:14px;line-height:1.45;color:#7a5a74;margin-bottom:18px;">Agora é obrigatório ter foto de perfil para usar o MIMI. Se você fechar este aviso, o aplicativo será fechado.</div>' +
+    '<button data-avatar-gate-add style="width:100%;padding:13px;border:0;border-radius:16px;background:linear-gradient(135deg,#ff5fa8,#c35cff);color:#fff;font-weight:700;font-size:15px;">Adicionar foto</button>' +
+    '</div>';
+  g.querySelector("[data-avatar-gate-add]").addEventListener("click", mimiAvatarGoAdd);
+  g.querySelector("[data-avatar-gate-x]").addEventListener("click", function() {
+    try { if (navigator.app && navigator.app.exitApp) navigator.app.exitApp(); } catch (e) {}
+    try { window.close(); } catch (e) {}
+    setTimeout(function() { mimiAvatarBlock(g); }, 400);
+  });
+  document.body.appendChild(g);
+}
+
 // ─── BLOQUEIO DE USUÁRIOS (via long-press no comentário, no perfil, nas
 // conversas) ──────────────────────────────────────────────────────────
 // BLOCKED_USERS = gente que EU bloqueei. BLOCKED_BY_OTHERS = gente que ME
@@ -4221,7 +4277,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.09.11";
+var APP_VERSION = "2026.10.09.12";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -10739,6 +10795,7 @@ function _renderImpl() {
   }
   meRefresh();
 
+  mimiAvatarGate();
   var unreadNotifs = NOTIFS.filter(function(n){ return !n.read; }).length;
   var unreadMsgs = CONVOS.reduce(function(a,c){ return a + ((c && c.unread) || 0); }, 0);
 
@@ -11842,6 +11899,7 @@ function hasOpenOverlay() {
     state.isbnScanOpen || state.bookAddDraft || state.bookActionFor || state.moderationPanelOpen ||
     state.usersPanelOpen ||
     state.booksPageFor ||
+    document.querySelector("[data-avatar-gate]") ||
     document.querySelector("[data-story-comments-panel]")
   );
 }
