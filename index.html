@@ -9657,6 +9657,7 @@ function _cleanupConvoMessages(convoId) {
 // conversas em que ele é membro, então isso nunca mexe em conversa
 // alheia.
 function runMessageCleanup() {
+  return; // retenção desativada: mensagens ficam nas conversas
   if (!_idToken || !ME_ID) return;
   CONVOS.forEach(function(c) { _cleanupConvoMessages(c.id); });
 }
