@@ -4366,7 +4366,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.10.01";
+var APP_VERSION = "2026.10.10.02";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -17674,6 +17674,7 @@ function _cleanupCallResources() {
 // escondida, precisamos pedir de novo quando ela volta a ficar visível
 // (ver o listener de visibilitychange logo abaixo).
 window.mimiHangup = function() { if (activeCall) endCall(false); };
+window.mimiRingAction = function(act, cid) { if (!incomingCall || incomingCall.callId !== cid) return; if (act === "accept") _acceptIncomingCall(); else if (act === "decline") _declineIncomingCall(); };
 var _callWakeLock = null;
 function _requestCallWakeLock() {
   try { if (window.MIMIApp && MIMIApp.startCall) MIMIApp.startCall(); } catch(e){}
@@ -17937,6 +17938,7 @@ function _handleIncomingCallCandidate(d) {
   var age = Date.now() - new Date(d.createdAt||0).getTime();
   if (!(age > -20000 && age < 60000)) return; // ignora chamadas velhas/travadas
   incomingCall = { callId: d._id, callerId: d.callerId, convId: d.convId, offerSdp: d.offerSdp };
+  try { if (window.MIMIApp && MIMIApp.showIncomingCall && document.hidden) MIMIApp.showIncomingCall(d._id, (USERS[d.callerId]||{}).name || "Alguém"); } catch(e){}
   backgroundRender();
 }
 
@@ -17967,8 +17969,9 @@ function startCallPolling() {
   // Rede de segurança — 20s em vez dos 3s de antes. A detecção normal
   // agora vem do Realtime; isso só cobre o caso do socket cair ou o
   // Realtime não estar habilitado no projeto Supabase.
+  try { if (window.MIMIApp && MIMIApp.startKeepAlive) MIMIApp.startKeepAlive(); } catch(e){}
   _callRingPollInterval = setInterval(function() {
-    if (!_idToken || !_fbUid) { stopCallPolling(); return; }
+    if (!_idToken || !_fbUid) { try { if (window.MIMIApp && MIMIApp.stopKeepAlive) MIMIApp.stopKeepAlive(); } catch(e){} stopCallPolling(); return; }
     if (activeCall || incomingCall) return;
     fsQuery("calls", "calleeId", "EQUAL", ME_ID).then(function(docs) {
       (docs||[]).forEach(_handleIncomingCallCandidate);
@@ -18015,6 +18018,7 @@ function _declineIncomingCall() {
   if (!incomingCall) return;
   var callId = incomingCall.callId;
   _handledCallIds[callId] = true;
+  try { if (window.MIMIApp && MIMIApp.cancelIncomingCall) MIMIApp.cancelIncomingCall(); } catch(e){}
   fsSet("calls/"+callId, { status:"declined" }, true).catch(function(){});
   incomingCall = null;
   render();
@@ -18023,6 +18027,7 @@ function _declineIncomingCall() {
 function _acceptIncomingCall() {
   if (!incomingCall) return;
   console.log("[chamada] usuário apertou ACEITAR", incomingCall);
+  try { if (window.MIMIApp && MIMIApp.cancelIncomingCall) MIMIApp.cancelIncomingCall(); } catch(e){}
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     showToast("Seu navegador não permite chamadas de voz.");
     _declineIncomingCall();
