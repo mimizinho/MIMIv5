@@ -10290,6 +10290,7 @@ function startChatPolling() {
   _pollInterval = setInterval(function() {
     if (!state.activeConvoId || !_idToken) { stopChatPolling(); return; }
     if (document.hidden) return;
+    if (activeCall && !activeCall.minimized && ((window._pollTick = (window._pollTick || 0) + 1) % 10) !== 0) return;
     try {
       _updateRtIndicator(); // reafirma o ícone ⚡/🔄 mesmo depois de um render que recriou o cabeçalho
       checkOnlineStatus(CONVOS);
