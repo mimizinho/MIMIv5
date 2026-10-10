@@ -17673,14 +17673,17 @@ function _cleanupCallResources() {
 // o próprio navegador LIBERA o wake lock sozinho assim que a aba fica
 // escondida, precisamos pedir de novo quando ela volta a ficar visível
 // (ver o listener de visibilitychange logo abaixo).
+window.mimiHangup = function() { if (activeCall) endCall(false); };
 var _callWakeLock = null;
 function _requestCallWakeLock() {
+  try { if (window.MIMIApp && MIMIApp.startCall) MIMIApp.startCall(); } catch(e){}
   if (!("wakeLock" in navigator)) return; // navegador sem suporte — segue sem, sem quebrar nada
   navigator.wakeLock.request("screen").then(function(lock) {
     _callWakeLock = lock;
   }).catch(function() { _callWakeLock = null; });
 }
 function _releaseCallWakeLock() {
+  try { if (window.MIMIApp && MIMIApp.stopCall) MIMIApp.stopCall(); } catch(e){}
   if (_callWakeLock) { try { _callWakeLock.release(); } catch(e){} _callWakeLock = null; }
 }
 document.addEventListener("visibilitychange", function() {
