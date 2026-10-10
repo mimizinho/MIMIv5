@@ -17932,7 +17932,7 @@ function _handleIncomingCallCandidate(d) {
   if (d.status !== "ringing") return;
   if (_handledCallIds[d._id]) return;
   var age = Date.now() - new Date(d.createdAt||0).getTime();
-  if (!(age >= 0 && age < 30000)) return; // ignora chamadas velhas/travadas
+  if (!(age > -20000 && age < 60000)) return; // ignora chamadas velhas/travadas
   incomingCall = { callId: d._id, callerId: d.callerId, convId: d.convId, offerSdp: d.offerSdp };
   backgroundRender();
 }
