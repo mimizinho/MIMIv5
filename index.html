@@ -10289,6 +10289,7 @@ function startChatPolling() {
   // ✅ FIX 5c: Aumentar de 3s para 8s, passa _lastMessageCheck para busca incremental
   _pollInterval = setInterval(function() {
     if (!state.activeConvoId || !_idToken) { stopChatPolling(); return; }
+    if (document.hidden) return;
     try {
       _updateRtIndicator(); // reafirma o ícone ⚡/🔄 mesmo depois de um render que recriou o cabeçalho
       checkOnlineStatus(CONVOS);
