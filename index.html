@@ -10683,6 +10683,7 @@ function _restoreScrollY(y, attempts) {
   }
 }
 window.addEventListener("popstate", function() {
+  if (activeCall && !activeCall.minimized && activeCall.histPushed) { activeCall.minimized = true; activeCall.histPushed = false; render(); return; }
   var snap = _navSnapshots.pop();
   if (!snap) return; // não há retrato pra restaurar (já estamos na raiz da navegação)
   state.page = snap.page;
@@ -10956,7 +10957,7 @@ function _renderImpl() {
   if (state.subsOpen) html += renderSubsPage();
   if (state.viewingStoryIdx !== null) html += renderStoryViewer();
   if (state.photoViewerUrl) html += renderPhotoViewer();
-  if (activeCall) html += renderCallScreen();
+  if (activeCall) html += (activeCall.minimized ? renderCallMini() : renderCallScreen());
   if (incomingCall) html += renderIncomingCallScreen();
   if (state.actionSheetPostId) html += renderActionSheet();
   if (state.profileSheetUserId) html += renderProfileSheet();
@@ -11015,7 +11016,7 @@ function _renderImpl() {
   if (state.subsOpen) bindSubsPage();
   if (state.viewingStoryIdx !== null) bindStoryViewer();
   if (state.photoViewerUrl) bindPhotoViewer();
-  if (activeCall) bindCallScreen();
+  if (activeCall) { if (activeCall.minimized) bindCallMini(); else bindCallScreen(); }
   if (incomingCall) bindIncomingCallScreen();
   if (state.actionSheetPostId) bindActionSheet();
   if (state.profileSheetUserId) bindProfileSheet();
@@ -18077,6 +18078,21 @@ function _acceptIncomingCall() {
     });
 }
 
+function renderCallMini() {
+  var u = USERS[activeCall.conv.userId] || { name: "Usuário" };
+  var t = activeCall.status === "calling" ? "Chamando…" : formatCallTime(activeCall.seconds);
+  return '<div class="call-mini" data-call-max><span>📞 '+esc(u.name)+' · <b data-call-timer>'+t+'</b></span><button data-end-call-mini>Encerrar</button></div>';
+}
+function bindCallMini() {
+  var bar = document.querySelector("[data-call-max]");
+  if (bar) bar.addEventListener("click", function() {
+    activeCall.minimized = false;
+    render();
+  });
+  var end = document.querySelector("[data-end-call-mini]");
+  if (end) end.addEventListener("click", function(e) { e.stopPropagation(); endCall(); });
+}
+(function(){var s=document.createElement("style");s.textContent=".call-mini{position:fixed;top:0;left:0;right:0;z-index:99999;display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#7c3aed;color:#fff;font-size:14px}.call-mini button{background:#ef4444;color:#fff;border:0;border-radius:14px;padding:6px 12px}";document.head.appendChild(s);})();
 function renderCallScreen() {
   var conv = activeCall.conv;
   var u = USERS[conv.userId] || { name: "Usuário", avatar: DEFAULT_AVATAR };
@@ -18111,6 +18127,7 @@ function renderCallScreen() {
 }
 
 function bindCallScreen() {
+  if (!activeCall.histPushed) { activeCall.histPushed = true; try { history.pushState({ mimiCall: 1 }, "", location.href); } catch(e) {} }
   var endBtn = document.querySelector("[data-end-call]");
   if (endBtn) endBtn.addEventListener("click", function(){ endCall(); });
   var muteBtn = document.querySelector("[data-toggle-mute]");
