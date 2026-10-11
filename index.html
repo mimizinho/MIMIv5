@@ -4366,7 +4366,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.11.01";
+var APP_VERSION = "2026.10.11.02";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -17888,7 +17888,7 @@ function _startCallerStatusPoll(callId) {
     if (!doc) { showToast("A chamada foi encerrada."); endCall(); return; }
     var answerSdpValida = typeof doc.answerSdp === "string" && doc.answerSdp.length > 20;
     var doDocCorreto = doc.callerId === ME_ID && doc.calleeId && doc.calleeId === (activeCall.conv && activeCall.conv.userId);
-    if (doc.status === "accepted" && answerSdpValida && doDocCorreto && _rtcPeer && !_rtcPeer.currentRemoteDescription) {
+    if (doc.status === "accepted" && answerSdpValida && doDocCorreto && _rtcPeer && !_rtcPeer.currentRemoteDescription && _rtcPeer.signalingState === "have-local-offer") {
       _stopCallDocWatch();
       clearTimeout(_callRingTimeout);
       _rtcPeer.setRemoteDescription({ type:"answer", sdp:doc.answerSdp }).then(function() {
@@ -17899,7 +17899,7 @@ function _startCallerStatusPoll(callId) {
         _startCallEndWatcher(callId);
       }).catch(function(err) {
         console.error("Erro ao conectar áudio:", err);
-        showToast("Falha ao conectar a chamada.");
+        if (_rtcPeer && _rtcPeer.signalingState === "stable" && _rtcPeer.currentRemoteDescription) return; showToast("Falha ao conectar a chamada.");
         endCall();
       });
     } else if (doc.status === "declined") {
