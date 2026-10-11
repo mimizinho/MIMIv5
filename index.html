@@ -4366,7 +4366,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.10.04";
+var APP_VERSION = "2026.10.10.05";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -17979,7 +17979,7 @@ function startCallPolling() {
   // Rede de segurança — 20s em vez dos 3s de antes. A detecção normal
   // agora vem do Realtime; isso só cobre o caso do socket cair ou o
   // Realtime não estar habilitado no projeto Supabase.
-  try { if (window.MIMIApp && MIMIApp.startKeepAlive) MIMIApp.startKeepAlive(); } catch(e){}
+  try { if (window.MIMIApp && MIMIApp.startKeepAlive) MIMIApp.stopKeepAlive(); } catch(e){}
   _registerFcmToken();
   _callRingPollInterval = setInterval(function() {
     if (!_idToken || !_fbUid) { try { if (window.MIMIApp && MIMIApp.stopKeepAlive) MIMIApp.stopKeepAlive(); } catch(e){} stopCallPolling(); return; }
