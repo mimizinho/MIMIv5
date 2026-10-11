@@ -4366,7 +4366,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.11.02";
+var APP_VERSION = "2026.10.11.03";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -14607,6 +14607,7 @@ function getUserLang() {
   return l.split("-")[0];
 }
 function translateText(text, targetLang) {
+  return Promise.resolve(null); // TRADUCAO DESLIGADA (servidores publicos fora do ar). Para religar, apague esta linha.
   function tryEndpoint(i) {
     if (i >= TRANSLATE_ENDPOINTS.length) return Promise.resolve(null);
     return fetch(TRANSLATE_ENDPOINTS[i], {
