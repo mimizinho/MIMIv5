@@ -4366,7 +4366,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.11.04";
+var APP_VERSION = "2026.10.11.05";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -12073,7 +12073,7 @@ function mimiOpenBirthPicker() {
 }
 document.addEventListener("click", function(e) {
   var t = e.target && e.target.closest ? e.target.closest('[data-field="birthdate-view"]') : null;
-  if (t) { e.preventDefault(); t.blur(); mimiOpenBirthPicker(); }
+  if (t) { e.preventDefault(); t.blur(); var _h = document.querySelector('[data-field="birthdate"]'); if (_h && _h.value) _bdPick = _h.value; mimiOpenBirthPicker(); }
 }, true);
 
 function hasOpenOverlay() {
@@ -19996,7 +19996,7 @@ function renderEditProfile() {
       '<div class="edit-field" style="position:relative;"><label class="edit-field-label">Bio</label><textarea class="input" style="min-height:70px;resize:vertical;" data-edit-field="bio">'+esc(u.bio||"")+'</textarea><div class="bio-mention-box" data-bio-mention-box></div></div>' +
       '<div class="edit-field"><label class="edit-field-label">Localização</label><input class="input" data-edit-field="location" value="'+esc(u.location||"")+'"></div>' +
       '<div class="edit-field"><label class="edit-field-label">Site</label><input class="input" data-edit-field="website" value="'+esc(u.website||"")+'"></div>' +
-      '<div class="edit-field"><label class="edit-field-label">Data de nascimento</label><input type="date" class="input" data-edit-field="birthDate" max="'+new Date().toISOString().slice(0,10)+'" value="'+esc(u.birthDate||u.birthdate||"")+'"></div>' +
+      '<div class="edit-field"><label class="edit-field-label">Data de nascimento</label><input class="input" readonly data-field="birthdate-view" placeholder="Selecionar data" style="cursor:pointer;" value="'+esc(_bdFmt(u.birthDate||u.birthdate||""))+'"><input type="hidden" data-field="birthdate" data-edit-field="birthDate" value="'+esc(u.birthDate||u.birthdate||"")+'"></div>' +
       '<input type="file" data-edit-avatar-input accept="image/*" class="hidden">' +
       '<input type="file" data-edit-cover-input accept="image/*,video/*" class="hidden">' +
     '</div>' +
