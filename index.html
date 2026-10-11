@@ -4366,7 +4366,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.10.02";
+var APP_VERSION = "2026.10.10.03";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -17942,6 +17942,16 @@ function _handleIncomingCallCandidate(d) {
   backgroundRender();
 }
 
+function _registerFcmToken(t) {
+  try {
+    t = t || window.__mimiFcm || (window.MIMIApp && MIMIApp.getFcmToken ? MIMIApp.getFcmToken() : "");
+    if (!t || !ME_ID || !_idToken || window.__fcmSent === t) return;
+    window.__fcmSent = t;
+    fsSet("fcmTokens/"+ME_ID, { userId: ME_ID, token: t, updatedAt: Date.now() }, true).catch(function(){ window.__fcmSent = null; });
+  } catch(e){}
+}
+window.mimiFcmToken = function(t){ _registerFcmToken(t); };
+
 function startCallPolling() {
   stopCallPolling();
   if (!_idToken || !_fbUid) return;
@@ -17970,6 +17980,7 @@ function startCallPolling() {
   // agora vem do Realtime; isso só cobre o caso do socket cair ou o
   // Realtime não estar habilitado no projeto Supabase.
   try { if (window.MIMIApp && MIMIApp.startKeepAlive) MIMIApp.startKeepAlive(); } catch(e){}
+  _registerFcmToken();
   _callRingPollInterval = setInterval(function() {
     if (!_idToken || !_fbUid) { try { if (window.MIMIApp && MIMIApp.stopKeepAlive) MIMIApp.stopKeepAlive(); } catch(e){} stopCallPolling(); return; }
     if (activeCall || incomingCall) return;
