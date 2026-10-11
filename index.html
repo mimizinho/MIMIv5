@@ -4366,7 +4366,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.10.10";
+var APP_VERSION = "2026.10.10.11";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -17951,6 +17951,19 @@ function _registerFcmToken(t) {
   } catch(e){}
 }
 window.mimiFcmToken = function(t){ _registerFcmToken(t); };
+window.mimiOpenConvo = function(cid, n) {
+  n = n || 0; if (!cid) return;
+  var ready = _idToken && ME_ID && typeof CONVOS !== "undefined" && CONVOS.some(function(c){ return c.id === cid; });
+  if (!ready && n < 100) { setTimeout(function(){ window.mimiOpenConvo(cid, n + 1); }, 200); return; }
+  try {
+    pushNavSnapshot();
+    state.viewProfileId = null; state.profileStack.length = 0;
+    state.page = "msgs"; state.activeConvoId = cid;
+    var conv = CONVOS.find(function(c){ return c.id === cid; }); if (conv) conv.unread = 0;
+    _lastAutoScrolledConvoId = null;
+    startChatPolling(); window.scrollTo(0,0); render(); scrollChatToBottom();
+  } catch (e) {}
+};
 
 function startCallPolling() {
   stopCallPolling();
