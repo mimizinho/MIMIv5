@@ -4366,7 +4366,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.10.09";
+var APP_VERSION = "2026.10.10.10";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -9108,7 +9108,7 @@ function _applyConvoDoc(doc, myId) {
     // agora mesmo (o polling do chat já cuida de marcar como vista).
     if (isFromOther && !alreadyRead && state.activeConvoId !== conv.id) {
       conv.unread = (conv.unread || 0) + 1;
-      try { if (window.MIMIApp) MIMIApp.show(USERS[otherId] ? USERS[otherId].name : "Nova mensagem", doc.lastMsg || ""); } catch (e) {}
+      try { if (window.MIMIApp) (MIMIApp.showMsg ? MIMIApp.showMsg(String(conv.id), USERS[otherId] ? USERS[otherId].name : "Nova mensagem", doc.lastMsg || "") : MIMIApp.show(USERS[otherId] ? USERS[otherId].name : "Nova mensagem", doc.lastMsg || "")); } catch (e) {}
     }
   }
 
