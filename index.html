@@ -4366,7 +4366,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.11.03";
+var APP_VERSION = "2026.10.11.04";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -12009,6 +12009,73 @@ function closeStoryComments() {
 // ações, comentários de story, criar post, editar perfil, MIMI Plus, sheet
 // de livro, etc). Usado para impedir que o vídeo do feed toque sozinho
 // "por baixo" dessas telas.
+// ─── SELETOR DE DATA DE NASCIMENTO (cadastro) ──────────────────
+var _bdPick = null;
+function _bdFmt(iso) { if (!iso) return ""; var p = iso.split("-"); return p[2] + "/" + p[1] + "/" + p[0]; }
+function mimiOpenBirthPicker() {
+  if (document.querySelector("[data-bdate-picker]")) return;
+  var H = 44, cy = new Date().getFullYear();
+  var MES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  var cur = _bdPick ? _bdPick.split("-").map(Number) : [2000, 1, 1];
+  var y = cur[0], m = cur[1], d = cur[2];
+  var ov = document.createElement("div");
+  ov.setAttribute("data-bdate-picker", "1");
+  ov.style.cssText = "position:fixed;inset:0;z-index:99999;background:rgba(40,20,35,.55);display:flex;align-items:flex-end;justify-content:center;";
+  var colCss = "height:" + (H * 5) + "px;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;padding:" + (H * 2) + "px 0;box-sizing:border-box;";
+  ov.innerHTML = '<style>[data-bd-col]::-webkit-scrollbar{display:none}</style>' +
+    '<div style="width:100%;max-width:480px;background:var(--surface);color:var(--text);border-radius:28px 28px 0 0;padding:22px 20px calc(20px + env(safe-area-inset-bottom,0px));text-align:center;box-sizing:border-box;">' +
+    '<div style="font-size:42px;line-height:1;">🎂</div>' +
+    '<div style="font-size:20px;font-weight:800;margin:10px 0 4px;">Quando você nasceu?</div>' +
+    '<div style="font-size:13px;color:var(--sub);margin-bottom:14px;">Usamos para personalizar o conteúdo e manter o MIMI seguro. Ela não aparece para ninguém.</div>' +
+    '<div style="position:relative;display:flex;">' +
+    '<div style="position:absolute;left:0;right:0;top:' + (H * 2) + 'px;height:' + H + 'px;background:var(--border);border-radius:14px;pointer-events:none;"></div>' +
+    '<div data-bd-col="m" style="flex:1.7;position:relative;' + colCss + '"></div>' +
+    '<div data-bd-col="d" style="flex:.8;position:relative;' + colCss + '"></div>' +
+    '<div data-bd-col="y" style="flex:1;position:relative;' + colCss + '"></div></div>' +
+    '<button type="button" data-bd-ok style="width:100%;margin-top:16px;padding:15px;border:0;border-radius:999px;background:linear-gradient(135deg,var(--accentL),var(--pink));color:#fff;font-size:16px;font-weight:800;">Confirmar</button>' +
+    '<button type="button" data-bd-cancel style="width:100%;margin-top:6px;padding:10px;border:0;background:none;color:var(--sub);font-size:14px;">Cancelar</button></div>';
+  document.body.appendChild(ov);
+  var cols = { m: ov.querySelector('[data-bd-col="m"]'), d: ov.querySelector('[data-bd-col="d"]'), y: ov.querySelector('[data-bd-col="y"]') };
+  function paint(col, idx) { Array.prototype.forEach.call(col.children, function(it, i) { it.style.opacity = i === idx ? "1" : ".4"; it.style.fontWeight = i === idx ? "800" : "500"; }); }
+  function fill(key, labels, idx) {
+    cols[key].innerHTML = labels.map(function(t) { return '<div style="height:' + H + 'px;line-height:' + H + 'px;font-size:18px;scroll-snap-align:center;">' + t + '</div>'; }).join("");
+    paint(cols[key], idx); cols[key].scrollTop = idx * H;
+  }
+  function days() { var n = new Date(y, m, 0).getDate(), a = []; for (var i = 1; i <= n; i++) a.push(i); if (d > n) d = n; return a; }
+  function refreshDays() { var a = days(); if (a.length !== cols.d.children.length) fill("d", a, d - 1); }
+  fill("m", MES, m - 1);
+  fill("d", days(), d - 1);
+  var ys = []; for (var yy = cy - 100; yy <= cy; yy++) ys.push(yy);
+  fill("y", ys, y - (cy - 100));
+  function onSettle(key) {
+    var col = cols[key], n = col.children.length, idx = Math.max(0, Math.min(n - 1, Math.round(col.scrollTop / H)));
+    paint(col, idx);
+    if (key === "m") { m = idx + 1; refreshDays(); }
+    else if (key === "d") d = idx + 1;
+    else { y = cy - 100 + idx; refreshDays(); }
+  }
+  ["m", "d", "y"].forEach(function(k) { var t; cols[k].addEventListener("scroll", function() { clearTimeout(t); t = setTimeout(function() { onSettle(k); }, 120); }); });
+  setTimeout(function() { cols.m.scrollTop = (m - 1) * H; cols.d.scrollTop = (d - 1) * H; cols.y.scrollTop = (y - (cy - 100)) * H; }, 30);
+  function close() { ov.remove(); }
+  ov.addEventListener("click", function(e) { if (e.target === ov || e.target.closest("[data-bd-cancel]")) close(); });
+  ov.querySelector("[data-bd-ok]").addEventListener("click", function() {
+    ["m", "y", "d"].forEach(onSettle);
+    var t = new Date(); t.setHours(0, 0, 0, 0);
+    var pick = new Date(y, m - 1, d);
+    if (pick > t) { y = t.getFullYear(); m = t.getMonth() + 1; d = t.getDate(); }
+    var p2 = function(n) { return (n < 10 ? "0" : "") + n; };
+    _bdPick = y + "-" + p2(m) + "-" + p2(d);
+    var hid = document.querySelector('[data-field="birthdate"]'), vw = document.querySelector('[data-field="birthdate-view"]');
+    if (hid) hid.value = _bdPick;
+    if (vw) vw.value = _bdFmt(_bdPick);
+    close();
+  });
+}
+document.addEventListener("click", function(e) {
+  var t = e.target && e.target.closest ? e.target.closest('[data-field="birthdate-view"]') : null;
+  if (t) { e.preventDefault(); t.blur(); mimiOpenBirthPicker(); }
+}, true);
+
 function hasOpenOverlay() {
   return !!(
     state.followListFor || state.myAdsOpen || state.publishMenu || state.creating || musicSearch.open ||
@@ -12018,6 +12085,7 @@ function hasOpenOverlay() {
     state.isbnScanOpen || state.bookAddDraft || state.bookActionFor || state.moderationPanelOpen ||
     state.usersPanelOpen ||
     state.booksPageFor ||
+    document.querySelector("[data-bdate-picker]") ||
     document.querySelector("[data-avatar-gate]") ||
     document.querySelector("[data-story-comments-panel]")
   );
@@ -21676,7 +21744,7 @@ function renderAuthPage() {
         '</div>') : "") +
         (authMode==="register" ? ('<div class="auth-input-wrap">'+
           '<span class="auth-input-icon">'+icoSvg("user",18,"var(--sub)")+'</span>' +
-          '<input class="input" type="date" placeholder="Data de nascimento" data-field="birthdate" max="'+new Date().toISOString().slice(0,10)+'">' +
+          '<input class="input" type="text" readonly inputmode="none" placeholder="Data de nascimento" data-field="birthdate-view" value="'+_bdFmt(_bdPick)+'" style="cursor:pointer;">'+'<input type="hidden" data-field="birthdate" value="'+(_bdPick||"")+'">' +
         '</div>') : "") +
         '<div class="auth-input-wrap">' +
           '<span class="auth-input-icon">'+icoSvg("mail",18,"var(--sub)")+'</span>' +
