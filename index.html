@@ -4366,7 +4366,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.10.08";
+var APP_VERSION = "2026.10.10.09";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -17947,7 +17947,7 @@ function _registerFcmToken(t) {
     t = t || window.__mimiFcm || (window.MIMIApp && MIMIApp.getFcmToken ? MIMIApp.getFcmToken() : "");
     if (!t || !ME_ID || !_idToken || window.__fcmSent === t) return;
     window.__fcmSent = t;
-    fsSet("users/"+ME_ID, { fcmToken: t }, true).catch(function(){ window.__fcmSent = null; });
+    fsSet("fcmTokens/"+ME_ID, { token: t }, true).catch(function(){ window.__fcmSent = null; });
   } catch(e){}
 }
 window.mimiFcmToken = function(t){ _registerFcmToken(t); };
