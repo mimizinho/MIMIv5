@@ -4366,7 +4366,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.10.05";
+var APP_VERSION = "2026.10.10.06";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -17674,7 +17674,7 @@ function _cleanupCallResources() {
 // escondida, precisamos pedir de novo quando ela volta a ficar visível
 // (ver o listener de visibilitychange logo abaixo).
 window.mimiHangup = function() { if (activeCall) endCall(false); };
-window.mimiRingAction = function(act, cid) { if (!incomingCall || incomingCall.callId !== cid) return; if (act === "accept") _acceptIncomingCall(); else if (act === "decline") _declineIncomingCall(); };
+window.mimiRingAction = function(act, cid, n) { n = n || 0; if (!cid) return; if (incomingCall && incomingCall.callId === cid) { if (act === "accept") _acceptIncomingCall(); else if (act === "decline") _declineIncomingCall(); else render(); return; } if (!_idToken || !ME_ID) { if (n < 40) setTimeout(function(){ window.mimiRingAction(act, cid, n + 1); }, 500); return; } fsGet("calls/" + cid).then(function(d) { if (!d || d.status !== "ringing" || activeCall) return; incomingCall = { callId: cid, callerId: d.callerId, convId: d.convId, offerSdp: d.offerSdp }; if (act === "accept") _acceptIncomingCall(); else if (act === "decline") _declineIncomingCall(); else render(); }).catch(function(){}); };
 var _callWakeLock = null;
 function _requestCallWakeLock() {
   try { if (window.MIMIApp && MIMIApp.startCall) MIMIApp.startCall(); } catch(e){}
