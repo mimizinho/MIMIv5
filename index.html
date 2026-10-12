@@ -4366,7 +4366,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.11.06";
+var APP_VERSION = "2026.10.11.07";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -8029,7 +8029,7 @@ var FB = {
 
   // ── NOTIFICAÇÕES NO FIRESTORE ────────────────────────────────
   // Grava uma notificação para outro usuário no Firestore
-  pushNotif: function(toUid, type, text) {
+  pushNotif: function(toUid, type, text, extra) {
     if (!_idToken || !toUid || toUid === ME_ID) return;
     var data = {
       type:      type,
@@ -8040,6 +8040,7 @@ var FB = {
       read:      false,
       createdAt: new Date().toISOString(),
     };
+    if (extra) { if (extra.postId) data.postId = extra.postId; if (extra.commentId) data.commentId = extra.commentId; }
     fsAdd("notifications/" + toUid + "/items", data).catch(function(){});
   },
 
@@ -9609,7 +9610,7 @@ function startNotifPolling() {
             userId:   doc.fromUid  || "",
             _fromName:doc.fromName || "",
             _fromAvatar: doc.fromAvatar || "",
-            text:     doc.text     || "",
+            text:     doc.text     || "", postId: doc.postId || "", commentId: doc.commentId || "",
             time:     doc.createdAt ? _relTime(doc.createdAt) : "antes",
             read:     !!doc.read,
           });
@@ -9624,7 +9625,7 @@ function startNotifPolling() {
           userId:    doc.fromUid  || "",
           _fromName: doc.fromName || "",
           _fromAvatar: doc.fromAvatar || "",
-          text:      doc.text     || "",
+          text:      doc.text     || "", postId: doc.postId || "", commentId: doc.commentId || "",
           time:      doc.createdAt ? _relTime(doc.createdAt) : "agora",
           createdAt: doc.createdAt,
           read:      false,
@@ -11126,6 +11127,15 @@ function handleDeepLinkFromUrl() {
       }
     }
   } catch(e) { console.error("Erro ao abrir link de denúncia:", e); }
+}
+function openPostAtComment(pid, cid) {
+  pushNavSnapshot();
+  state.postDetailId = pid;
+  state.openComments[pid] = true;
+  if (cid) { state.highlightCommentId = cid; expandReplyAncestors(pid, cid); }
+  window.scrollTo(0,0);
+  render();
+  if (cid) scrollToHighlightedComment(cid, 0);
 }
 function expandReplyAncestors(pid, cid) {
   var cmts = getComments(pid);
@@ -13924,7 +13934,7 @@ function addComment(pid) {
   if (post && post.authorId !== ME_ID) {
     var cmtText = 'comentou: "' + text.slice(0,40) + (text.length>40?"…":"") + '"';
     addNotif("comment", ME_ID, cmtText, post.authorId);
-    FB.pushNotif(post.authorId, "comment", cmtText);
+    FB.pushNotif(post.authorId, "comment", cmtText, { postId: pid, commentId: newComment.id });
   }
   // Notificação: menção (@usuario)
   var mentions = text.match(/@(\w+)/g);
@@ -13934,7 +13944,7 @@ function addComment(pid) {
       var mentioned = Object.values(USERS).find(function(u){ return (u.username||"").toLowerCase() === uname || (u.username||"").toLowerCase() === uname.slice(1); });
       if (mentioned && mentioned.uid !== ME_ID) {
         addNotif("mention", ME_ID, "te mencionou em um comentário", mentioned.uid);
-        FB.pushNotif(mentioned.uid, "mention", "te mencionou em um comentário");
+        FB.pushNotif(mentioned.uid, "mention", "te mencionou em um comentário", { postId: pid, commentId: newComment.id });
       }
     });
   }
@@ -14405,6 +14415,13 @@ function bindNotifsPage() {
   appEl.querySelectorAll("[data-open-author]").forEach(function(el) {
     el.addEventListener("click", function() {
       var uid = el.getAttribute("data-open-author");
+      var row = el.closest("[data-notif-id]");
+      var nid = row ? row.getAttribute("data-notif-id") : null;
+      var nn = nid ? NOTIFS.find(function(x){ return x.id === nid; }) : null;
+      if (el.classList.contains("grow") && nn && nn.postId && posts.some(function(p){ return p.id === nn.postId; })) {
+        openPostAtComment(nn.postId, nn.commentId || null);
+        return;
+      }
       if (uid && USERS[uid]) openProfile(uid);
     });
   });
@@ -21861,7 +21878,7 @@ function onAuthSuccess(u) {
         userId: doc.fromUid || "",
         _fromName: doc.fromName || "",
         _fromAvatar: doc.fromAvatar || "",
-        text: doc.text || "",
+        text: doc.text || "", postId: doc.postId || "", commentId: doc.commentId || "",
         time: doc.createdAt ? _relTime(doc.createdAt) : "antes",
         read: !!doc.read,
       });
@@ -23155,7 +23172,7 @@ function checkAgeVerificationLinkFromUrl() {
               userId: doc.fromUid || "",
               _fromName: doc.fromName || "",
               _fromAvatar: doc.fromAvatar || "",
-              text: doc.text || "",
+              text: doc.text || "", postId: doc.postId || "", commentId: doc.commentId || "",
               time: doc.createdAt ? _relTime(doc.createdAt) : "antes",
               read: !!doc.read,
             });
