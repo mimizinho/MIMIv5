@@ -4485,7 +4485,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.12.10";
+var APP_VERSION = "2026.10.12.11";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -7292,7 +7292,7 @@ var FB = {
     var limit = (opts && typeof opts.limit === "number") ? opts.limit : POSTS_PAGE_SIZE;
     var pageOpts = { limit: limit };
     if (before) pageOpts.before = before;
-    return _fsListMerged("posts", pageOpts).then(function(docs){
+    return SupabaseDB.mirror.list("posts", pageOpts).then(function(r){ return (r && r.length) ? r : _fsListMerged("posts", pageOpts); }).catch(function(){ return _fsListMerged("posts", pageOpts); }).then(function(docs){
       // FIX: um resultado vazio do Firestore é uma resposta válida (a conta
       // realmente não tem posts ainda / ninguém que você segue publicou) —
       // não é um erro de rede (erros de rede caem no .catch abaixo). Antes,
@@ -7320,7 +7320,6 @@ var FB = {
         d.createdAt = d.createdAt || d.time || "";
         return d;
       });
-      if (location.search.indexOf("dbgcc") !== -1 || ME_ID === MIMI_OFFICIAL_UID) { try { showToast("cc: cru " + docs.filter(function(x){ return x.commentCount != null; }).length + "/" + docs.length + " | >0 " + fsPosts.filter(function(x){ return x.commentCount > 0; }).length + " | sup " + docs.filter(function(x){ return x._createdAt; }).length + " | bf " + _isBackfillConfirmed() + " | thr " + _isFirebaseThrottled() + " | pag " + (typeof POSTS_PAGE_SIZE !== "undefined" ? POSTS_PAGE_SIZE : "?")); } catch(e){} }
       // Mesma lógica de ordenação já usada em VibesModule.loadUserVibes()
       // (mais curtidas primeiro). Empate (mesmo número de curtidas,
       // inclusive 0) é resolvido pelo mais recente primeiro.
