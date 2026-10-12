@@ -4366,7 +4366,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.11.09";
+var APP_VERSION = "2026.10.11.10";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -8100,7 +8100,7 @@ var FB = {
       // de alguém bloqueado ainda chegavam normalmente na aba de
       // notificações — bloquear precisa cortar "tudo relacionado" à
       // pessoa, notificação incluída.
-      docs = docs.filter(function(d){ return d.type !== "profileView" && !isUserBlocked(d.fromUid); });
+      docs = docs.filter(function(d){ return d.type !== "profileView" && !d.deleted && !isUserBlocked(d.fromUid); });
       return docs.sort(function(a,b){
         return (b.createdAt||"").localeCompare(a.createdAt||"");
       });
@@ -8120,11 +8120,19 @@ var FB = {
     });
   },
 
-  // Apaga notificações no servidor
+  // Desfaz o apagamento (Desfazer)
+  restoreNotifs: function(ids) {
+    if (!_idToken || !_fbUid || !ids || !ids.length) return;
+    ids.forEach(function(id) {
+      fsSet("notifications/" + _fbUid + "/items/" + id, { deleted: false }, true).catch(function(){});
+    });
+  },
+
+  // Apaga notificações (marca deleted: o servidor não permite apagar de fato)
   deleteNotifs: function(ids) {
     if (!_idToken || !_fbUid || !ids || !ids.length) return;
     ids.forEach(function(id) {
-      fsDelete("notifications/" + _fbUid + "/items/" + id).catch(function(){});
+      fsSet("notifications/" + _fbUid + "/items/" + id, { deleted: true, read: true }, true).catch(function(){});
     });
   },
 
@@ -14403,12 +14411,13 @@ function flushNotifPending() {
   var ids = _notifPending.list.filter(function(r){ return r.n._fsId; }).map(function(r){ return r.n._fsId; });
   _notifPending = null;
   hideNotifToast();
-  if (ids.length) FB.deleteNotifs(ids);
 }
 function removeNotifs(list, msg) {
   flushNotifPending();
   var rec = list.map(function(n){ return { n: n, idx: NOTIFS.indexOf(n) }; });
   list.forEach(function(n){ var i = NOTIFS.indexOf(n); if (i >= 0) NOTIFS.splice(i, 1); });
+  var _delIds = rec.filter(function(r){ return r.n._fsId; }).map(function(r){ return r.n._fsId; });
+  if (_delIds.length) FB.deleteNotifs(_delIds);
   _notifPending = { list: rec, timer: setTimeout(flushNotifPending, 5000) };
   showNotifToast(msg);
   if (typeof updateNotifBadge === "function") updateNotifBadge();
@@ -14416,6 +14425,8 @@ function removeNotifs(list, msg) {
 function undoNotifRemove() {
   if (!_notifPending) return;
   clearTimeout(_notifPending.timer);
+  var _rids = _notifPending.list.filter(function(r){ return r.n._fsId; }).map(function(r){ return r.n._fsId; });
+  if (_rids.length) FB.restoreNotifs(_rids);
   _notifPending.list.slice().sort(function(a, b){ return a.idx - b.idx; }).forEach(function(r){
     NOTIFS.splice(Math.max(0, Math.min(r.idx, NOTIFS.length)), 0, r.n);
   });
