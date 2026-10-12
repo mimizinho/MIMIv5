@@ -4485,7 +4485,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.12.02";
+var APP_VERSION = "2026.10.12.03";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -7965,6 +7965,7 @@ var FB = {
           existingConv.unread = (isFromOther && !alreadyRead) ? 1 : 0;
           existingConv.pinned = doc.pinned || false;
           existingConv.archived = doc.archived || false;
+          if (("hiddenFor_" + myId) in doc) existingConv.hiddenAt = doc["hiddenFor_" + myId];
           existingConv.otherLastRead = doc["lastRead_" + otherId] || existingConv.otherLastRead;
           existingConv.myLastRead = myLastRead || existingConv.myLastRead || null;
           existingConv.replyPromptDismissedFor = doc["replyDismissed_" + myId] || existingConv.replyPromptDismissedFor || null;
@@ -7983,7 +7984,7 @@ var FB = {
           theme: doc.theme || null,
           activeMazeRoomId: doc.activeMazeRoomId || null,
           activeTicTacRoomId: doc.activeTicTacRoomId || null,
-          _lastTimeRaw: doc.lastTime || null,
+          _lastTimeRaw: doc.lastTime || null, hiddenAt: doc["hiddenFor_" + myId] || null,
           lastSenderId: doc.lastSenderId || null,
         });
         if (!USERS[otherId]) {
@@ -8128,6 +8129,12 @@ var FB = {
       console.error("Erro ao apagar conversa:", err);
       return Promise.reject(err);
     });
+  },
+
+  hideConversation: function(convoId, stamp) {
+    if (!_idToken || !_fbUid || !convoId) return Promise.reject("Not authenticated");
+    var u = {}; u["hiddenFor_" + _fbUid] = stamp;
+    return fsSet("convos/" + convoId, u, true);
   },
 
   // ✅ NOVO: Atualizar propriedades da conversa (pin, archive, etc)
@@ -9217,7 +9224,7 @@ function _applyConvoDoc(doc, myId) {
       theme: doc.theme || null,
       activeMazeRoomId: doc.activeMazeRoomId || null,
       activeTicTacRoomId: doc.activeTicTacRoomId || null,
-      _lastTimeRaw: doc.lastTime || null,
+      _lastTimeRaw: doc.lastTime || null, hiddenAt: doc["hiddenFor_" + myId] || null,
       lastSenderId: doc.lastSenderId || null,
     };
     CONVOS.unshift(conv);
@@ -9232,6 +9239,7 @@ function _applyConvoDoc(doc, myId) {
   // Só reage se o Firestore tem uma mensagem mais nova do que a
   // última que já processamos localmente (evita reprocessar/contar
   // de novo a cada tick).
+  if (("hiddenFor_" + myId) in doc && conv.hiddenAt !== doc["hiddenFor_" + myId]) { conv.hiddenAt = doc["hiddenFor_" + myId]; changed = true; }
   if (doc.lastTime && doc.lastTime !== conv._lastTimeRaw) {
     conv._lastTimeRaw = doc.lastTime;
     conv.last = doc.lastMsg || conv.last;
@@ -11076,7 +11084,7 @@ function _renderImpl() {
 
   mimiAvatarGate();
   var unreadNotifs = NOTIFS.filter(function(n){ return !n.read; }).length;
-  var unreadMsgs = CONVOS.reduce(function(a,c){ return a + ((c && c.unread) || 0); }, 0);
+  var unreadMsgs = CONVOS.reduce(function(a,c){ return a + ((c && !_convoHidden(c) && c.unread) || 0); }, 0);
 
   var pageHtml = "";
   var showBottomNav = true;
@@ -14869,7 +14877,9 @@ function renderMsgsPage() {
   var html = '<div class="page-header" style="border-bottom:1px solid var(--border);">' +
     '<div class="row" style="gap:10px;">' +
       '<span class="display grow" style="font-size:18px;">Mensagens</span>' +
-      '<button class="icon-btn" data-new-chat style="color:var(--accent);font-size:24px;">+</button>' +
+      '<button class="icon-btn" data-delete-all aria-label="Apagar todas" style="color:var(--accent);">' +
+      '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg></button>' +
+    '<button class="icon-btn" data-new-chat style="color:var(--accent);font-size:24px;">+</button>' +
     '</div>' +
     (state.userSearchOpen ?
       '<div style="margin-top:10px;">' +
@@ -14897,9 +14907,9 @@ function renderMsgsPage() {
   '</div>';
 
   // ✅ NOVO: Separar conversas em grupos
-  var pinnedConvos = CONVOS.filter(function(c) { return c.pinned && !c.archived; });
-  var activeConvos = CONVOS.filter(function(c) { return !c.pinned && !c.archived; });
-  var archivedConvos = CONVOS.filter(function(c) { return c.archived; });
+  var pinnedConvos = CONVOS.filter(function(c) { return c.pinned && !c.archived && !_convoHidden(c); });
+  var activeConvos = CONVOS.filter(function(c) { return !c.pinned && !c.archived && !_convoHidden(c); });
+  var archivedConvos = CONVOS.filter(function(c) { return c.archived && !_convoHidden(c); });
 
   var hasNormalConvos = pinnedConvos.length > 0 || activeConvos.length > 0;
   if (hasNormalConvos === 0 && !state.userSearchOpen) {
@@ -15414,6 +15424,40 @@ function bindMsgsPage() {
     });
   });
 
+  appEl.querySelectorAll("[data-convo-longpress]").forEach(function(row) {
+    var sx = 0, sy = 0, dx = 0, mode = 0;
+    row.style.touchAction = "pan-y";
+    row.addEventListener("touchstart", function(e) {
+      var t = e.touches[0]; sx = t.clientX; sy = t.clientY; dx = 0; mode = 0;
+      row.style.transition = "none";
+    }, { passive: true });
+    row.addEventListener("touchmove", function(e) {
+      var t = e.touches[0]; var mx = t.clientX - sx, my = t.clientY - sy;
+      if (mode === 0) {
+        if (mx < -10 && Math.abs(mx) > Math.abs(my) * 1.5) { mode = 1; row.dispatchEvent(new Event("touchcancel")); }
+        else if (Math.abs(my) > 10) { mode = 2; }
+      }
+      if (mode !== 1) return;
+      dx = Math.min(0, mx);
+      row.style.transform = "translateX(" + dx + "px)";
+    }, { passive: true });
+    row.addEventListener("touchend", function() {
+      if (mode !== 1) return;
+      mode = 0;
+      row._swipedAt = Date.now();
+      var convoId = row.getAttribute("data-convo-longpress");
+      if (dx <= -80) {
+        _hideConvo(convoId); render();
+        _undoToast("Conversa apagada", function() { _unhideConvo(convoId); render(); });
+      } else {
+        row.style.transition = "transform .2s"; row.style.transform = "";
+      }
+    });
+    row.addEventListener("click", function(e) {
+      if (row._swipedAt && Date.now() - row._swipedAt < 500) { e.stopImmediatePropagation(); e.preventDefault(); }
+    }, true);
+  });
+
   // ✅ NOVO: Event listener para toggle de conversas arquivadas
   var archiveToggle = appEl.querySelector("[data-toggle-archived]");
   if (archiveToggle) {
@@ -15872,6 +15916,8 @@ function bindMsgsPage() {
   }
 
   // ── novo chat: busca de utilizadores ──
+  var delAllBtn = appEl.querySelector("[data-delete-all]");
+  if (delAllBtn) delAllBtn.addEventListener("click", showDeleteAllModal);
   var newChatBtn = appEl.querySelector("[data-new-chat]");
   if (newChatBtn) newChatBtn.addEventListener("click", function() {
     state.userSearchOpen = !state.userSearchOpen;
@@ -15924,6 +15970,7 @@ function bindMsgsPage() {
             row.addEventListener("click", function() {
               var targetUid = row.getAttribute("data-start-convo-inline");
               FB.getOrCreateConvo(targetUid).then(function(convoId) {
+        _unhideConvo(convoId);
                 state.userSearchOpen = false;
                 state.userSearchQuery = "";
                 state.userSearchResults = [];
@@ -15948,6 +15995,7 @@ function bindMsgsPage() {
       e.stopPropagation();
       var targetUid = btn.getAttribute("data-start-convo");
       FB.getOrCreateConvo(targetUid).then(function(convoId) {
+        _unhideConvo(convoId);
         state.userSearchOpen = false;
         state.userSearchQuery = "";
         state.userSearchResults = [];
@@ -17445,7 +17493,7 @@ function showDeleteConvoModal(convoId) {
   modal.innerHTML = 
     '<div class="delete-modal-content">' +
       '<div class="delete-modal-title">Apagar conversa?</div>' +
-      '<div class="delete-modal-text">Tem certeza que deseja apagar a conversa com <strong>'+esc(u.name)+'</strong>? Esta ação não pode ser desfeita.</div>' +
+      '<div class="delete-modal-text">Tem certeza que deseja apagar a conversa com <strong>'+esc(u.name)+'</strong>? Ela some só para você; a outra pessoa continua com a conversa.</div>' +
       '<div class="delete-modal-buttons">' +
         '<button class="delete-modal-btn delete-modal-btn-danger" data-confirm-delete="'+convoId+'">Apagar</button>' +
         '<button class="delete-modal-btn delete-modal-btn-cancel" data-cancel-delete>Cancelar</button>' +
@@ -17474,44 +17522,67 @@ function closeDeleteModal() {
   if (_pendingBackgroundRender) { _pendingBackgroundRender = false; render(); }
 }
 
+function _hideConvo(convoId) {
+  var conv = CONVOS.find(function(c){ return c.id === convoId; });
+  if (!conv) return;
+  var stamp = conv._lastTimeRaw || new Date().toISOString();
+  conv.hiddenAt = stamp;
+  if (state.activeConvoId === convoId) { stopChatPolling(); state.activeConvoId = null; }
+  if (_idToken) FB.hideConversation(convoId, stamp).catch(function() {
+    conv.hiddenAt = null; showToast("Erro ao apagar conversa"); render();
+  });
+}
+function _unhideConvo(convoId) {
+  var conv = CONVOS.find(function(c){ return c.id === convoId; });
+  if (!conv) return;
+  conv.hiddenAt = null;
+  if (_idToken) FB.hideConversation(convoId, null).catch(function(){});
+}
+function _undoToast(msg, onUndo) {
+  var old = document.querySelector("[data-undo-toast]"); if (old) old.remove();
+  var t = document.createElement("div");
+  t.className = "toast"; t.setAttribute("data-undo-toast", "1");
+  t.style.pointerEvents = "auto";
+  t.innerHTML = '<span>' + msg + '</span><button style="margin-left:12px;background:none;border:0;color:var(--accent);font-weight:700;">Desfazer</button>';
+  document.body.appendChild(t);
+  var timer = setTimeout(function() { t.remove(); }, 5000);
+  t.querySelector("button").addEventListener("click", function() { clearTimeout(timer); t.remove(); onUndo(); });
+}
+function _convoHidden(c) { return !!(c.hiddenAt && (!c._lastTimeRaw || c._lastTimeRaw <= c.hiddenAt)); }
+function showDeleteAllModal() {
+  if (appEl.querySelector("[data-delete-modal]")) return;
+  var vis = CONVOS.filter(function(c){ return !_convoHidden(c); });
+  if (!vis.length) { showToast("Nenhuma conversa para apagar"); return; }
+  var modal = document.createElement("div");
+  modal.className = "delete-modal";
+  modal.setAttribute("data-delete-modal", "1");
+  modal.innerHTML =
+    '<div class="delete-modal-content">' +
+      '<div class="delete-modal-title">Apagar todas as conversas?</div>' +
+      '<div class="delete-modal-text">' + vis.length + ' conversa(s) somem só para você; as outras pessoas continuam com tudo.</div>' +
+      '<div class="delete-modal-buttons">' +
+        '<button class="delete-modal-btn delete-modal-btn-danger" data-confirm-delete-all>Apagar todas</button>' +
+        '<button class="delete-modal-btn delete-modal-btn-cancel" data-cancel-delete>Cancelar</button>' +
+      '</div>' +
+    '</div>';
+  appEl.appendChild(modal);
+  modal.addEventListener("click", function(e) { if (e.target === modal) closeDeleteModal(); });
+  modal.querySelector("[data-cancel-delete]").addEventListener("click", closeDeleteModal);
+  modal.querySelector("[data-confirm-delete-all]").addEventListener("click", function() {
+    closeDeleteModal();
+    var ids = vis.map(function(c){ return c.id; });
+    ids.forEach(function(id){ _hideConvo(id); });
+    render();
+    _undoToast("Conversas apagadas", function() { ids.forEach(function(id){ _unhideConvo(id); }); render(); });
+  });
+}
+
 function deleteConversation(convoId) {
   var modal = appEl.querySelector("[data-delete-modal]");
   if (modal) modal.remove();
-  
-  // Encontrar índice da conversa
-  var index = CONVOS.findIndex(function(c){ return c.id === convoId; });
-  if (index === -1) return;
-  
-  // Marcar como deletando
-  var row = appEl.querySelector('[data-convo-id="'+convoId+'"]');
-  if (row) row.classList.add("deleting");
-  
-  // Se essa era a conversa ativa, fechar
-  if (state.activeConvoId === convoId) {
-    stopChatPolling();
-    state.activeConvoId = null;
-  }
-  
-  // Remover do array CONVOS
-  CONVOS.splice(index, 1);
-  
-  // Remover do Firebase/Firestore
-  if (_idToken) {
-    FB.deleteConversation(convoId).then(function() {
-      showToast("Conversa apagada");
-      render();
-    }).catch(function(err) {
-      showToast("Erro ao apagar conversa");
-      console.error("Erro ao apagar conversa:", err);
-      // Re-adicionar se falhar
-      CONVOS.splice(index, 0, CONVOS.find(function(c){ return c.id === convoId; }));
-      if (row) row.classList.remove("deleting");
-      render();
-    });
-  } else {
-    showToast("Conversa apagada");
-    render();
-  }
+  _hideConvo(convoId);
+  render();
+  _undoToast("Conversa apagada", function() { _unhideConvo(convoId); render(); });
 }
 
 // ✅ NOVO: Mostrar menu de opções da conversa (long press)
