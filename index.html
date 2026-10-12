@@ -4366,7 +4366,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.11.11";
+var APP_VERSION = "2026.10.11.12";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -13477,33 +13477,49 @@ function bindPostCardEvents(root) {
       }
     });
   });
-// Folha de compartilhar (só no APK): lista só os apps instalados no celular
+// Folha de compartilhar (só no APK): WhatsApp, Telegram, Instagram, SMS e Gmail (só os instalados)
 window.abrirCompartilhar = function(url, texto, done) {
   if (document.getElementById("shareSheet")) return;
-  var apps = [];
-  try { apps = JSON.parse(MIMIApp.getShareApps()); } catch (e) {}
+  var todos = [];
+  try { todos = JSON.parse(MIMIApp.getShareApps()); } catch (e) {}
   var msg = texto + " " + url;
+  var regras = [
+    ["WhatsApp", function(p) { return p === "com.whatsapp"; }],
+    ["Telegram", function(p) { return p.indexOf("org.telegram.messenger") === 0; }],
+    ["Instagram", function(p) { return p === "com.instagram.android"; }],
+    ["SMS", function(p) { return p === "com.google.android.apps.messaging" || p === "com.android.mms" || p === "com.samsung.android.messaging" || p === "com.miui.mms"; }],
+    ["Gmail", function(p) { return p === "com.google.android.gm"; }]
+  ];
+  var lista = [];
+  regras.forEach(function(r) {
+    var m = todos.filter(function(a) { return r[1](a.pkg); });
+    if (!m.length) return;
+    var esc = m.filter(function(a) { return /direct/i.test(a.cls); })[0] || m[0];
+    lista.push({ nome: r[0], a: esc });
+  });
   var ov = document.createElement("div");
   ov.id = "shareSheet";
-  ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;display:flex;align-items:flex-end";
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(74,59,69,.45);z-index:99999;display:flex;align-items:flex-end";
   var sh = document.createElement("div");
-  sh.style.cssText = "width:100%;max-height:60%;overflow-y:auto;background:#fff;border-radius:24px 24px 0 0;padding:16px 8px 24px;box-sizing:border-box";
-  sh.innerHTML = '<div style="text-align:center;font-weight:700;color:#ff6fa5;padding-bottom:12px">Compartilhar</div><div id="shareGrid" style="display:flex;flex-wrap:wrap;gap:12px 0"></div>';
+  sh.style.cssText = "width:100%;box-sizing:border-box;background:linear-gradient(180deg,#fff5f8,#fff);border-radius:28px 28px 0 0;box-shadow:0 -8px 24px rgba(255,111,165,.25);padding:10px 0 24px;transform:translateY(100%);transition:transform .25s ease";
+  sh.innerHTML = '<div style="width:44px;height:5px;border-radius:5px;background:#ffc2d9;margin:0 auto 12px"></div>'
+    + '<div style="text-align:center;font-weight:800;font-size:16px;color:#ff6fa5;padding-bottom:14px">Compartilhar 💗</div>'
+    + '<div id="shareRow" style="display:flex;gap:18px;overflow-x:auto;padding:4px 20px 6px;-webkit-overflow-scrolling:touch"></div>';
   ov.appendChild(sh);
   document.body.appendChild(ov);
-  var g = sh.querySelector("#shareGrid");
+  requestAnimationFrame(function() { sh.style.transform = "translateY(0)"; });
+  var row = sh.querySelector("#shareRow");
   function fechar() { ov.remove(); }
-  function item(img, nome, fn) {
+  function item(conteudo, nome, fn) {
     var b = document.createElement("div");
-    b.style.cssText = "width:25%;text-align:center;font-size:12px;color:#444";
-    b.innerHTML = '<div style="width:56px;height:56px;margin:0 auto 6px;border-radius:14px;overflow:hidden;background:#ffe3ef;display:flex;align-items:center;justify-content:center;font-size:26px">'
-      + (img.indexOf("data:") === 0 ? '<img src="' + img + '" style="width:100%;height:100%">' : img)
-      + '</div><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + nome + '</div>';
+    b.style.cssText = "flex:0 0 auto;width:68px;text-align:center";
+    b.innerHTML = '<div style="width:60px;height:60px;margin:0 auto 7px;border-radius:20px;background:#fff;border:2px solid #ffd3e4;box-shadow:0 4px 10px rgba(255,111,165,.25);box-sizing:border-box;padding:8px;display:flex;align-items:center;justify-content:center;font-size:26px">' + conteudo + '</div>'
+      + '<div style="font-size:12px;font-weight:600;color:#4a3b45">' + nome + '</div>';
     b.onclick = function() { fn(); fechar(); if (done) done(); };
-    g.appendChild(b);
+    row.appendChild(b);
   }
-  apps.forEach(function(a) {
-    item(a.icon, a.label, function() { MIMIApp.shareTo(a.pkg, a.cls, msg); });
+  lista.forEach(function(x) {
+    item('<img src="' + x.a.icon + '" style="width:100%;height:100%;border-radius:10px">', x.nome, function() { MIMIApp.shareTo(x.a.pkg, x.a.cls, msg); });
   });
   item("🔗", "Copiar link", function() {
     if (navigator.clipboard && navigator.clipboard.writeText) {
