@@ -4366,7 +4366,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.11.07";
+var APP_VERSION = "2026.10.11.08";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -8117,6 +8117,14 @@ var FB = {
     if (!_idToken || !_fbUid || !ids || !ids.length) return;
     ids.forEach(function(id) {
       fsSet("notifications/" + _fbUid + "/items/" + id, { read: true }, true).catch(function(){});
+    });
+  },
+
+  // Apaga notificações no servidor
+  deleteNotifs: function(ids) {
+    if (!_idToken || !_fbUid || !ids || !ids.length) return;
+    ids.forEach(function(id) {
+      fsDelete("notifications/" + _fbUid + "/items/" + id).catch(function(){});
     });
   },
 
@@ -14363,12 +14371,113 @@ function bindExplorePage() {
 }
 
 // ─── NOTIFICATIONS PAGE ──────────────────────────────────────
+var _notifPending = null;
+function notifBgOf(el) {
+  while (el) {
+    var c = getComputedStyle(el).backgroundColor;
+    if (c && c !== "rgba(0, 0, 0, 0)" && c !== "transparent") return c;
+    el = el.parentElement;
+  }
+  return "#fff";
+}
+function hideNotifToast() {
+  var t = document.getElementById("notifUndoToast");
+  if (t) t.style.display = "none";
+}
+function showNotifToast(msg) {
+  var t = document.getElementById("notifUndoToast");
+  if (!t) {
+    t = document.createElement("div");
+    t.id = "notifUndoToast";
+    t.style.cssText = "position:fixed;left:12px;right:12px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:9999;background:#3A2530;color:#fff;border-radius:14px;padding:11px 14px;display:flex;align-items:center;justify-content:space-between;font-size:14px;max-width:480px;margin:0 auto;";
+    t.innerHTML = '<span data-t></span><button data-undo style="background:none;border:none;color:#FF8FBF;font-weight:700;font-size:14px;cursor:pointer;padding:4px 0 4px 14px;">Desfazer</button>';
+    document.body.appendChild(t);
+    t.querySelector("[data-undo]").addEventListener("click", undoNotifRemove);
+  }
+  t.querySelector("[data-t]").textContent = msg;
+  t.style.display = "flex";
+}
+function flushNotifPending() {
+  if (!_notifPending) return;
+  clearTimeout(_notifPending.timer);
+  var ids = _notifPending.list.filter(function(r){ return r.n._fsId; }).map(function(r){ return r.n._fsId; });
+  _notifPending = null;
+  hideNotifToast();
+  if (ids.length) FB.deleteNotifs(ids);
+}
+function removeNotifs(list, msg) {
+  flushNotifPending();
+  var rec = list.map(function(n){ return { n: n, idx: NOTIFS.indexOf(n) }; });
+  list.forEach(function(n){ var i = NOTIFS.indexOf(n); if (i >= 0) NOTIFS.splice(i, 1); });
+  _notifPending = { list: rec, timer: setTimeout(flushNotifPending, 5000) };
+  showNotifToast(msg);
+  if (typeof updateNotifBadge === "function") updateNotifBadge();
+}
+function undoNotifRemove() {
+  if (!_notifPending) return;
+  clearTimeout(_notifPending.timer);
+  _notifPending.list.slice().sort(function(a, b){ return a.idx - b.idx; }).forEach(function(r){
+    NOTIFS.splice(Math.max(0, Math.min(r.idx, NOTIFS.length)), 0, r.n);
+  });
+  _notifPending = null;
+  hideNotifToast();
+  if (typeof updateNotifBadge === "function") updateNotifBadge();
+  render();
+}
+window.addEventListener("pagehide", flushNotifPending);
+function bindNotifsClear() {
+  var all = appEl.querySelector("[data-clear-all-notifs]");
+  if (all) all.addEventListener("click", function() {
+    removeNotifs(NOTIFS.slice(), "Todas as notificações apagadas");
+    render();
+  });
+  appEl.querySelectorAll(".notif-swipe").forEach(function(w) {
+    var row = w.querySelector(".notif-row"), bg = w.querySelector(".notif-swipe-bg");
+    if (!row || !bg) return;
+    var sx = 0, dx = 0, drag = false, moved = false;
+    row.addEventListener("pointerdown", function(e) {
+      drag = true; moved = false; sx = e.clientX; dx = 0;
+      row.style.transition = "none";
+      row.style.background = notifBgOf(row);
+    });
+    row.addEventListener("pointermove", function(e) {
+      if (!drag) return;
+      dx = Math.min(0, e.clientX - sx);
+      if (dx < -8) {
+        if (!moved) { try { row.setPointerCapture(e.pointerId); } catch (_) {} }
+        moved = true; bg.style.display = "flex";
+      }
+      row.style.transform = "translateX(" + dx + "px)";
+    });
+    function end() {
+      if (!drag) return;
+      drag = false;
+      row.style.transition = "transform .2s";
+      if (dx < -Math.min(110, w.offsetWidth * 0.3)) {
+        row.style.transform = "translateX(-110%)";
+        var id = row.getAttribute("data-notif-id");
+        setTimeout(function() {
+          var n = NOTIFS.find(function(x){ return x.id === id; });
+          if (n) { removeNotifs([n], "Notificação apagada"); render(); }
+        }, 180);
+      } else {
+        row.style.transform = "translateX(0)";
+        setTimeout(function(){ bg.style.display = "none"; }, 200);
+      }
+    }
+    row.addEventListener("pointerup", end);
+    row.addEventListener("pointercancel", end);
+    row.addEventListener("click", function(e) {
+      if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; }
+    }, true);
+  });
+}
 function renderNotifsPage() {
   var iconMap = { like:"heart", follow:"user", comment:"comment", mention:"msg" };
   var colMap  = { like:C.pink, follow:C.accent, comment:C.green, mention:"#ffb454" };
   var html = '<div class="page-header row" style="justify-content:space-between;">' +
     '<span class="display" style="font-size:18px;">Notificações</span>' +
-    '<button data-mark-all-read style="background:none;border:none;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;">Marcar todas como lidas</button>' +
+    (NOTIFS.length ? '<button data-clear-all-notifs aria-label="Limpar todas as notificações" style="background:none;border:none;padding:6px;cursor:pointer;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg></button>' : "") +
   '</div>';
   if (!NOTIFS.length) {
     html += '<div style="padding:60px 20px;text-align:center;color:var(--muted);">' +
@@ -14381,7 +14490,8 @@ function renderNotifsPage() {
     var u = USERS[n.userId];
     var name   = u ? u.name   : (n._fromName   || "Alguém");
     var avatar = u ? u.avatar : (n._fromAvatar || DEFAULT_AVATAR);
-    html += '<div class="notif-row '+(n.read?"":"unread")+'" data-notif-id="'+n.id+'">' +
+    html += '<div class="notif-swipe" style="position:relative;overflow:hidden;"><div class="notif-swipe-bg" style="position:absolute;top:0;bottom:0;left:0;right:0;background:#E5484D;display:none;align-items:center;justify-content:flex-end;padding-right:22px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg></div>' +
+      '<div class="notif-row '+(n.read?"":"unread")+'" data-notif-id="'+n.id+'" style="position:relative;touch-action:pan-y;">' +
       '<div style="position:relative;cursor:pointer;" data-open-author="'+n.userId+'">' + avatarHtml(avatar, 46, false, false, false, null, null, getUserFrame(u)) +
         (n.type === "birthday"
           ? '<div class="notif-badge" style="background:#ff5fa8;display:flex;align-items:center;justify-content:center;">'+icoSvg("cake",13,"#fff")+'</div>'
@@ -14393,12 +14503,13 @@ function renderNotifsPage() {
         '<div style="font-size:12px;color:var(--muted);margin-top:2px;">'+esc(n.time)+'</div>' +
       '</div>' +
       (!n.read ? '<div class="notif-dot"></div>' : "") +
-    '</div>';
+    '</div></div>';
   });
   html += renderAppAdBanner("notifs");
   return html;
 }
 function bindNotifsPage() {
+  bindNotifsClear();
   // Marca todas como lidas ao abrir a página
   var unreadFsIds = NOTIFS.filter(function(n){ return !n.read && n._fsId; }).map(function(n){ return n._fsId; });
   NOTIFS.forEach(function(n){ n.read = true; });
