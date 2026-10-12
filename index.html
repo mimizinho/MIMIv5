@@ -3164,7 +3164,7 @@ function saveEditedMessage(messageId, newText) {
   if (isLast && conv) conv.last = newText;
 
   if (!_idToken) return;
-  fsSet("convos/"+convoId+"/messages/"+messageId,
+  fsSet("convos/"+convoId+"/messages/"+(msg._firestoreId || messageId),
     { content: newText, edited: true, editedAt: new Date().toISOString() }, true
   ).then(function() {
     if (isLast) fsSet("convos/"+convoId, { lastMsg: newText }, true).catch(function(){});
@@ -4485,7 +4485,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.12.01";
+var APP_VERSION = "2026.10.12.02";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
