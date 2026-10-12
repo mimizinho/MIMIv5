@@ -4485,7 +4485,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.12.06";
+var APP_VERSION = "2026.10.12.07";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -21813,7 +21813,7 @@ function bindSettingsPage() {
 // ─── ASSINATURA MIMI+ ────────────────────────────────────────
 function renderSubsPage() {
   var me = ME_obj();
-  var isOfficial = me.uid === ME_ID && me.verifiedType === "official";
+  var isOfficial = ME_ID === MIMI_OFFICIAL_UID;
   var hasActive = isSubscriptionActive(me);
 
   var perks = [
