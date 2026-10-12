@@ -14428,7 +14428,7 @@ window.addEventListener("pagehide", flushNotifPending);
 function bindNotifsClear() {
   var all = appEl.querySelector("[data-clear-all-notifs]");
   if (all) all.addEventListener("click", function() {
-    removeNotifs(NOTIFS.slice(), "Todas as notificações apagadas");
+    state.confirmDialog = { title: "Apagar todas as notificações?", text: "Todas as suas notificações serão removidas.", confirmLabel: "Apagar tudo", danger: true, onConfirm: function() { removeNotifs(NOTIFS.slice(), "Todas as notificações apagadas"); render(); } };
     render();
   });
   appEl.querySelectorAll(".notif-swipe").forEach(function(w) {
