@@ -4485,7 +4485,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.12.11";
+var APP_VERSION = "2026.10.12.12";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -7289,7 +7289,7 @@ var FB = {
     // Com opts.before, pede a página seguinte e ANEXA ao array já
     // carregado — mesmo padrão de VibesModule (loadVibes/loadMoreVibes).
     var before = (opts && opts.before) || null;
-    var limit = (opts && typeof opts.limit === "number") ? opts.limit : POSTS_PAGE_SIZE;
+    var limit = (opts && typeof opts.limit === "number") ? opts.limit : 200;
     var pageOpts = { limit: limit };
     if (before) pageOpts.before = before;
     return SupabaseDB.mirror.list("posts", pageOpts).then(function(r){ return (r && r.length) ? r : _fsListMerged("posts", pageOpts); }).catch(function(){ return _fsListMerged("posts", pageOpts); }).then(function(docs){
