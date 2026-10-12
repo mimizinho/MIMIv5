@@ -4485,7 +4485,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.12.03";
+var APP_VERSION = "2026.10.12.04";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -19000,7 +19000,7 @@ function renderProfilePage(userId) {
         '</div>' +
         '<div class="profile-stats">' +
           '<div><div class="profile-stat-num">'+fmtNum(postCount)+'</div><div class="profile-stat-label">posts</div></div>' +
-          '<div data-open-followlist="'+userId+':followers" style="cursor:pointer;"><div class="profile-stat-num">'+fmtNum(typeof u.followerCountOverride === "number" ? u.followerCountOverride : (u.followers||[]).length)+'</div><div class="profile-stat-label">seguidores'+((u.hideFollowerCount && !isMe) ? ' <span style="display:inline-flex;vertical-align:-2px;">'+icoSvg("lock",11,"var(--muted)")+'</span>' : "")+'</div></div>' +
+          '<div data-open-followlist="'+userId+':followers" style="cursor:pointer;"><div class="profile-stat-num">'+fmtNum(u.verifiedType === "official" && typeof u.followerCountOverride === "number" ? u.followerCountOverride : (u.followers||[]).length)+'</div><div class="profile-stat-label">seguidores'+((u.hideFollowerCount && !isMe) ? ' <span style="display:inline-flex;vertical-align:-2px;">'+icoSvg("lock",11,"var(--muted)")+'</span>' : "")+'</div></div>' +
           '<div data-open-followlist="'+userId+':following" style="cursor:pointer;"><div class="profile-stat-num">'+fmtNum((u.following||[]).length)+'</div><div class="profile-stat-label">seguindo'+((u.hideFollowerCount && !isMe) ? ' <span style="display:inline-flex;vertical-align:-2px;">'+icoSvg("lock",11,"var(--muted)")+'</span>' : "")+'</div></div>' +
         '</div>' +
         (isMe ? '<div class="profile-insights-row" data-open-profileviewers="'+userId+'">' +
@@ -21574,6 +21574,7 @@ function renderSettingsPage() {
   '</div>' +
 
 
+  (me.verifiedType === "official" ? (
   '<div class="cfg-item" style="cursor:default;align-items:flex-start;">' +
     '<div class="cfg-item-icon" style="background:#fff0f6;">'+icoSvg("user",20,C.accent)+'</div>' +
     '<div class="grow">' +
@@ -21584,7 +21585,7 @@ function renderSettingsPage() {
         '<button class="btn btn-sm" data-follower-override-save>Salvar</button>' +
       '</div>' +
     '</div>' +
-  '</div>' +
+  '</div>') : "") +
 
   // Ferramentas
   '<div class="cfg-section-title">Ferramentas</div>' +
