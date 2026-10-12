@@ -4485,7 +4485,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.12.13";
+var APP_VERSION = "2026.10.12.14";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -5542,7 +5542,7 @@ function _fsListMerged(collection, opts) {
     return SupabaseDB.mirror.list(collection, opts).catch(function(){ return []; });
   }
   var supaPromise = (typeof SupabaseDB !== "undefined")
-    ? SupabaseDB.mirror.list(collection, opts).catch(function(){ return []; })
+    ? SupabaseDB.mirror.list(collection, collection === "posts" ? undefined : opts).catch(function(){ return []; })
     : Promise.resolve([]);
   var firePromise = _isFirebaseThrottled() ? Promise.resolve([]) : _fsListFirebase(collection).catch(function(){ return []; });
   return Promise.all([supaPromise, firePromise]).then(function(results){
