@@ -1264,7 +1264,7 @@
   .story-add-fab { position:absolute; bottom:24px; left:50%; transform:translateX(-50%); background:rgba(255,255,255,.2); border:2px solid #fff; border-radius:50%; width:54px; height:54px; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:2; }
 
   .photo-viewer { position:fixed; inset:0; background:rgba(0,0,0,.92); z-index:350; display:flex; align-items:center; justify-content:center; }
-  .photo-viewer img { max-width:100%; max-height:100%; object-fit:contain; }
+  .photo-viewer img { width:min(88vw,480px); height:min(88vw,480px); object-fit:cover; border-radius:50%; box-shadow:0 8px 40px rgba(0,0,0,.5); }
   .photo-viewer-close { position:absolute; top:16px; right:16px; background:rgba(255,255,255,.15); border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:2; }
 
   .call-screen { position:fixed; inset:0; background:radial-gradient(circle at 50% 15%,#3a2247,#1c1024 65%,#150c1c); overflow:hidden; z-index:400; display:flex; flex-direction:column; align-items:center; justify-content:space-between; max-width:480px; margin:0 auto; color:#fff; padding:50px 24px 40px; }
@@ -4366,7 +4366,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.11.05";
+var APP_VERSION = "2026.10.11.06";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
