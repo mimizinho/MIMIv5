@@ -4485,7 +4485,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.12.09";
+var APP_VERSION = "2026.10.12.10";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -7320,7 +7320,7 @@ var FB = {
         d.createdAt = d.createdAt || d.time || "";
         return d;
       });
-      if (location.search.indexOf("dbgcc") !== -1 || ME_ID === MIMI_OFFICIAL_UID) { try { showToast("cc: cru " + docs.filter(function(x){ return x.commentCount != null; }).length + "/" + docs.length + " | >0 " + fsPosts.filter(function(x){ return x.commentCount > 0; }).length + " | tipo " + typeof (docs[0] && docs[0].commentCount)); } catch(e){} }
+      if (location.search.indexOf("dbgcc") !== -1 || ME_ID === MIMI_OFFICIAL_UID) { try { showToast("cc: cru " + docs.filter(function(x){ return x.commentCount != null; }).length + "/" + docs.length + " | >0 " + fsPosts.filter(function(x){ return x.commentCount > 0; }).length + " | sup " + docs.filter(function(x){ return x._createdAt; }).length + " | bf " + _isBackfillConfirmed() + " | thr " + _isFirebaseThrottled() + " | pag " + (typeof POSTS_PAGE_SIZE !== "undefined" ? POSTS_PAGE_SIZE : "?")); } catch(e){} }
       // Mesma lógica de ordenação já usada em VibesModule.loadUserVibes()
       // (mais curtidas primeiro). Empate (mesmo número de curtidas,
       // inclusive 0) é resolvido pelo mais recente primeiro.
