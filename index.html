@@ -581,6 +581,7 @@
     font-size:10px; color:var(--muted); padding:0 2px;
   }
   .msg-card.sent .msg-time { text-align:right; }
+  .msg-edited-tag { font-style:italic; opacity:.8; }
   .msg-deleted-text { font-style:italic; opacity:.65; display:inline-flex; align-items:center; gap:5px; }
 
   /* 🎨 TEMAS DE CONVERSA — aplica variáveis CSS por conversa. O container
@@ -3032,6 +3033,12 @@ function showMessageContextMenu(messageId, messageText, targetEl) {
         konvoMenuIcon("delete") + '<span style="margin-left:12px;">Apagar para todos</span>' +
       '</button>';
   }
+  var editItemHtml = canEditMessage(msg)
+    ? '<button class="convo-action-menu-item" data-msg-action-edit="'+esc(messageId)+'">' +
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>' +
+        '<span style="margin-left:12px;">Editar mensagem</span>' +
+      '</button>'
+    : '';
   items += '<button class="convo-action-menu-item" data-msg-action-cancel>Cancelar</button>';
 
   menu.innerHTML =
@@ -3039,6 +3046,7 @@ function showMessageContextMenu(messageId, messageText, targetEl) {
     '<div class="convo-action-menu-panel">' +
       reactionRow +
       '<div class="convo-action-menu-header">Opções da mensagem</div>' +
+      editItemHtml +
       items +
     '</div>';
 
@@ -3056,8 +3064,119 @@ function showMessageContextMenu(messageId, messageText, targetEl) {
   var delMeBtn = menu.querySelector("[data-msg-action-delete-me]");
   if (delMeBtn) delMeBtn.addEventListener("click", function(){ deleteMessageForMe(messageId); });
 
+  var editBtn = menu.querySelector("[data-msg-action-edit]");
+  if (editBtn) editBtn.addEventListener("click", function(){ showEditMessageModal(messageId); });
+
   var delAllBtn = menu.querySelector("[data-msg-action-delete-all]");
   if (delAllBtn) delAllBtn.addEventListener("click", function(){ showDeleteMessageForEveryoneModal(messageId); });
+}
+
+// ✏️ EDITAR MENSAGEM — só texto, só do próprio usuário, até 15 min após o envio.
+var MSG_EDIT_WINDOW_MS = 15 * 60 * 1000;
+
+function _msgEditTimeLeft(msg) {
+  var t = msg && msg.createdAt ? new Date(msg.createdAt).getTime() : NaN;
+  if (isNaN(t)) return 0;
+  return Math.max(0, MSG_EDIT_WINDOW_MS - (Date.now() - t));
+}
+
+function canEditMessage(msg) {
+  return !!msg && !!msg.me && !msg.deleted && (!msg.type || msg.type === "text") &&
+    !!msg._firestoreId && _msgEditTimeLeft(msg) > 0;
+}
+
+function _refreshMsgCard(msg) {
+  var conv = CONVOS.find(function(c){ return c.id === state.activeConvoId; });
+  var box = appEl.querySelector("[data-chat-msgs]");
+  var card = box && box.querySelector('[data-msg-id="'+msg.id+'"]');
+  if (!conv || !card) { render(); return; }
+  var wrap = document.createElement("div");
+  wrap.innerHTML = renderChatMsgCardHtml(msg, conv);
+  var fresh = wrap.firstElementChild;
+  if (!fresh) { render(); return; }
+  card.replaceWith(fresh);
+  bindMsgElementSwipe(fresh);
+  ensureMessageTranslation(msg);
+  hydrateImages(fresh);
+}
+
+function showEditMessageModal(messageId) {
+  closeMessageActionMenu();
+  var convoId = state.activeConvoId;
+  var msg = (chatHistories[convoId] || []).find(function(m){ return m.id === messageId; });
+  if (!canEditMessage(msg)) { showToast("O prazo de 15 minutos para editar já passou"); return; }
+  var modal = document.createElement("div");
+  modal.className = "delete-modal";
+  modal.setAttribute("data-edit-msg-modal", "1");
+  modal.innerHTML =
+    '<div class="delete-modal-content">' +
+      '<div class="delete-modal-title">Editar mensagem</div>' +
+      '<div class="delete-modal-text" data-edit-msg-hint></div>' +
+      '<textarea data-edit-msg-input rows="4" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:14px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;font-size:15px;resize:none;margin:0 0 16px;"></textarea>' +
+      '<div class="delete-modal-buttons">' +
+        '<button class="delete-modal-btn delete-modal-btn-danger" data-edit-msg-save>Salvar</button>' +
+        '<button class="delete-modal-btn delete-modal-btn-cancel" data-edit-msg-cancel>Cancelar</button>' +
+      '</div>' +
+    '</div>';
+  appEl.appendChild(modal);
+  var mins = Math.max(1, Math.ceil(_msgEditTimeLeft(msg) / 60000));
+  modal.querySelector("[data-edit-msg-hint]").textContent = "Você ainda pode editar por cerca de " + mins + " min.";
+  var input = modal.querySelector("[data-edit-msg-input]");
+  input.value = msg.text || "";
+  modal.addEventListener("click", function(e){ if (e.target === modal) closeEditMessageModal(); });
+  modal.querySelector("[data-edit-msg-cancel]").addEventListener("click", closeEditMessageModal);
+  modal.querySelector("[data-edit-msg-save]").addEventListener("click", function() {
+    saveEditedMessage(messageId, input.value);
+  });
+  setTimeout(function(){ try { input.focus(); input.setSelectionRange(input.value.length, input.value.length); } catch(e){} }, 50);
+}
+
+function closeEditMessageModal() {
+  var modal = appEl.querySelector("[data-edit-msg-modal]");
+  if (modal) modal.remove();
+  if (_pendingBackgroundRender) { _pendingBackgroundRender = false; render(); }
+}
+
+function saveEditedMessage(messageId, newText) {
+  var convoId = state.activeConvoId;
+  var chat = chatHistories[convoId] || [];
+  var msg = chat.find(function(m){ return m.id === messageId; });
+  if (!canEditMessage(msg)) {
+    closeEditMessageModal();
+    showToast("O prazo de 15 minutos para editar já passou");
+    return;
+  }
+  newText = (newText || "").trim();
+  if (!newText) { showToast("A mensagem não pode ficar vazia"); return; }
+  if (newText === (msg.text || "")) { closeEditMessageModal(); return; }
+
+  var prevText = msg.text, prevEdited = msg.edited;
+  msg.text = newText;
+  msg.edited = true;
+  closeEditMessageModal();
+  _refreshMsgCard(msg);
+
+  var lastVisible = null;
+  for (var i = chat.length - 1; i >= 0; i--) { if (!chat[i].deleted) { lastVisible = chat[i]; break; } }
+  var isLast = !!lastVisible && lastVisible.id === msg.id;
+  var conv = CONVOS.find(function(c){ return c.id === convoId; });
+  var prevLast = conv ? conv.last : null;
+  if (isLast && conv) conv.last = newText;
+
+  if (!_idToken) return;
+  fsSet("convos/"+convoId+"/messages/"+messageId,
+    { content: newText, edited: true, editedAt: new Date().toISOString() }, true
+  ).then(function() {
+    if (isLast) fsSet("convos/"+convoId, { lastMsg: newText }, true).catch(function(){});
+    showToast("Mensagem editada");
+  }).catch(function(err) {
+    console.error("Erro ao editar mensagem:", err);
+    msg.text = prevText;
+    msg.edited = prevEdited;
+    if (isLast && conv) conv.last = prevLast;
+    _refreshMsgCard(msg);
+    showToast("Não foi possível editar. Tenta de novo.");
+  });
 }
 
 function closeMessageActionMenu() {
@@ -4366,7 +4485,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.11.14";
+var APP_VERSION = "2026.10.12.01";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -9426,6 +9545,19 @@ function patchChatMessagesInPlace(convoId) {
       }
       continue;
     }
+    var _curSig = (!m.deleted && m.edited) ? (m.text || "") : "";
+    if (!m.deleted && _curSig !== (card.getAttribute("data-edit-sig") || "")) {
+      var _editWrap = document.createElement("div");
+      _editWrap.innerHTML = renderChatMsgCardHtml(m, conv);
+      var _editCard = _editWrap.firstElementChild;
+      if (_editCard) {
+        card.replaceWith(_editCard);
+        bindMsgElementSwipe(_editCard);
+        ensureMessageTranslation(m);
+        bindAudioPlayback();
+      }
+      continue;
+    }
     var badgeImg = card.querySelector(".msg-reaction-badge img");
     var badgeType = badgeImg ? badgeImg.getAttribute("data-reaction-type") : null;
     var curType = (!m.deleted && m.reaction && MSG_REACTIONS[m.reaction.type]) ? m.reaction.type : null;
@@ -9973,6 +10105,15 @@ function _mergeIncomingMessages(convoId, msgs) {
           existing.src = null;
           changed = true;
         }
+        // Edição de texto (dentro da janela de 15 min) feita pelo remetente.
+        if (m.edited && !existing.deleted && (!existing.type || existing.type === "text")) {
+          var _editedTxt = m.content || m.text || "";
+          if (_editedTxt && (existing.text !== _editedTxt || !existing.edited)) {
+            existing.text = _editedTxt;
+            existing.edited = true;
+            changed = true;
+          }
+        }
         // Reação (própria ou da outra pessoa) pode mudar numa mensagem
         // já conhecida — sincroniza pra refletir reações em tempo real.
         var _incomingReaction = m.reaction ? m.reaction.type : null;
@@ -10038,6 +10179,7 @@ function _mergeIncomingMessages(convoId, msgs) {
           duration: msgType === "audio" ? (m.duration || 0) : undefined, // FIX: sem isto a bolha de áudio sempre mostrava "0:00"
           deleted: !!m.deleted,
           reaction: m.reaction || null,
+          edited: !!m.edited,
           createdAt: createdAt,
           time: new Date(createdAt).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}),
           replyTo: m.replyTo || null,
@@ -15034,7 +15176,7 @@ function renderChatMsgCardHtml(m, conv) {
   var user = m.me ? ME_obj() : USERS[conv.userId] || { name: "Usuário", avatar: DEFAULT_AVATAR };
   var avatarSrc = user.avatar || DEFAULT_AVATAR;
 
-  var html = '<div class="msg-card '+(m.me?"sent":"")+'" data-msg-id="'+esc(m.id)+'" data-msg-element>' +
+  var html = '<div class="msg-card '+(m.me?"sent":"")+'" data-msg-id="'+esc(m.id)+'" data-edit-sig="'+esc((!m.deleted && m.edited) ? (m.text || "") : "")+'" data-msg-element>' +
     '<span class="msg-reply-icon">↩</span>' +
     '<div class="msg-card-swipe" data-msg-swipe>' +
     msgAvatarDivHtml(avatarSrc) +
@@ -15068,7 +15210,7 @@ function renderChatMsgCardHtml(m, conv) {
   var _reactionBadge = (!m.deleted && m.reaction && MSG_REACTIONS[m.reaction.type])
     ? '<span class="msg-reaction-badge"><img src="'+MSG_REACTIONS[m.reaction.type].img+'" data-reaction-type="'+esc(m.reaction.type)+'" alt=""></span>' : '';
   html += _reactionBadge + '</div>' +
-    '<div class="msg-time">'+esc(m.time)+(_status ? renderMsgStatusIcon(_status) : '')+'</div>' +
+    '<div class="msg-time">'+((m.edited && !m.deleted) ? '<span class="msg-edited-tag">editada</span> · ' : '')+esc(m.time)+(_status ? renderMsgStatusIcon(_status) : '')+'</div>' +
     '</div>' +
     '</div>' +
   '</div>';
@@ -15204,6 +15346,7 @@ function bindMsgsPage() {
                 me: isMe, type: m.type || "text",
                 text: m.deleted ? null : (m.content || m.text || null),
                 src: m.deleted ? null : (m.content || m.img || m.audio || null),
+                edited: !!m.edited,
                 duration: (m.type === "audio") ? (m.duration || 0) : undefined, // FIX: mesma correção do "0:00" ao (re)abrir a conversa
                 deleted: !!m.deleted,
                 createdAt: m.createdAt || null,
