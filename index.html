@@ -4366,7 +4366,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.11.08";
+var APP_VERSION = "2026.10.11.09";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
 // Problema antigo: depois de subir um index.html novo no GitHub Pages,
@@ -6431,7 +6431,7 @@ function backfillFirebaseToSupabase() {
 // já abre a caixa de comentários rolada/destacada no comentário denunciado).
 // Ver handleDeepLinkFromUrl() (chamada no boot do app) para o outro lado.
 function buildPostDeepLink(postId, commentId) {
-  var base = "https://mimi-preview.franciscoviei123.workers.dev/";
+  var base = "https://mimizinho.github.io/MIMIv5/";
   var url = base + "?post=" + encodeURIComponent(postId);
   if (commentId) url += "&comment=" + encodeURIComponent(commentId);
   return url;
@@ -13471,7 +13471,7 @@ function bindPostCardEvents(root) {
     btn.addEventListener("click", function(e) { 
       e.stopPropagation();
       var postId = btn.getAttribute("data-share-post");
-      var shareUrl = "https://mimi-preview.franciscoviei123.workers.dev/" + "?post=" + postId;
+      var shareUrl = buildPostDeepLink(postId);
 
       function countShare() {
         if (typeof FB !== "undefined" && FB.incrementShareCount) {
