@@ -4485,7 +4485,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.12.14";
+var APP_VERSION = "2026.10.12.15";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -14096,7 +14096,7 @@ function deleteComment(pid, commentId) {
   var toRemoveIds = [commentId].concat(
     cmts.filter(function(r){ return r.parentId === commentId; }).map(function(r){ return r.id; })
   );
-  postComments[pid] = cmts.filter(function(x){ return toRemoveIds.indexOf(x.id) === -1; });
+  postComments[pid] = cmts.filter(function(x){ return toRemoveIds.indexOf(x.id) === -1; }); var _pd = posts.find(function(p){ return p.id === pid; }); if (_pd) { _pd.commentCount = Math.max(0, (_pd.commentCount || 0) - (cmts.length - postComments[pid].length)); }
 
   if (state.replyTarget && state.replyTarget.pid === pid && toRemoveIds.indexOf(state.replyTarget.commentId) !== -1) {
     state.replyTarget = null;
