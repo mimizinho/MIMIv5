@@ -4485,7 +4485,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.12.16";
+var APP_VERSION = "2026.10.12.17";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -5770,6 +5770,7 @@ function _fsSetFirebase(path, data, merge) {
 // no Firebase (backup). Se o Supabase falhar, grava no Firebase e
 // enfileira pra sincronizar de volta assim que possível.
 function fsSet(path, data, merge) {
+  if (typeof _pendingProfile !== "undefined" && _pendingProfile && path === "users/"+_pendingProfile.uid && !(data && data.avatar)) return Promise.resolve({});
   if (typeof SupabaseDB === "undefined") return _fsSetFirebase(path, data, merge);
   // 🚀 FIX (mensagem/status ainda chegando com atraso perceptível pro
   // outro usuário): antes, a réplica pro Firebase (_mirrorSetToFirebase)
@@ -7197,6 +7198,14 @@ var FB = {
         cover:null, bio:"", location:"", website:"", joined: new Date().toLocaleDateString("pt-BR",{month:"short",year:"numeric"}),
         verified:false, followers:[], following:[]
       };
+      if (!avatar) {
+        _pendingProfile = newUser;
+        USERS[uid] = newUser;
+        ME_ID = uid;
+        try { localStorage.setItem("mimi_session", JSON.stringify({ idToken: _idToken, uid: uid, refreshToken: _refreshToken })); } catch(e){}
+        cacheUserSnapshot(newUser);
+        return Promise.resolve(newUser);
+      }
       return fsSet("users/"+uid, newUser).then(function(res){
         if (res && res.error) {
           console.error("fsSet error:", res.error);
@@ -19072,7 +19081,9 @@ function persistAvatarChange(url) {
   me.avatar = url;
   render();
   if (!_idToken) { showToast("Foto atualizada localmente."); return; }
-  fsSet("users/"+ME_ID, { avatar: url }).then(function(res) {
+  var _full = (_pendingProfile && _pendingProfile.uid === ME_ID) ? Object.assign({}, _pendingProfile, { avatar: url }) : { avatar: url };
+  fsSet("users/"+ME_ID, _full).then(function(res) {
+    if (!(res && res.error) && _full.uid) _pendingProfile = null;
     if (res && res.error) {
       showToast("Erro ao salvar a foto: " + (res.error.message || "tente um arquivo menor."));
     } else {
@@ -22054,6 +22065,7 @@ function bindSubsPage() {
 }
 
 // ─── AUTH PAGE ────────────────────────────────────────────────
+var _pendingProfile = null;
 var _regPhoto = null, _regPhotoUrl = null;
 function mimiRegPhotoHtml() {
   var has = !!_regPhotoUrl;
