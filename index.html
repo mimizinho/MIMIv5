@@ -4485,7 +4485,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.12.15";
+var APP_VERSION = "2026.10.12.16";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -6865,7 +6865,7 @@ var FB = {
     }).catch(function(){});
   },
 
-  register: function(email, pw, name, birthdate) {
+  register: function(email, pw, name, birthdate, photoFile) {
     return fetch(FIRE_AUTH+":signUp?key="+CFG.apiKey, {
       method:"POST", headers: idpHeaders(),
       body: JSON.stringify({ email:email, password:pw, returnSecureToken:true })
@@ -6876,7 +6876,14 @@ var FB = {
       _idToken = d.idToken;
       _fbUid   = d.localId;
       _refreshToken = d.refreshToken || null;
-      return FB._loadOrCreateUser(d.localId, d.email, name||d.email.split("@")[0], birthdate);
+      var _nm = name||d.email.split("@")[0];
+      function _fin(av) { return FB._loadOrCreateUser(d.localId, d.email, _nm, birthdate, av).then(function(r) { _regPhoto = null; _regPhotoUrl = null; return r; }); }
+      if (!photoFile) return _fin(null);
+      return ImageGateway.upload(photoFile, "profile", { fileName: photoFile.name || "avatar.jpg" }).then(function(fp) { return _fin(fp); }).catch(function(err) {
+        console.error("Erro ao enviar a foto do cadastro:", err);
+        showToast("Conta criada, mas a foto não subiu. Adicione a foto para continuar.");
+        return _fin(null);
+      });
     });
   },
 
@@ -7150,7 +7157,7 @@ var FB = {
   },
 
   // carrega perfil do Firestore ou cria um novo
-  _loadOrCreateUser: function(uid, email, name, birthdate) {
+  _loadOrCreateUser: function(uid, email, name, birthdate, avatar) {
     // Antes de ler, tenta reenviar pro Firebase qualquer alteração do
     // PRÓPRIO perfil que ficou pendente (ex.: troca de foto/capa que só
     // chegou a salvar no Supabase) — evita que a leitura a seguir traga
@@ -7186,7 +7193,7 @@ var FB = {
         uid:uid, name:name, username:"@"+name.toLowerCase().replace(/\s+/g,""),
         email: email,
         birthdate: birthdate || null,
-        avatar:DEFAULT_AVATAR,
+        avatar:(avatar||DEFAULT_AVATAR),
         cover:null, bio:"", location:"", website:"", joined: new Date().toLocaleDateString("pt-BR",{month:"short",year:"numeric"}),
         verified:false, followers:[], following:[]
       };
@@ -22047,6 +22054,36 @@ function bindSubsPage() {
 }
 
 // ─── AUTH PAGE ────────────────────────────────────────────────
+var _regPhoto = null, _regPhotoUrl = null;
+function mimiRegPhotoHtml() {
+  var has = !!_regPhotoUrl;
+  return '<div style="text-align:center;margin:0 0 14px;">' +
+    '<div data-reg-photo-btn role="button" aria-label="Adicionar foto de perfil" style="width:92px;height:92px;border-radius:50%;margin:0 auto 8px;cursor:pointer;display:flex;align-items:center;justify-content:center;overflow:hidden;background-color:rgba(255,255,255,.06);background-size:cover;background-position:center;' + (has ? 'background-image:url(' + _regPhotoUrl + ');border:2px solid #ff5fa8;' : 'border:2px dashed var(--muted);') + '">' + (has ? '' : icoSvg("user",34,"var(--sub)")) + '</div>' +
+    '<div data-reg-photo-label style="font-size:13px;color:var(--sub);">' + (has ? 'Toque para trocar a foto' : 'Adicionar foto de perfil (obrigatória)') + '</div>' +
+    '<input type="file" accept="image/*" data-reg-photo-input style="display:none;">' +
+  '</div>';
+}
+function mimiBindRegPhoto() {
+  var btn = appEl.querySelector("[data-reg-photo-btn]");
+  var inp = appEl.querySelector("[data-reg-photo-input]");
+  if (!btn || !inp) return;
+  btn.addEventListener("click", function() { inp.click(); });
+  inp.addEventListener("change", function() {
+    var file = inp.files[0]; if (!file) return;
+    inp.value = "";
+    mimiCropImage(file).then(function(cropped) {
+      if (!cropped) return;
+      _regPhoto = cropped;
+      if (_regPhotoUrl) { try { URL.revokeObjectURL(_regPhotoUrl); } catch (e) {} }
+      _regPhotoUrl = URL.createObjectURL(cropped);
+      btn.style.backgroundImage = "url(" + _regPhotoUrl + ")";
+      btn.style.border = "2px solid #ff5fa8";
+      btn.innerHTML = "";
+      var lb = appEl.querySelector("[data-reg-photo-label]");
+      if (lb) lb.textContent = "Toque para trocar a foto";
+    });
+  });
+}
 var authMode = "login";
 // Controla se o painel "Outras formas de entrar" (Google/Facebook/GitHub/
 // Microsoft) está expandido. Começa fechado pra não poluir a tela com
@@ -22147,7 +22184,7 @@ function renderAuthPage() {
         '<button class="auth-tab '+(authMode==="login"?"active":"")+'" data-mode="login">'+icoSvg("loginArrow",16,authMode==="login"?"#fff":"var(--muted)")+' <span>Entrar</span></button>' +
         '<button class="auth-tab '+(authMode==="register"?"active":"")+'" data-mode="register">'+icoSvg("personPlus",16,authMode==="register"?"#fff":"var(--muted)")+' <span>Cadastrar</span></button>' +
       '</div>' +
-      '<div class="auth-fields">' +
+      '<div class="auth-fields">' + (authMode==="register" ? mimiRegPhotoHtml() : "") +
         (authMode==="register" ? ('<div class="auth-input-wrap">'+
           '<span class="auth-input-icon">'+icoSvg("user",18,"var(--sub)")+'</span>' +
           '<input class="input" placeholder="Nome completo" data-field="name">' +
@@ -22344,6 +22381,7 @@ function bindAuthPage() {
     });
   }
 
+  mimiBindRegPhoto();
   var submitBtn = appEl.querySelector("[data-submit-auth]");
   if (submitBtn) submitBtn.addEventListener("click", function() {
     var emailEl = appEl.querySelector('[data-field="email"]');
@@ -22367,6 +22405,7 @@ function bindAuthPage() {
       var idadeCalc = calcularIdadeMIMI(birthdate);
       if (idadeCalc === null) { showToast("Data de nascimento inválida."); return; }
       if (idadeCalc < 16) { showToast("Você precisa ter pelo menos 16 anos para usar o MIMI."); return; }
+      if (!_regPhoto) { showToast("Adicione uma foto de perfil para criar a conta."); return; }
     }
 
     // Trava de tentativas por e-mail: antes só valia pro login. Agora
@@ -22419,7 +22458,7 @@ function bindAuthPage() {
 
       var p = authMode === "login"
         ? FB.login(email, pw)
-        : FB.register(email, pw, name, birthdate);
+        : FB.register(email, pw, name, birthdate, _regPhoto);
 
       var timeout = setTimeout(function() {
         resetSubmitUi();
