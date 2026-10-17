@@ -1561,7 +1561,7 @@
   .vibe-side { position:absolute; right:12px; bottom:calc(env(safe-area-inset-bottom,0px) + 158px); z-index:10; display:flex; flex-direction:column; align-items:center; gap:26px; }
   .vibe-side button { background:none; border:none; color:#fff; display:flex; flex-direction:column; align-items:center; gap:5px; font-size:12px; font-weight:700; text-shadow:0 1px 4px rgba(0,0,0,.5); cursor:pointer; }
   .vibe-side button:hover { opacity:.8; }
-  .vibe-side { gap:20px; bottom:calc(env(safe-area-inset-bottom,0px) + 96px); }
+  .vibe-side { gap:16px; zoom:1.2; bottom:calc(env(safe-area-inset-bottom,0px) + 80px); }
   .vibe-side button { font-size:13px; }
   .vibe-side .vibe-save-btn, .vibe-side .vibe-download-btn { display:none; }
   .heart-pulse { animation:pulse .35s ease; }
@@ -4488,7 +4488,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.12.20";
+var APP_VERSION = "2026.10.12.21";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
