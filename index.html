@@ -4488,7 +4488,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.12.19";
+var APP_VERSION = "2026.10.12.20";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -4541,6 +4541,10 @@ var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
     return false;
   }
 
+  if ("serviceWorker" in navigator && /^https:/.test(location.protocol)) {
+    window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+  }
+
   function applyUpdate(remoteVersion) {
     if (updating) return;
     updating = true;
@@ -4559,6 +4563,7 @@ var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
   }
 
   function doApplyUpdate(remoteVersion) {
+    try { if (navigator.serviceWorker && navigator.serviceWorker.controller) { navigator.serviceWorker.controller.postMessage({ type: "REFRESH" }); return; } } catch (e) {}
     showUpdatingToast();
     var jobs = [];
     try {
