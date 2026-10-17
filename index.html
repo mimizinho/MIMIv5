@@ -4489,7 +4489,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.12.22";
+var APP_VERSION = "2026.10.12.23";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -24861,7 +24861,23 @@ var VibesModule = {
       if (!video) return;
       var idxAttr = slideEl.getAttribute("data-vibe-idx");
       if (idxAttr === null) return; // slide de anúncio (imagem) — sem duplo toque pra curtir
+      var _tx = 0, _ty = 0, _tt = 0, _moved = false;
+      slideEl.addEventListener("touchstart", function(t) { var q = t.touches[0]; _tx = q.clientX; _ty = q.clientY; _tt = Date.now(); _moved = false; }, { passive: true });
+      slideEl.addEventListener("touchmove", function(t) { var q = t.touches[0]; if (Math.abs(q.clientX - _tx) > 12 || Math.abs(q.clientY - _ty) > 12) _moved = true; }, { passive: true });
+      slideEl.addEventListener("touchend", function(t) {
+        if (_moved || Date.now() - _tt > 300) return;
+        var tg = t.target;
+        if (tg && tg.closest && tg.closest("button, .vibe-info, .vibe-side, .mute-btn")) return;
+        var q = t.changedTouches[0];
+        var idx = parseInt(idxAttr);
+        var now = Date.now();
+        var last = self._lastVibeTap[idx] || 0;
+        self._lastVibeTap[idx] = now;
+        self._vibeTouchAt = now;
+        if (now - last < 400) self.likeVibeByDoubleTap(idx, slideEl, { clientX: q.clientX, clientY: q.clientY });
+      }, { passive: true });
       slideEl.addEventListener("click", function(ev) {
+        if (Date.now() - (self._vibeTouchAt || 0) < 800) return;
         if (ev.target && ev.target.closest && ev.target.closest("button, .vibe-info, .vibe-side, .mute-btn")) return;
         var idx = parseInt(idxAttr);
         var now = Date.now();
