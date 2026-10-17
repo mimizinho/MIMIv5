@@ -1553,6 +1553,7 @@
   .vibe-slide video, .vibe-slide img.vibe-video { width:100%; height:100%; object-fit:contain; background:#0b0710; display:block; }
   .vibe-slide .empty-hint { color:#fff; text-align:center; padding:0 30px; font-size:14px; opacity:.7; }
   .vibe-mute-layer { position:absolute; inset:0; z-index:5; pointer-events:none; }
+  .vibe-slide, .vibe-slide video { touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
   .vibe-info { position:absolute; left:14px; right:88px; bottom:calc(env(safe-area-inset-bottom,0px) + 90px); z-index:10; color:#fff; }
   .vibe-info .who { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
   .vibe-avatar { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accentL)); border:1.5px solid #fff; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; color:#fff; }
@@ -4488,7 +4489,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.12.21";
+var APP_VERSION = "2026.10.12.22";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -24860,11 +24861,12 @@ var VibesModule = {
       if (!video) return;
       var idxAttr = slideEl.getAttribute("data-vibe-idx");
       if (idxAttr === null) return; // slide de anúncio (imagem) — sem duplo toque pra curtir
-      video.addEventListener("click", function(ev) {
+      slideEl.addEventListener("click", function(ev) {
+        if (ev.target && ev.target.closest && ev.target.closest("button, .vibe-info, .vibe-side, .mute-btn")) return;
         var idx = parseInt(idxAttr);
         var now = Date.now();
         var last = self._lastVibeTap[idx] || 0;
-        if (now - last < 300) {
+        if (now - last < 350) {
           self._lastVibeTap[idx] = now;
           self.likeVibeByDoubleTap(idx, slideEl, ev);
         } else {
