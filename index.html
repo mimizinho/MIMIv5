@@ -1561,6 +1561,9 @@
   .vibe-side { position:absolute; right:12px; bottom:calc(env(safe-area-inset-bottom,0px) + 158px); z-index:10; display:flex; flex-direction:column; align-items:center; gap:26px; }
   .vibe-side button { background:none; border:none; color:#fff; display:flex; flex-direction:column; align-items:center; gap:5px; font-size:12px; font-weight:700; text-shadow:0 1px 4px rgba(0,0,0,.5); cursor:pointer; }
   .vibe-side button:hover { opacity:.8; }
+  .vibe-side { gap:18px; zoom:.82; }
+  .vibe-side button { font-size:15px; }
+  .vibe-side .vibe-save-btn, .vibe-side .vibe-download-btn { display:none; }
   .heart-pulse { animation:pulse .35s ease; }
   @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.28)} }
   /* Coração do duplo toque para curtir (exclusivo das Vibes) */
@@ -4485,7 +4488,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.12.17";
+var APP_VERSION = "2026.10.12.18";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -24421,6 +24424,7 @@ var VibesModule = {
     var isMine = vibe.userId === ME_ID;
     return '<div class="sheet-overlay fade-in" data-vibe-sheet-overlay>' +
       '<div class="sheet-panel">' +
+        '<div class="sheet-item" data-vibe-sheet-action="download">'+sparkleIcon("download",20,"var(--text)")+' Baixar vídeo</div>' +
         '<div class="sheet-item" data-vibe-sheet-action="notinterested">'+icoSvg("close",20,"var(--text)")+' Não tenho interesse</div>' +
         (!isMine ? '<div class="sheet-item danger" data-vibe-sheet-action="report">'+icoSvg("bell",20,"#e0507a")+' Denunciar</div>' : "") +
         (!isMine ? '<div class="sheet-item danger" data-vibe-sheet-action="block">'+icoSvg("close",20,"#e0507a")+' Bloquear @'+esc(vibe.username||"")+'</div>' : "") +
@@ -24473,6 +24477,11 @@ var VibesModule = {
         var vibe = self.vibes[idx];
         self.closeActionSheet();
         if (!vibe) return;
+        if (action === "download") {
+          var _db = appEl.querySelector('.vibe-download-btn[data-vibe-idx="'+idx+'"]');
+          if (_db) _db.click();
+          return;
+        }
         if (action === "notinterested") {
           if (typeof FB !== "undefined" && FB.logEvent) FB.logEvent(vibe.id, "not_interested", null);
           markVibeNotInterested(vibe.id);
@@ -24846,13 +24855,13 @@ var VibesModule = {
       if (!video) return;
       var idxAttr = slideEl.getAttribute("data-vibe-idx");
       if (idxAttr === null) return; // slide de anúncio (imagem) — sem duplo toque pra curtir
-      video.addEventListener("click", function() {
+      video.addEventListener("click", function(ev) {
         var idx = parseInt(idxAttr);
         var now = Date.now();
         var last = self._lastVibeTap[idx] || 0;
         if (now - last < 300) {
-          self._lastVibeTap[idx] = 0; // reseta pra não disparar 3x seguidas
-          self.likeVibeByDoubleTap(idx, slideEl);
+          self._lastVibeTap[idx] = now;
+          self.likeVibeByDoubleTap(idx, slideEl, ev);
         } else {
           self._lastVibeTap[idx] = now;
         }
@@ -24906,7 +24915,7 @@ var VibesModule = {
   // Curtir via duplo toque no vídeo — exclusivo das Vibes.
   // Diferente do botão de curtir (que alterna), o duplo toque só curte,
   // nunca descurte — igual TikTok/Instagram.
-  likeVibeByDoubleTap: function(idx, slideEl) {
+  likeVibeByDoubleTap: function(idx, slideEl, ev) {
     var self = this;
     var vibe = self.vibes[idx];
     if (!vibe) return;
@@ -24924,15 +24933,16 @@ var VibesModule = {
       }
       FB.likeVibe(vibe.id, vibe.liked);
     }
-    self.showDoubleTapHeart(idx, slideEl);
+    self.showDoubleTapHeart(idx, slideEl, ev);
   },
 
   // Mostra o coração animado no centro do vídeo ao dar duplo toque
-  showDoubleTapHeart: function(idx, slideEl) {
+  showDoubleTapHeart: function(idx, slideEl, ev) {
     if (!slideEl) slideEl = document.getElementById("vibeVideo-"+idx) && document.getElementById("vibeVideo-"+idx).closest(".vibe-slide");
     if (!slideEl) return;
     var heart = slideEl.querySelector(".vibe-doubletap-heart");
     if (!heart) return;
+    if (ev && typeof ev.clientX === "number") { var _r = slideEl.getBoundingClientRect(); heart.style.left = (ev.clientX - _r.left) + "px"; heart.style.top = (ev.clientY - _r.top) + "px"; } else { heart.style.left = "50%"; heart.style.top = "50%"; }
     heart.classList.remove("vibe-dt-heart-anim");
     void heart.offsetWidth; // força reflow pra poder reiniciar a animação em toques seguidos
     heart.classList.add("vibe-dt-heart-anim");
