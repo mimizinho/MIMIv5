@@ -4489,7 +4489,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.12.23";
+var APP_VERSION = "2026.10.18.01";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -9068,6 +9068,7 @@ function _isChatComposeActive() {
 // Chamar isto em vez de render() direto em qualquer atualização "de fundo"
 // (que não é uma resposta direta a uma ação do usuário nesse instante).
 function backgroundRender() {
+  if (window.MimiPlus && MimiPlus.isOpen()) return; // tela MIMI Plus nova aberta: não re-renderiza por baixo (ao fechar ela mesma chama render)
   if (document.getElementById("shareSheet")) { _pendingBackgroundRender = true; return; }
   if (_isUserScrolling) { _pendingBackgroundRender = true; return; }
   if (_isPointerDown) { _pendingBackgroundRender = true; return; }
@@ -11149,7 +11150,10 @@ function _renderImpl() {
   if (state.vibeDraft) html += renderVibeComposePage();
   if (state.editProfileOpen) html += renderEditProfile();
   if (state.supportOpen) html += renderSupportPage();
-  if (state.subsOpen) html += renderSubsPage();
+  if (state.subsOpen) {
+    if (usarTelaPlusNova()) { state.subsOpen = false; setTimeout(abrirTelaPlusNova, 0); }
+    else html += renderSubsPage();
+  }
   if (state.viewingStoryIdx !== null) html += renderStoryViewer();
   if (state.photoViewerUrl) html += renderPhotoViewer();
   if (activeCall) html += (activeCall.minimized ? renderCallMini() : renderCallScreen());
@@ -12280,6 +12284,7 @@ document.addEventListener("click", function(e) {
 }, true);
 
 function hasOpenOverlay() {
+  if (window.MimiPlus && MimiPlus.isOpen()) return true; // tela MIMI Plus nova aberta
   if (document.getElementById("shareSheet")) return true;
   return !!(
     state.followListFor || state.myAdsOpen || state.publishMenu || state.creating || musicSearch.open ||
@@ -21838,6 +21843,42 @@ function bindSettingsPage() {
 }
 
 // ─── ASSINATURA MIMI+ ────────────────────────────────────────
+// ─── MIMI Plus: tela de assinatura nova (biblioteca mimi-plus embutida no fim do arquivo) ───
+function usarTelaPlusNova() {
+  if (!window.MimiPlus) return false; // biblioteca não carregou: usa a tela antiga
+  if (ME_ID === MIMI_OFFICIAL_UID) return true;
+  return !isSubscriptionActive(ME_obj()); // assinante ativo continua na tela antiga (brilho, molduras, cancelar)
+}
+function abrirTelaPlusNova() {
+  var oficial = (ME_ID === MIMI_OFFICIAL_UID);
+  var ativou = false;
+  MimiPlus.onSubscribe = function(plano) {
+    return new Promise(function(resolve) {
+      // Simula fluxo de pagamento — em produção integrar com Stripe, Pagar.me, etc. (igual à tela antiga)
+      setTimeout(function() {
+        var me = ME_obj();
+        var ate = new Date();
+        ate.setMonth(ate.getMonth() + (plano === "anual" ? 12 : 1));
+        me.verified = true;
+        me.verifiedType = "subscriber";
+        me.subscribedUntil = ate.toISOString().slice(0,10);
+        USERS[ME_ID] = me;
+        if (_idToken) {
+          fsSet("users/"+ME_ID, { verified:true, verifiedType:"subscriber", subscribedUntil:me.subscribedUntil }).catch(function(){});
+        }
+        ativou = true;
+        resolve(true);
+      }, 1200);
+    });
+  };
+  MimiPlus.onClose = function() {
+    if (ativou) {
+      render();
+      showToast(toastWithIcon("MIMI Plus ativado! Seu badge já está visível.", "star", "before"), true);
+    }
+  };
+  MimiPlus.open({ oficial: oficial, semBotao: oficial });
+}
 function renderSubsPage() {
   var me = ME_obj();
   var isOfficial = ME_ID === MIMI_OFFICIAL_UID;
@@ -25427,5 +25468,579 @@ var BirthdayNotifier = (function () {
 // onAuthSuccess preencherem USERS com os dados reais).
 setTimeout(function () { BirthdayNotifier.init(); }, 2000);
 </script>
+<!-- MIMI-PLUS:INICIO -->
+<script>
+/* MIMI Plus — tela de assinatura animada (JS puro, sem dependências)
+ * Uso:  tag script com src="mimi-plus.js"
+ *       MimiPlus.open({ oficial: true, semBotao: true });   // oficial: card da conta oficial; semBotao: esconde o botão Assinar
+ *       MimiPlus.onClose = function () {...};  // chamado ao fechar a tela
+ *       MimiPlus.close();
+ *       MimiPlus.isOpen();                  // use em hasOpenOverlay() e no guard do backgroundRender
+ *       MimiPlus.onSubscribe = function (plano) { return suaFuncaoDePagamento(plano); };
+ *         // plano = 'mensal' | 'anual'. Retorne Promise; resolver (≠ false) = sucesso, false/rejeitar = cancela.
+ *         // Sem onSubscribe a tela roda em modo demonstração (sucesso falso após 1,6 s).
+ */
+(function () {
+  'use strict';
+  if (window.MimiPlus) return;
+
+  // ---------- CSS (tudo com prefixo mpx- para não conflitar com o MIMI) ----------
+  var CSS = [
+    '.mpx-root{position:fixed;inset:0;z-index:99990;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;background:#FFF3F8;color:#4B1F3D;font-family:inherit;opacity:0;transform:translateY(40px);transition:opacity .35s ease,transform .45s cubic-bezier(.2,.9,.3,1)}',
+    '.mpx-root.mpx-in{opacity:1;transform:none}',
+    '.mpx-root *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}',
+    '.mpx-root button{font-family:inherit;border:0;background:none;color:inherit;cursor:pointer;padding:0}',
+    '.mpx-ico{display:block;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}',
+    '.mpx-bd{position:fixed;inset:0;pointer-events:none;overflow:hidden}',
+    '.mpx-bd span{position:absolute;font-size:18px;opacity:.3;animation:mpx-float 7s ease-in-out infinite}',
+    '.mpx-main{position:relative;max-width:430px;margin:0 auto;padding-bottom:132px}',
+    '.mpx-wrap{margin-top:-20px;padding:0 16px;display:flex;flex-direction:column;gap:24px}',
+    /* cabeçalho */
+    '.mpx-head{position:relative;overflow:hidden;border-radius:0 0 32px 32px;background:linear-gradient(160deg,#0F0B1A 0%,#3B1A6B 55%,#8A2250 100%);padding:max(16px,env(safe-area-inset-top)) 20px 40px;color:#fff}',
+    '.mpx-star{position:absolute;border-radius:50%;background:#fff;animation:mpx-tw 3s ease-in-out infinite}',
+    '.mpx-shoot{position:absolute;height:1px;width:80px;left:-20%;background:linear-gradient(90deg,transparent,#fff);opacity:0;animation:mpx-shoot 5.4s linear infinite}',
+    '.mpx-back{position:relative;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.12);display:grid!important;place-items:center;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}',
+    '.mpx-hero{position:relative;margin-top:8px;display:flex;flex-direction:column;align-items:center;text-align:center}',
+    '.mpx-orb{position:relative;width:112px;height:112px;display:grid;place-items:center}',
+    '.mpx-ring{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,#F43F8E,#8B5CF6,#F5B90A,#4A9DE8,#F43F8E);filter:blur(6px);opacity:.85;animation:mpx-spin 8s linear infinite}',
+    '.mpx-core{position:absolute;inset:6px;border-radius:50%;background:#0F0B1A}',
+    '.mpx-spark{position:relative;font-size:48px;line-height:1;color:#F5B90A;text-shadow:0 0 12px #F5B90A;animation:mpx-bobscale 2.6s ease-in-out infinite}',
+    '.mpx-title{margin:16px 0 0;font-size:36px;font-weight:900;letter-spacing:-.02em;background:linear-gradient(90deg,#fff 30%,#FFD1E8 45%,#FFE08A 50%,#fff 65%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:mpx-shimmer 3.5s linear infinite}',
+    '.mpx-sub{margin:4px 0 0;font-size:14px;font-weight:700;color:rgba(255,255,255,.75)}',
+    '.mpx-pillbox{margin-top:16px;height:32px}',
+    '.mpx-pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 16px;font-size:12px;font-weight:800;animation:mpx-pillin .4s cubic-bezier(.3,1.4,.5,1)}',
+    '.mpx-pill.v{background:#8B5CF6}.mpx-pill.p{background:linear-gradient(100deg,#F43F8E,#8B5CF6)}',
+    /* cards */
+    '.mpx-card{background:#fff;border:1px solid #FBCFE2;border-radius:24px;box-shadow:0 10px 30px -12px rgba(244,63,142,.35)}',
+    '.mpx-shine{position:relative;overflow:hidden}',
+    '.mpx-shine::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.45) 50%,transparent 70%);transform:translateX(-100%);animation:mpx-sweep 2.8s ease-in-out infinite;pointer-events:none}',
+    '.mpx-off{display:flex;gap:12px;padding:16px;border:2px solid rgba(245,185,10,.5);box-shadow:0 10px 30px -12px #F5B90A;animation:mpx-rise .6s ease both}',
+    '.mpx-offi{flex:none;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#FFE08A,#F5B90A,#E89B00)}',
+    '.mpx-off h2{margin:0;font-size:16px;font-weight:800}.mpx-off h2 b{color:#F5B90A}',
+    '.mpx-off p{margin:4px 0 0;font-size:14px;color:#A0708D}',
+    /* preço */
+    '.mpx-price{padding:20px;text-align:center;border:2px solid #F43F8E;animation:mpx-pulse 2s ease-out infinite}',
+    '.mpx-seg{position:relative;display:flex;width:224px;margin:0 auto;padding:4px;border-radius:999px;background:#FFE1EE;font-size:14px;font-weight:800}',
+    '.mpx-seg i{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:999px;background:linear-gradient(100deg,#F43F8E,#8B5CF6);transition:transform .35s cubic-bezier(.3,1.3,.5,1)}',
+    '.mpx-seg.a i{transform:translateX(100%)}',
+    '.mpx-seg button{position:relative;z-index:1;flex:1;padding:8px 0;border-radius:999px;color:#F43F8E;transition:color .25s}',
+    '.mpx-seg button.on{color:#fff}',
+    '.mpx-save{position:absolute;right:-24px;top:-16px;border-radius:999px;background:#F5B90A;color:#0F0B1A;padding:2px 8px;font-size:10px;font-weight:900;animation:mpx-wig 2s ease-in-out infinite}',
+    '.mpx-amt{margin-top:20px;display:flex;align-items:flex-end;justify-content:center;gap:4px;font-weight:900}',
+    '.mpx-amt small{margin-bottom:8px;font-size:18px;color:#F43F8E}',
+    '.mpx-amt span{font-size:60px;line-height:1;letter-spacing:-.02em}',
+    '.mpx-per{margin:4px 0 0;font-weight:700;color:#A0708D}',
+    '.mpx-cancel{margin:4px 0 0;font-size:12px;font-weight:600;color:#8B5CF6}',
+    /* títulos de seção */
+    '.mpx-h2{margin:0 0 12px;padding:0 4px;font-size:18px;font-weight:900}',
+    /* revelar ao rolar */
+    '.mpx-rev{opacity:0;transform:translateY(30px) scale(.96);transition:opacity .5s ease,transform .6s cubic-bezier(.34,1.56,.64,1)}',
+    '.mpx-rev.mpx-vis{opacity:1;transform:none}',
+    /* benefícios */
+    '.mpx-bens{display:flex;flex-direction:column;gap:12px}',
+    '.mpx-ben{overflow:hidden}',
+    '.mpx-benh{display:flex;align-items:flex-start;gap:12px;width:100%;padding:16px;text-align:left}',
+    '.mpx-bi{flex:none;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:#fff;animation:mpx-bob 3s ease-in-out infinite}',
+    '.mpx-bt{flex:1}.mpx-bt h3{margin:0;font-size:16px;font-weight:800}.mpx-bt p{margin:2px 0 0;font-size:14px;color:#A0708D}',
+    '.mpx-chev{margin-top:4px;color:#F43F8E;transition:transform .35s cubic-bezier(.3,1.3,.5,1)}',
+    '.mpx-open .mpx-chev{transform:rotate(180deg)}',
+    '.mpx-bbody{height:0;overflow:hidden;opacity:0;transition:height .45s cubic-bezier(.3,1.1,.5,1),opacity .3s}',
+    '.mpx-open>.mpx-bbody{opacity:1}',
+    '.mpx-bin{padding:0 16px 16px;display:flex;flex-direction:column;gap:12px}',
+    '.mpx-bin>p{margin:0;font-size:14px;font-weight:600;color:rgba(75,31,61,.8)}',
+    '.mpx-pv{border-radius:16px;background:rgba(255,225,238,.6);padding:12px}',
+    '.mpx-who{display:flex;align-items:center;gap:8px;font-weight:800}.mpx-who em{font-style:normal;font-size:24px}',
+    '.mpx-gold{color:#F5B90A;animation:mpx-glow 1.6s ease-in-out infinite}.mpx-gold .mpx-ico{fill:#F5B90A;stroke:#fff}',
+    '.mpx-list{display:flex;flex-direction:column;gap:6px}',
+    '.mpx-li{border-radius:12px;padding:8px 12px;font-size:12px;font-weight:700;background:rgba(255,225,238,.6)}',
+    '.mpx-li.hl{background:linear-gradient(100deg,#F43F8E,#8B5CF6);color:#fff}',
+    '.mpx-red{font-size:14px;color:#F0556A;font-weight:600}.mpx-red b{font-weight:800}',
+    '.mpx-cur{animation:mpx-blink .6s steps(2) infinite}',
+    '.mpx-ad{position:relative;height:56px}',
+    '.mpx-adb{position:absolute;inset:0;display:grid;place-items:center;border-radius:12px;border:1px dashed rgba(160,112,141,.4);background:#f3eef2;font-size:12px;font-weight:700;color:#A0708D;animation:mpx-fadein .4s}',
+    '.mpx-adt{position:absolute;inset:0;display:grid;place-items:center;font-size:12px;font-weight:800;color:#4A9DE8;animation:mpx-fadein .4s}',
+    '.mpx-dot{position:absolute;top:50%;width:6px;height:6px;border-radius:50%;background:#4A9DE8}',
+    /* comparar */
+    '.mpx-cmp{padding:16px}',
+    '.mpx-cmp h2{margin:0 0 12px;font-size:18px;font-weight:900}',
+    '.mpx-r{display:grid;grid-template-columns:1fr 56px 56px;align-items:center;font-size:14px;font-weight:600}',
+    '.mpx-r.hd{font-size:12px;font-weight:800;color:#A0708D}.mpx-r.hd span{text-align:center}.mpx-r.hd span:last-child{color:#F43F8E}',
+    '.mpx-r.rw{border-top:1px solid #FBCFE2;padding:10px 0;opacity:0;transform:translateX(-10px);transition:opacity .4s,transform .4s}',
+    '.mpx-r.rw.mpx-vis{opacity:1;transform:none}',
+    '.mpx-r .c{display:grid;place-items:center}',
+    '.mpx-x{color:rgba(160,112,141,.5)}.mpx-ck{color:#A0708D}',
+    '.mpx-ok{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;color:#fff;background:linear-gradient(100deg,#F43F8E,#8B5CF6);transform:scale(0);transition:transform .5s cubic-bezier(.3,2,.5,1) .3s}',
+    '.mpx-r.mpx-vis .mpx-ok{transform:scale(1)}',
+    /* depoimentos */
+    '.mpx-tw{position:relative;height:144px}',
+    '.mpx-tc{position:absolute;inset:0;padding:16px}',
+    '.mpx-tc.in{animation:mpx-tin .5s cubic-bezier(.3,1.2,.5,1)}.mpx-tc.out{animation:mpx-tout .26s ease-in forwards}',
+    '.mpx-tt{display:flex;align-items:center;gap:8px}',
+    '.mpx-av{width:40px;height:40px;border-radius:50%;background:#FFE1EE;display:grid;place-items:center;font-size:24px}',
+    '.mpx-tn{font-weight:800;color:#F0556A}.mpx-st{margin-left:auto;color:#F5B90A}',
+    '.mpx-tc p{margin:8px 0 0;font-size:14px;font-weight:600;color:rgba(75,31,61,.8)}',
+    '.mpx-dots{margin-top:12px;display:flex;justify-content:center;gap:6px}',
+    '.mpx-dots button{width:8px;height:8px;border-radius:99px;background:#FBCFE2;transition:width .3s,background .3s}',
+    '.mpx-dots button.on{width:20px;background:#F43F8E}',
+    /* FAQ */
+    '.mpx-faqs{display:flex;flex-direction:column;gap:8px}',
+    '.mpx-faq{border-radius:20px;overflow:hidden;box-shadow:none}',
+    '.mpx-faq>button{display:flex;width:100%;align-items:center;justify-content:space-between;padding:16px;text-align:left;font-size:14px;font-weight:800}',
+    '.mpx-faq .mpx-chev{margin:0;color:#8B5CF6}',
+    '.mpx-faq.mpx-open .mpx-chev{transform:rotate(180deg)}',
+    '.mpx-faq .mpx-bbody p{margin:0;padding:0 16px 16px;font-size:14px;color:#A0708D}',
+    '.mpx-legal{padding:0 8px;text-align:center;font-size:11px;line-height:1.6;color:#A0708D;margin:0}',
+    /* barra de assinar */
+    '.mpx-bar{position:fixed;left:0;right:0;bottom:0;max-width:430px;margin:0 auto;padding:24px 16px calc(20px + env(safe-area-inset-bottom));background:linear-gradient(to top,#FFF3F8,rgba(255,243,248,.95) 60%,rgba(255,243,248,0));z-index:5}',
+    '.mpx-cta{position:relative;overflow:hidden;display:flex!important;align-items:center;justify-content:center;gap:8px;width:100%;height:56px;border-radius:999px;background:linear-gradient(100deg,#F43F8E,#8B5CF6);color:#fff!important;font-size:16px;font-weight:900;box-shadow:0 10px 30px -12px rgba(244,63,142,.6);animation:mpx-beat 2s ease-in-out infinite;transition:transform .15s}',
+    '.mpx-cta:active{transform:scale(.96)}',
+    '.mpx-cta.ld{animation:none}',
+    '.mpx-cta::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.45) 50%,transparent 70%);transform:translateX(-100%);animation:mpx-sweep 2.8s ease-in-out infinite;pointer-events:none}',
+    '.mpx-rip{position:absolute;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.4);pointer-events:none;animation:mpx-rip .7s ease-out forwards}',
+    '.mpx-spin{animation:mpx-spin 1s linear infinite}',
+    /* sucesso */
+    '.mpx-modal{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:24px;background:rgba(15,11,26,.7);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);animation:mpx-fadein .3s}',
+    '.mpx-mc{width:100%;max-width:360px;border-radius:28px;background:#fff;padding:24px;text-align:center;animation:mpx-modalin .55s cubic-bezier(.3,1.5,.5,1)}',
+    '.mpx-mb{position:relative;overflow:hidden;width:96px;height:96px;margin:0 auto;border-radius:50%;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#FFE08A,#F5B90A,#E89B00);box-shadow:0 0 40px #F5B90A;animation:mpx-badgein .8s cubic-bezier(.3,1.4,.5,1) .2s both}',
+    '.mpx-mc h2{margin:20px 0 0;font-size:24px;font-weight:900}',
+    '.mpx-mc p{margin:8px 0 0;font-size:14px;color:#A0708D}',
+    '.mpx-mc .mpx-go{margin-top:20px;width:100%;height:48px;border-radius:999px;background:linear-gradient(100deg,#F43F8E,#8B5CF6);color:#fff;font-weight:800;font-size:16px}',
+    '.mpx-conf{position:fixed;inset:0;z-index:30;pointer-events:none;overflow:hidden}',
+    '.mpx-conf span{position:absolute;left:50%;top:50%;width:8px;height:12px;border-radius:2px}',
+    /* movimento reduzido */
+    '.mpx-reduce *,.mpx-reduce *::after{animation:none!important;transition-duration:.01ms!important}',
+    '.mpx-reduce .mpx-title{color:#fff;-webkit-text-fill-color:#fff}',
+    /* keyframes */
+    '@keyframes mpx-float{0%,100%{transform:translateY(0) rotate(0);opacity:.2}50%{transform:translateY(-24px) rotate(15deg);opacity:.55}}',
+    '@keyframes mpx-tw{0%,100%{opacity:.15;transform:scale(.8)}50%{opacity:1;transform:scale(1.2)}}',
+    '@keyframes mpx-shoot{0%{opacity:0;transform:translate(0,0) rotate(20deg)}2%{opacity:1}26%,100%{opacity:0;transform:translate(520px,180px) rotate(20deg)}}',
+    '@keyframes mpx-spin{to{transform:rotate(360deg)}}',
+    '@keyframes mpx-bobscale{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-6px) scale(1.12)}}',
+    '@keyframes mpx-shimmer{from{background-position:150% 0}to{background-position:-100% 0}}',
+    '@keyframes mpx-pillin{from{opacity:0;transform:translateY(8px) scale(.9)}to{opacity:1;transform:none}}',
+    '@keyframes mpx-sweep{0%{transform:translateX(-100%)}60%,100%{transform:translateX(100%)}}',
+    '@keyframes mpx-rise{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}',
+    '@keyframes mpx-pulse{0%{box-shadow:0 0 0 0 rgba(244,63,142,.33)}100%{box-shadow:0 0 0 10px rgba(244,63,142,0)}}',
+    '@keyframes mpx-wig{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}',
+    '@keyframes mpx-bob{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-3px) rotate(-6deg)}75%{transform:translateY(-3px) rotate(6deg)}}',
+    '@keyframes mpx-glow{0%,100%{transform:scale(1);filter:drop-shadow(0 0 0 #F5B90A)}50%{transform:scale(1.25);filter:drop-shadow(0 0 8px #F5B90A)}}',
+    '@keyframes mpx-blink{50%{opacity:0}}',
+    '@keyframes mpx-fadein{from{opacity:0}to{opacity:1}}',
+    '@keyframes mpx-tin{from{opacity:0;transform:translateX(60px) rotate(3deg)}to{opacity:1;transform:none}}',
+    '@keyframes mpx-tout{to{opacity:0;transform:translateX(-60px) rotate(-3deg)}}',
+    '@keyframes mpx-beat{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}',
+    '@keyframes mpx-rip{from{transform:scale(0);opacity:1}to{transform:scale(10);opacity:0}}',
+    '@keyframes mpx-modalin{from{opacity:0;transform:translateY(40px) scale(.6)}to{opacity:1;transform:none}}',
+    '@keyframes mpx-badgein{from{transform:rotate(-180deg) scale(0)}to{transform:none}}'
+  ].join('\n');
+
+  // ---------- ícones (traçado estilo lucide) ----------
+  var P = {
+    back: 'm15 18-6-6 6-6',
+    down: 'm6 9 6 6 6-6',
+    check: 'M20 6 9 17l-5-5',
+    x: 'M18 6 6 18M6 6l12 12',
+    shield: 'M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z',
+    trend: 'M16 7h6v6m0-6-8.5 8.5-5-5L2 17',
+    type: 'M4 7V4h16v3M9 20h6M12 4v16',
+    star: 'M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z',
+    eyeoff: 'M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49M14.084 14.158a3 3 0 0 1-4.242-4.242M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143M2 2l20 20',
+    crown: 'M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294zM5 21h14',
+    sparkles: 'M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0zM20 3v4M22 5h-4M4 17v2M5 18H3',
+    badge: 'M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76ZM9 12l2 2 4-4',
+    loader: 'M21 12a9 9 0 1 1-6.219-8.56'
+  };
+  function ico(n, s, cls) {
+    return '<svg class="mpx-ico ' + (cls || '') + '" width="' + s + '" height="' + s + '" viewBox="0 0 24 24" aria-hidden="true"><path d="' + P[n] + '"/></svg>';
+  }
+
+  // ---------- helpers ----------
+  function el(tag, cls, html) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (html != null) e.innerHTML = html;
+    return e;
+  }
+  function rand(seed) { var x = Math.sin(seed * 9301 + 49297) * 233280; return x - Math.floor(x); }
+
+  var root = null, REDUCE = false, timers = [], rafs = [], previews = [], io = null, plan = 'mensal', hookBusy = false;
+  function every(fn, ms) { var id = setInterval(fn, ms); timers.push(id); return id; }
+  function later(fn, ms) { var id = setTimeout(fn, ms); timers.push(id); return id; }
+  function clearAll() {
+    timers.forEach(function (t) { clearInterval(t); clearTimeout(t); });
+    rafs.forEach(function (r) { cancelAnimationFrame(r); });
+    timers = []; rafs = [];
+    previews.forEach(function (p) { p.stop(); });
+    previews = [];
+    if (io) { io.disconnect(); io = null; }
+  }
+
+  // revela elementos ao rolar (usa o próprio overlay como raiz)
+  function reveal(node, delay) {
+    if (delay) node.style.transitionDelay = delay + 's';
+    if (!io || REDUCE) { node.classList.add('mpx-vis'); return; }
+    io.observe(node);
+  }
+
+  // abre/fecha com altura animada (compatível com WebViews antigos)
+  function slide(body, open) {
+    if (open) {
+      body.style.height = body.scrollHeight + 'px';
+      later(function () { if (body.parentNode && body.parentNode.classList.contains('mpx-open')) body.style.height = 'auto'; }, 480);
+    } else {
+      body.style.height = body.scrollHeight + 'px';
+      void body.offsetHeight;
+      body.style.height = '0px';
+    }
+  }
+
+  // ---------- cabeçalho ----------
+  function buildHeader(opts) {
+    var h = el('header', 'mpx-head');
+    for (var i = 0; i < 36; i++) {
+      var s = el('span', 'mpx-star'), sz = 1 + rand(i + 99) * 2.5;
+      s.style.cssText = 'left:' + (rand(i) * 100) + '%;top:' + (rand(i + 50) * 100) + '%;width:' + sz + 'px;height:' + sz + 'px;animation-duration:' + (1.5 + rand(i + 7) * 3) + 's;animation-delay:' + (rand(i + 3) * 3) + 's';
+      h.appendChild(s);
+    }
+    [0, 1].forEach(function (i) {
+      var sh = el('span', 'mpx-shoot');
+      sh.style.top = (15 + i * 25) + '%';
+      sh.style.animationDelay = (i * 2.7) + 's';
+      h.appendChild(sh);
+    });
+    var back = el('button', 'mpx-back', ico('back', 20));
+    back.setAttribute('aria-label', 'Voltar');
+    back.onclick = function () { MimiPlus.close(); };
+    var top = el('div'); top.style.position = 'relative'; top.appendChild(back);
+    h.appendChild(top);
+    var hero = el('div', 'mpx-hero');
+    hero.innerHTML = '<div class="mpx-orb"><div class="mpx-ring"></div><div class="mpx-core"></div><span class="mpx-spark">✦</span></div>' +
+      '<h1 class="mpx-title">MIMI Plus</h1><p class="mpx-sub">Verificação e benefícios exclusivos</p><div class="mpx-pillbox"></div>';
+    h.appendChild(hero);
+    var box = hero.querySelector('.mpx-pillbox'), plus = false;
+    function pill() {
+      box.innerHTML = plus
+        ? '<span class="mpx-pill p">' + ico('sparkles', 14) + 'Seja Plus</span>'
+        : '<span class="mpx-pill v">' + ico('check', 14) + 'Conta verificada</span>';
+    }
+    pill();
+    if (!REDUCE) every(function () { plus = !plus; pill(); }, 2800);
+    return h;
+  }
+
+  // ---------- conta oficial ----------
+  function buildOfficial() {
+    return el('section', 'mpx-card mpx-off mpx-shine',
+      '<div class="mpx-offi">' + ico('crown', 24) + '</div><div><h2>Conta Oficial — <b>@mimioficial</b></h2>' +
+      '<p>Você é a criadora da plataforma. Sua verificação é permanente e gratuita.</p></div>');
+  }
+
+  // ---------- preço ----------
+  function buildPrice() {
+    var sec = el('section', 'mpx-card mpx-price');
+    sec.innerHTML = '<div class="mpx-seg"><i></i><button class="on" data-p="mensal">Mensal</button><button data-p="anual">Anual</button><span class="mpx-save">economize 20%</span></div>' +
+      '<div class="mpx-amt"><small>R$</small><span>0,00</span></div><p class="mpx-per">por mês</p><p class="mpx-cancel">cancele quando quiser</p>';
+    var seg = sec.querySelector('.mpx-seg'), num = sec.querySelector('.mpx-amt span'), per = sec.querySelector('.mpx-per');
+    var cur = 0, raf = 0;
+    function fmt(v) { return v.toFixed(2).replace('.', ','); }
+    function count(to) {
+      cancelAnimationFrame(raf);
+      var from = cur, t0 = performance.now(), dur = 1100;
+      if (REDUCE) { num.textContent = fmt(to); cur = to; return; }
+      (function f(now) {
+        var p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 2);
+        cur = from + (to - from) * e; num.textContent = fmt(cur);
+        if (p < 1) { raf = requestAnimationFrame(f); rafs.push(raf); }
+      })(t0);
+    }
+    function set(p) {
+      plan = p;
+      seg.classList.toggle('a', p === 'anual');
+      [].forEach.call(seg.querySelectorAll('button'), function (b) { b.classList.toggle('on', b.getAttribute('data-p') === p); });
+      per.textContent = p === 'mensal' ? 'por mês' : 'por ano · R$ 12,00/mês';
+      var cta = root && root.querySelector('.mpx-cta');
+      if (cta) cta.lastChild.textContent = ' ' + label();
+      count(p === 'mensal' ? 15 : 144);
+    }
+    [].forEach.call(seg.querySelectorAll('button'), function (b) { b.onclick = function () { set(b.getAttribute('data-p')); }; });
+    later(function () { count(plan === 'mensal' ? 15 : 144); }, 350);
+    return sec;
+  }
+  function label() { return plan === 'mensal' ? 'Assinar por R$ 15,00/mês' : 'Assinar por R$ 144,00/ano'; }
+
+  // ---------- prévias dos benefícios (cada uma só anima quando o card está aberto) ----------
+  function pvBadge() {
+    var n = el('div', 'mpx-pv mpx-who', '<em>🐰</em><span>Mimi Kawaii</span><span class="mpx-gold">' + ico('badge', 20) + '</span>');
+    return { node: n, start: function () {}, stop: function () {} };
+  }
+  function pvReorder(items, hl) {
+    var box = el('div', 'mpx-pv mpx-list'), els = {}, alt = false, id = null;
+    items.forEach(function (t) { var d = el('div', 'mpx-li' + (t === hl ? ' hl' : ''), t); els[t] = d; box.appendChild(d); });
+    function step() {
+      var first = {};
+      items.forEach(function (t) { first[t] = els[t].getBoundingClientRect().top; });
+      alt = !alt;
+      var order = alt ? [hl].concat(items.filter(function (i) { return i !== hl; })) : items;
+      order.forEach(function (t) { box.appendChild(els[t]); });
+      order.forEach(function (t) {
+        var dy = first[t] - els[t].getBoundingClientRect().top;
+        if (!dy || !els[t].animate) return;
+        els[t].animate([{ transform: 'translateY(' + dy + 'px)' }, { transform: 'none' }], { duration: 520, easing: 'cubic-bezier(.3,1.4,.5,1)' });
+      });
+    }
+    return {
+      node: box,
+      start: function () { if (!REDUCE && !id) id = setInterval(step, 1800); },
+      stop: function () { clearInterval(id); id = null; }
+    };
+  }
+  function pvRed() {
+    var full = 'Amei esse look, que fofura! 💖', n = el('div', 'mpx-pv mpx-red'), id = null, t = 0;
+    n.innerHTML = '<b>@você </b><span></span><span class="mpx-cur">|</span>';
+    var txt = n.children[1]; txt.textContent = full;
+    return {
+      node: n,
+      start: function () {
+        if (REDUCE || id) return;
+        t = 0;
+        id = setInterval(function () { t++; var k = t % (full.length + 15); txt.textContent = full.slice(0, Math.min(k, full.length)); }, 90);
+      },
+      stop: function () { clearInterval(id); id = null; txt.textContent = full; }
+    };
+  }
+  function pvAd() {
+    var n = el('div', 'mpx-pv'), box = el('div', 'mpx-ad'), gone = false, id = null;
+    n.appendChild(box);
+    function draw() {
+      box.innerHTML = '';
+      if (!gone) { box.appendChild(el('div', 'mpx-adb', 'ANÚNCIO · compre já!')); return; }
+      box.appendChild(el('p', 'mpx-adt', '✨ Sem interrupções'));
+      for (var i = 0; i < 14; i++) {
+        var d = el('span', 'mpx-dot'); d.style.left = (10 + i * 6) + '%';
+        box.appendChild(d);
+        if (d.animate) d.animate([{ opacity: 1, transform: 'translate(0,0)' }, { opacity: 0, transform: 'translate(' + ((i % 3 - 1) * 15) + 'px,' + (-30 - (i % 4) * 10) + 'px)' }], { duration: 1000, fill: 'forwards' });
+      }
+    }
+    draw();
+    return {
+      node: n,
+      start: function () { if (REDUCE || id) return; id = setInterval(function () { gone = !gone; draw(); }, 2600); },
+      stop: function () { clearInterval(id); id = null; gone = false; draw(); }
+    };
+  }
+
+  var BENS = [
+    { ic: 'shield', bg: '#F5B90A', t: 'Selo verificado dourado', d: 'O selo dourado aparece ao lado do seu nome em todos os lugares: feed, perfil, comentários e buscas.', l: 'Mostre que você é você! O selo brilha em cada interação e transmite confiança para quem te segue.', pv: pvBadge },
+    { ic: 'trend', bg: '#F43F8E', t: 'Destaque no feed', d: 'Suas publicações furam a ordem cronológica e aparecem mais acima para seus seguidores.', l: 'Seus posts ganham prioridade e chegam primeiro a quem importa.', pv: function () { return pvReorder(['🍓 Post da Lulu', '🌸 Post do Kiko', '⭐ Seu post'], '⭐ Seu post'); } },
+    { ic: 'type', bg: '#F0556A', t: 'Nome e comentários em vermelho', d: 'Seu nome e o texto dos seus comentários ficam nessa cor vermelha, mostrando seu status na hora.', l: 'Impossível passar despercebida: todo mundo reconhece um membro Plus.', pv: pvRed },
+    { ic: 'star', bg: '#8B5CF6', t: 'Comentários em destaque', d: 'Seus comentários aparecem primeiro nas publicações.', l: 'Sua opinião fica no topo da conversa, logo abaixo do post.', pv: function () { return pvReorder(['💬 Nina: que lindo!', '💬 Theo: amei', '💬 Você: perfeito ✦'], '💬 Você: perfeito ✦'); } },
+    { ic: 'eyeoff', bg: '#4A9DE8', t: 'Sem anúncios', d: 'Navegue sem interrupções na plataforma.', l: 'Feed limpinho, só com o que você ama. Nada de propagandas no meio.', pv: pvAd }
+  ];
+
+  function buildBenefits() {
+    var sec = el('section'), list = el('div', 'mpx-bens');
+    sec.appendChild(el('h2', 'mpx-h2', 'Seus benefícios ✦'));
+    BENS.forEach(function (b, i) {
+      var card = el('div', 'mpx-card mpx-ben mpx-rev');
+      var head = el('button', 'mpx-benh');
+      head.setAttribute('aria-expanded', 'false');
+      head.innerHTML = '<span class="mpx-bi" style="background:' + b.bg + ';animation-delay:' + (i * 0.3) + 's">' + ico(b.ic, 20) + '</span>' +
+        '<div class="mpx-bt"><h3>' + b.t + '</h3><p>' + b.d + '</p></div><span class="mpx-chev">' + ico('down', 20) + '</span>';
+      var body = el('div', 'mpx-bbody'), inner = el('div', 'mpx-bin', '<p>' + b.l + '</p>');
+      var pv = b.pv(); inner.appendChild(pv.node); body.appendChild(inner);
+      previews.push(pv);
+      head.onclick = function () {
+        var open = !card.classList.contains('mpx-open');
+        card.classList.toggle('mpx-open', open);
+        head.setAttribute('aria-expanded', open ? 'true' : 'false');
+        slide(body, open);
+        if (open) pv.start(); else pv.stop();
+      };
+      card.appendChild(head); card.appendChild(body); list.appendChild(card);
+      reveal(card, i * 0.08);
+    });
+    sec.appendChild(list);
+    return sec;
+  }
+
+  // ---------- comparar ----------
+  function buildCompare() {
+    var rows = [['Publicar e comentar', 1], ['Selo verificado dourado', 0], ['Destaque no feed', 0], ['Nome em vermelho', 0], ['Comentários no topo', 0], ['Sem anúncios', 0]];
+    var sec = el('section', 'mpx-card mpx-cmp', '<h2>Compare</h2><div class="mpx-r hd"><span></span><span>Grátis</span><span>Plus</span></div>');
+    rows.forEach(function (r, i) {
+      var row = el('div', 'mpx-r rw',
+        '<span>' + r[0] + '</span><span class="c">' + (r[1] ? '<span class="mpx-ck">' + ico('check', 16) + '</span>' : '<span class="mpx-x">' + ico('x', 16) + '</span>') + '</span>' +
+        '<span class="c"><span class="mpx-ok">' + ico('check', 14) + '</span></span>');
+      row.style.transitionDelay = (i * 0.1) + 's';
+      row.querySelector('.mpx-ok').style.transitionDelay = (0.3 + i * 0.12) + 's';
+      sec.appendChild(row);
+      reveal(row);
+    });
+    return sec;
+  }
+
+  // ---------- depoimentos ----------
+  function buildTestimonials() {
+    var T = [
+      ['🐱', '@gatinha.lu', 'O selo dourado deixou meu perfil muito mais fofo! Vale cada centavo ✨'],
+      ['🐻', '@ursinho.theo', 'Meus posts chegam primeiro pra galera. Ganhei muitos seguidores novos!'],
+      ['🦊', '@raposinha.bia', 'Sem anúncios é vida. Agora o feed é só amor 💖']
+    ], i = 0;
+    var sec = el('section', '', '<h2 class="mpx-h2">Quem é Plus ama 💕</h2>');
+    var wrap = el('div', 'mpx-tw'), card = el('div', 'mpx-card mpx-tc in'), dots = el('div', 'mpx-dots');
+    wrap.appendChild(card);
+    function fill() {
+      var c = T[i];
+      card.innerHTML = '<div class="mpx-tt"><span class="mpx-av">' + c[0] + '</span><span class="mpx-tn">' + c[1] + '</span><span class="mpx-st">★★★★★</span></div><p>“' + c[2] + '”</p>';
+      [].forEach.call(dots.children, function (d, k) { d.classList.toggle('on', k === i); });
+    }
+    function go(n) {
+      if (n === i) return;
+      if (REDUCE) { i = n; fill(); return; }
+      card.className = 'mpx-card mpx-tc out';
+      later(function () { i = n; fill(); card.className = 'mpx-card mpx-tc'; void card.offsetWidth; card.className = 'mpx-card mpx-tc in'; }, 270);
+    }
+    T.forEach(function (_, k) {
+      var b = el('button'); b.setAttribute('aria-label', 'Depoimento ' + (k + 1));
+      b.onclick = function () { go(k); };
+      dots.appendChild(b);
+    });
+    fill();
+    if (!REDUCE) every(function () { go((i + 1) % T.length); }, 3800);
+    sec.appendChild(wrap); sec.appendChild(dots);
+    return sec;
+  }
+
+  // ---------- FAQ ----------
+  function buildFaq() {
+    var F = [
+      ['Como cancelo?', 'Vá em Configurações › Assinatura › Cancelar. Você mantém os benefícios até o fim do período pago.'],
+      ['Quando o selo é ativado?', 'Imediatamente após a confirmação do pagamento — normalmente em poucos segundos.'],
+      ['Posso trocar de plano?', 'Sim! Você pode mudar entre Mensal e Anual quando quiser; a diferença é ajustada na próxima cobrança.']
+    ];
+    var sec = el('section', '', '<h2 class="mpx-h2">Dúvidas frequentes</h2>'), list = el('div', 'mpx-faqs'), items = [];
+    F.forEach(function (f) {
+      var it = el('div', 'mpx-card mpx-faq'), btn = el('button', '', f[0] + '<span class="mpx-chev">' + ico('down', 16) + '</span>');
+      var body = el('div', 'mpx-bbody', '<p>' + f[1] + '</p>');
+      btn.setAttribute('aria-expanded', 'false');
+      it._body = body;
+      btn.onclick = function () {
+        var open = !it.classList.contains('mpx-open');
+        items.forEach(function (o) {
+          if (o !== it && o.classList.contains('mpx-open')) { o.classList.remove('mpx-open'); o._body.style.opacity = ''; slide(o._body, false); }
+        });
+        it.classList.toggle('mpx-open', open);
+        body.style.opacity = open ? 1 : '';
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        slide(body, open);
+      };
+      it.appendChild(btn); it.appendChild(body); list.appendChild(it); items.push(it);
+    });
+    sec.appendChild(list);
+    return sec;
+  }
+
+  // ---------- barra de assinar + sucesso ----------
+  function confetti() {
+    if (REDUCE || !document.body.animate) return;
+    var cols = ['#F43F8E', '#8B5CF6', '#F5B90A', '#F0556A', '#4A9DE8'], c = el('div', 'mpx-conf');
+    for (var i = 0; i < 60; i++) {
+      var s = el('span'), a = (i / 60) * Math.PI * 2, d = 160 + (i % 5) * 50;
+      s.style.background = cols[i % 5];
+      c.appendChild(s);
+      s.animate([{ transform: 'translate(0,0) rotate(0)', opacity: 1 }, { transform: 'translate(' + Math.cos(a) * d + 'px,' + (Math.sin(a) * d + 300) + 'px) rotate(540deg)', opacity: 0 }], { duration: 1800 + (i % 4) * 200, easing: 'cubic-bezier(.2,.7,.4,1)', fill: 'forwards' });
+    }
+    root.appendChild(c);
+    later(function () { if (c.parentNode) c.parentNode.removeChild(c); }, 2600);
+  }
+  function success() {
+    var m = el('div', 'mpx-modal', '<div class="mpx-mc"><div class="mpx-mb">' + ico('badge', 48) + '</div><h2>Bem-vinda ao Plus! 🎉</h2><p>Seu selo dourado já está ativo em todos os lugares da MIMI.</p><button class="mpx-go">Aproveitar ✦</button></div>');
+    m.querySelector('.mpx-go').onclick = function () { if (m.parentNode) m.parentNode.removeChild(m); MimiPlus.close(); };
+    root.appendChild(m);
+    confetti();
+  }
+  function buildBar() {
+    var bar = el('div', 'mpx-bar'), btn = el('button', 'mpx-cta', '<span class="mpx-lead">✦</span> ');
+    btn.appendChild(document.createTextNode(label()));
+    var busy = false;
+    function idle() { busy = false; btn.classList.remove('ld'); btn.innerHTML = '<span class="mpx-lead">✦</span> '; btn.appendChild(document.createTextNode(label())); }
+    btn.onclick = function (e) {
+      if (busy) return;
+      var r = btn.getBoundingClientRect(), rp = el('span', 'mpx-rip');
+      rp.style.left = (e.clientX - r.left - 20) + 'px'; rp.style.top = (e.clientY - r.top - 20) + 'px';
+      btn.appendChild(rp); later(function () { if (rp.parentNode) rp.parentNode.removeChild(rp); }, 700);
+      busy = true; btn.classList.add('ld');
+      btn.innerHTML = ico('loader', 20, 'mpx-spin') + ' Processando…';
+      var hook = MimiPlus.onSubscribe;
+      if (typeof hook === 'function') {
+        Promise.resolve().then(function () { return hook(plan); }).then(function (ok) {
+          if (ok === false) { idle(); return; }
+          idle(); success();
+        }, function () { idle(); });
+      } else {
+        later(function () { idle(); success(); }, 1600);
+      }
+    };
+    bar.appendChild(btn);
+    return bar;
+  }
+
+  // ---------- API pública ----------
+  var MimiPlus = {
+    onSubscribe: null,
+    onClose: null,
+    isOpen: function () { return !!root; },
+    open: function (opts) {
+      if (root) return;
+      opts = opts || {};
+      REDUCE = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+      plan = 'mensal';
+      if (!document.getElementById('mpx-css')) {
+        var st = el('style'); st.id = 'mpx-css'; st.textContent = CSS; document.head.appendChild(st);
+      }
+      root = el('div', 'mpx-root' + (REDUCE ? ' mpx-reduce' : ''));
+      root.setAttribute('role', 'dialog'); root.setAttribute('aria-label', 'MIMI Plus');
+      if ('IntersectionObserver' in window) {
+        io = new IntersectionObserver(function (es) {
+          es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('mpx-vis'); io.unobserve(e.target); } });
+        }, { root: root, rootMargin: '0px 0px -40px 0px', threshold: 0.05 });
+      }
+      var bd = el('div', 'mpx-bd'), g = ['✦', '♡', '✿', '⋆', '♥', '✧', '❀', '☆', '✦', '♡', '✧', '✿'], cl = ['#F43F8E', '#8B5CF6', '#F5B90A', '#4A9DE8', '#F0556A'];
+      g.forEach(function (c, i) {
+        var s = el('span', '', c);
+        s.style.cssText = 'left:' + ((i * 37) % 100) + '%;top:' + ((i * 53) % 100) + '%;color:' + cl[i % 5] + ';animation-duration:' + (6 + (i % 4)) + 's;animation-delay:' + (i * 0.4) + 's';
+        bd.appendChild(s);
+      });
+      root.appendChild(bd);
+      var main = el('main', 'mpx-main'), wrap = el('div', 'mpx-wrap');
+      main.appendChild(buildHeader(opts));
+      if (opts.oficial) wrap.appendChild(buildOfficial());
+      wrap.appendChild(buildPrice());
+      wrap.appendChild(buildBenefits());
+      wrap.appendChild(buildCompare());
+      wrap.appendChild(buildTestimonials());
+      wrap.appendChild(buildFaq());
+      wrap.appendChild(el('p', 'mpx-legal', 'Ao assinar você concorda com os Termos de Uso da Mimi. A cobrança é mensal e pode ser cancelada a qualquer momento. O badge de verificação é ativado imediatamente após o pagamento ser confirmado.'));
+      main.appendChild(wrap);
+      root.appendChild(main);
+      if (opts.semBotao) main.style.paddingBottom = '40px'; else root.appendChild(buildBar());
+      document.body.appendChild(root);
+      void root.offsetWidth;
+      root.classList.add('mpx-in');
+    },
+    close: function () {
+      if (!root) return;
+      var r = root; root = null;
+      clearAll();
+      r.classList.remove('mpx-in');
+      setTimeout(function () { if (r.parentNode) r.parentNode.removeChild(r); }, 400);
+      if (typeof MimiPlus.onClose === 'function') { try { MimiPlus.onClose(); } catch (e) { console.error(e); } }
+    }
+  };
+  window.MimiPlus = MimiPlus;
+})();
+
+</script>
+<!-- MIMI-PLUS:FIM -->
 </body>
 </html>
