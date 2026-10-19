@@ -4489,7 +4489,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.18.01";
+var APP_VERSION = "2026.10.18.02";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -11597,12 +11597,39 @@ function renderStories() {
   return html;
 }
 
+// Abre um menu Foto/Vídeo e só então o seletor com o tipo certo (evita galeria sem vídeos)
+function abrirSeletorStory() {
+  var fi = document.querySelector("#story-file-input");
+  if (!fi) return;
+  var velho = document.getElementById("story-pick-sheet");
+  if (velho) velho.remove();
+  var ov = document.createElement("div");
+  ov.id = "story-pick-sheet";
+  ov.style.cssText = "position:fixed;left:0;top:0;right:0;bottom:0;z-index:99999;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;";
+  var btn = "border:0;border-radius:16px;padding:14px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;";
+  ov.innerHTML = '<div style="width:100%;max-width:480px;background:#fff;border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px;">' +
+    '<button data-pick="image" style="' + btn + 'background:#ff6fa5;color:#fff;">Foto</button>' +
+    '<button data-pick="video" style="' + btn + 'background:#ff6fa5;color:#fff;">Vídeo</button>' +
+    '<button data-pick="cancel" style="' + btn + 'background:#f3f3f3;color:#555;">Cancelar</button></div>';
+  ov.addEventListener("click", function(e) {
+    var b = e.target.closest("[data-pick]");
+    if (b && b.getAttribute("data-pick") !== "cancel") {
+      fi.accept = b.getAttribute("data-pick") === "video" ? "video/*" : "image/*";
+      ov.remove();
+      fi.click();
+      return;
+    }
+    if (b || e.target === ov) ov.remove();
+  });
+  document.body.appendChild(ov);
+}
+
 function bindStoriesEvents() {
   var fileInput = appEl.querySelector("#story-file-input");
   appEl.querySelectorAll("[data-add-story]").forEach(function(btn) {
     btn.addEventListener("click", function(e) {
       e.stopPropagation();
-      if (fileInput) fileInput.click();
+      abrirSeletorStory();
     });
   });
   appEl.querySelectorAll("[data-story-ring]").forEach(function(ring) {
@@ -11612,7 +11639,7 @@ function bindStoriesEvents() {
       var list = allStoriesList();
       var entry = list[idx];
       if (entry.empty) {
-        if (fileInput) fileInput.click();
+        abrirSeletorStory();
         return;
       }
       state.viewingStoryIdx = idx;
@@ -11624,7 +11651,7 @@ function bindStoriesEvents() {
     fileInput.addEventListener("change", function() {
       var file = fileInput.files[0];
       if (!file) return;
-      var isVideo = file.type.indexOf("video") === 0;
+      var isVideo = file.type.indexOf("video") === 0 || /\.(mp4|mov|m4v|webm|3gp|mkv)$/i.test(file.name || "");
       if (isVideo) {
         // Vídeo grande demais é dividido automaticamente em várias partes no
         // Firestore (sem custo), então o limite aqui é só pra evitar vídeos
@@ -20871,8 +20898,7 @@ function bindPublishMenu() {
       } else if (type === "story") {
         state.publishMenu = false;
         render();
-        var storyInput = document.querySelector("#story-file-input");
-        if (storyInput) storyInput.click();
+        abrirSeletorStory();
       }
     });
   });
