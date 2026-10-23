@@ -24016,7 +24016,7 @@ var cloudinaryWidget = {
             console.log("🔄 Tentando novamente...");
             doUpload();
           } else {
-            showToast(toastWithIcon("Falha na conexão: " + err.message + " [" + (file.type || "sem tipo") + ", " + Math.round(file.size/1024) + "KB]", "error", "before"), true);
+            showToast(toastWithIcon("Falha na conexão: " + err.message + " [" + (file.type || "sem tipo") + ", " + Math.round(file.size/1024) + "KB]" + " [" + (file.type || "sem tipo") + ", " + Math.round(file.size/1024) + "KB]", "error", "before"), true);
           }
         });
     }
