@@ -4503,7 +4503,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.23.09";
+var APP_VERSION = "2026.10.23.10";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -12803,6 +12803,21 @@ class AdvancedVideoPlayer {
   }
 
   onError(e) {
+    if (!this._fallbackSrcs) {
+      var cur = (this.video && (this.video.currentSrc || this.video.src)) || "";
+      this._fallbackSrcs = [];
+      if (cur.indexOf("res.cloudinary.com") !== -1) {
+        var orig = cur.replace("/upload/q_auto,f_auto,w_720,c_limit/", "/upload/");
+        if (orig !== cur) this._fallbackSrcs.push(orig);
+        this._fallbackSrcs.push(orig.replace("/upload/", "/upload/vc_h264,f_mp4,w_720,c_limit/").replace(/\.[a-z0-9]+(\?.*)?$/i, ".mp4$1"));
+      }
+    }
+    if (this._fallbackSrcs.length) {
+      this.loader?.classList.remove('hidden');
+      this.video.src = this._fallbackSrcs.shift();
+      this.video.load();
+      return;
+    }
     this.loader?.classList.add('hidden');
     if (this.errorMsg) {
       this.errorMsg.textContent = 'Erro ao carregar o vídeo';
