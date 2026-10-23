@@ -4512,7 +4512,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.23.11";
+var APP_VERSION = "2026.10.23.12";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -20197,7 +20197,9 @@ function renderMyAdsPage() {
   } else {
     myAds.forEach(function(p) {
       var thumb = p.img ? '<img '+imageTagAttrs(p.img)+' style="width:56px;height:56px;border-radius:10px;object-fit:cover;flex-shrink:0;">' :
-        p.video ? '<video src="'+p.video+'" style="width:56px;height:56px;border-radius:10px;object-fit:cover;flex-shrink:0;"></video>' :
+        p.video ? (videoThumbUrl(p.video) /*MIMI-AD-THUMB*/ ?
+          '<img src="'+esc(videoThumbUrl(p.video))+'" alt="" onerror="mimiThumbFallback(this,\''+esc(p.video).replace(/'/g,"&#39;")+'\')" style="width:56px;height:56px;border-radius:10px;object-fit:cover;flex-shrink:0;">' :
+          '<video src="'+esc(p.video)+'" muted preload="metadata" playsinline style="width:56px;height:56px;border-radius:10px;object-fit:cover;flex-shrink:0;"></video>') :
         '<div style="width:56px;height:56px;border-radius:10px;background:var(--bg);flex-shrink:0;"></div>';
       html += '<div class="cfg-item" style="align-items:center;margin-bottom:10px;">' +
         thumb +
@@ -21572,7 +21574,7 @@ function bindCreatePost() {
         compose = { media:null, mediaType:null, loc:null, audioMeta:null, isAd:false, adVisible:false, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false, takeover:false }, adLink:"", adCta:"saiba" };
         state.page = "feed";
         var feedList = appEl.querySelector("[data-feed-posts]");
-        if (feedList) {
+        if (feedList && !newPost.isAd) {
           if (overlayEl && overlayEl.parentNode) overlayEl.parentNode.removeChild(overlayEl);
           var wrap = document.createElement("div");
           wrap.innerHTML = renderPostCard(newPost);
