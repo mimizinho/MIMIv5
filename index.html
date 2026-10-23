@@ -2541,13 +2541,13 @@ function adRotationQueue(where) {
 var _adPickCache = {};
 function pickAdsForSlots(where, slots) {
   var key = where + ":" + slots, now = Date.now(), c = _adPickCache[key];
-  if (c && now - c.t < 600000) {
+  if (c && c.ids.length && now - c.t < 600000) {
     var still = c.ids.map(function(id) { return posts.find(function(p) { return p.id === id; }); })
       .filter(function(p) { return p && p.isAd && p.adVisible && adPlacesOf(p)[where] && (p.img || p.video); });
     if (still.length === c.ids.length) return still;
   }
   var chosen = _pickAdsForSlotsRaw(where, slots);
-  _adPickCache[key] = { t: now, ids: chosen.map(function(ad) { return ad.id; }) };
+  if (chosen.length) _adPickCache[key] = { t: now, ids: chosen.map(function(ad) { return ad.id; }) };
   return chosen;
 }
 function _pickAdsForSlotsRaw(where, slots) {
@@ -4501,7 +4501,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.23.07";
+var APP_VERSION = "2026.10.23.08";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
