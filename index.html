@@ -4489,7 +4489,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.23.03";
+var APP_VERSION = "2026.10.23.04";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -24016,7 +24016,7 @@ var cloudinaryWidget = {
             console.log("🔄 Tentando novamente...");
             doUpload();
           } else {
-            showToast(toastWithIcon("Falha na conexão: " + err.message, "error", "before"), true);
+            showToast(toastWithIcon("Falha na conexão: " + err.message + " [" + (file.type || "sem tipo") + ", " + Math.round(file.size/1024) + "KB]", "error", "before"), true);
           }
         });
     }
