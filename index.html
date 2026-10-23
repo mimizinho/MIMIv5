@@ -2538,6 +2538,8 @@ function adRotationQueue(where) {
 
 // Escolhe até "slots" anúncios, sem repetir anunciante enquanto houver
 // outros disponíveis e sem repetir o mesmo anúncio na mesma rolagem.
+var _adCountedThisSession = {};
+try { if (typeof AD_STATS_KEY !== "undefined" && localStorage.getItem("mimi_ad_stats_reset_1") !== "1") { localStorage.removeItem(AD_STATS_KEY); localStorage.setItem("mimi_ad_stats_reset_1", "1"); } } catch (e) {}
 var _adPickCache = {};
 function pickAdsForSlots(where, slots) {
   var key = where + ":" + slots, now = Date.now(), c = _adPickCache[key];
@@ -2566,7 +2568,7 @@ function _pickAdsForSlotsRaw(where, slots) {
       chosen.push(ad);
     }
   }
-  chosen.forEach(function(ad) { noteAdImpression(ad.id); });
+  chosen.forEach(function(ad) { if (!_adCountedThisSession[ad.id]) { _adCountedThisSession[ad.id] = true; noteAdImpression(ad.id); } });
   return chosen;
 }
 
@@ -4501,7 +4503,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.23.08";
+var APP_VERSION = "2026.10.23.09";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
