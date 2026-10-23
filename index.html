@@ -4512,7 +4512,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.23.12";
+var APP_VERSION = "2026.10.23.13";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -5087,7 +5087,13 @@ function loadPostsWithRetryAndRerender(onSuccessExtra) {
   clearTimeout(_loadPostsBgRetryTimer);
   retryPromise(function(){ return FB.loadPosts(); }, 4, 2000)
     .then(function(){
-      renderSoon();
+      /*MIMI-FEED-FRESH*/
+      if (!window._feedFreshDone && state.page === "feed" && !state.postDetailId && !_isTypingInField && !_isPointerDown && !_isUserScrolling && window.scrollY < 300) {
+        window._feedFreshDone = true;
+        render();
+      } else {
+        renderSoon();
+      }
       if (typeof onSuccessExtra === "function") onSuccessExtra();
     })
     .catch(function(err){
@@ -5121,7 +5127,10 @@ function cacheUserSnapshot(u) {
 // não pesar o localStorage.
 function cachePostsSnapshot(list) {
   try {
-    localStorage.setItem("mimi_cached_posts", JSON.stringify((list||[]).slice(0,30)));
+    var _cp = (list||[]).slice(0,30), _cids = {};
+    _cp.forEach(function(p){ _cids[p.id] = true; });
+    (list||[]).forEach(function(p){ if (p && p.isAd && !_cids[p.id]) _cp.push(p); });
+    localStorage.setItem("mimi_cached_posts", JSON.stringify(_cp));
   } catch(e){}
 }
 function getCachedPosts() {
