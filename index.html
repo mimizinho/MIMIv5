@@ -4489,7 +4489,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.23.05";
+var APP_VERSION = "2026.10.23.06";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -23809,7 +23809,7 @@ var cloudinaryWidget = {
       var file = e.target.files[0];
       if (file) {
         console.log("📁 Arquivo selecionado:", file.name, file.size, "bytes");
-        self.uploadDirectFile(file, mediaType, callback);
+        self.uploadSafe(file, mediaType, callback);
       }
     };
     
@@ -23921,11 +23921,23 @@ var cloudinaryWidget = {
     fileInput.onchange = function(e) {
       var file = e.target.files[0];
       if (file) {
-        self.uploadDirectFile(file, mediaType, callback);
+        self.uploadSafe(file, mediaType, callback);
       }
     };
     
     fileInput.click();
+  },
+
+  uploadSafe: function(file, mediaType, callback) {
+    var self = this;
+    if (!file || !file.arrayBuffer) { return self.uploadDirectFile(file, mediaType, callback); }
+    showToast(toastWithIcon("Lendo o arquivo...", "upload", "before"), true);
+    file.arrayBuffer().then(function(buf) {
+      var copy = new File([buf], file.name || ("arquivo_" + Date.now()), { type: file.type || (mediaType === "video" ? "video/mp4" : "") });
+      self.uploadDirectFile(copy, mediaType, callback);
+    }).catch(function() {
+      showToast(toastWithIcon("Não consegui ler esse arquivo da galeria. Copie para a pasta Download ou grave de novo.", "error", "before"), true);
+    });
   },
 
   uploadDirectFile: function(file, mediaType, callback) {
