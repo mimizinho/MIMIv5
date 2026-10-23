@@ -4489,7 +4489,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.23.04";
+var APP_VERSION = "2026.10.23.05";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -23962,15 +23962,15 @@ var cloudinaryWidget = {
       showToast(toastWithIcon("Enviando " + mediaType + "... (tentativa " + attempt + ")", "upload", "before"), true);
       
       var uploadTimeout = setTimeout(function() {
-        console.warn("⏱️ Upload timeout - tentando novamente...");
+        console.warn("⏱️ Upload timeout - tentando novamente..."); try { window._mimiUpAbort.abort(); } catch (e) {} return;
         if (attempt < maxRetries) {
           doUpload();
         } else {
           showToast(toastWithIcon("Timeout ao enviar. Verifique sua conexão e tente novamente.", "error", "before"), true);
         }
-      }, 60000);
+      }, 180000);
       
-      fetch("https://api.cloudinary.com/v1_1/" + cloudName + "/" + resourceType + "/upload", {
+      fetch("https://api.cloudinary.com/v1_1/" + cloudName + "/" + resourceType + "/upload", { signal: (window._mimiUpAbort = new AbortController()).signal,
         method: "POST",
         body: formData
       })
