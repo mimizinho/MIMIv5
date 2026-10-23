@@ -2626,7 +2626,7 @@ function getFeedOrder(list) {
   var slots = [];
   for (var i = AD_FIRST_SLOT - 1; i < ordered.length; i += AD_EVERY) slots.push(i);
   // Teto: anúncios nunca passam de AD_MAX_RATIO do feed exibido.
-  var maxAds = Math.floor(ordered.length * AD_MAX_RATIO);
+  var maxAds = Math.max(1, Math.floor(ordered.length * AD_MAX_RATIO)); // pelo menos 1 anúncio quando há espaço
   if (slots.length > maxAds) slots = slots.slice(0, maxAds);
   if (!slots.length) return ordered;
   var chosenAds = pickAdsForSlots("feed", slots.length);
@@ -4489,7 +4489,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.19.01";
+var APP_VERSION = "2026.10.23.01";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
