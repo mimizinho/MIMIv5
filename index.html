@@ -2605,6 +2605,15 @@ function getFeedOrder(list) {
   // Em vez disso são intercalados em posições fixas: depois da 3ª
   // publicação, e a cada 4 publicações dali em diante.
   list = list.filter(function(p){ return !isUserBlocked(p.authorId) && !p.isAd; });
+  /*DIAG-INI*/ if (!window._adDiagShown) { window._adDiagShown = true; var _dn = list.length; setTimeout(function() { try {
+    var ads = posts.filter(function(p) { return p.isAd; });
+    var info = ads.map(function(p) { return (p.adVisible ? "ON" : "off") + "/" + (adPlacesOf(p).feed ? "feed" : "sem-feed") + "/" + (p.video ? "video" : "") + (p.img ? "img" : "") + (!p.video && !p.img ? "SEM-MIDIA" : ""); }).join(" | ");
+    var d = document.createElement("div");
+    d.style.cssText = "position:fixed;left:8px;right:8px;top:70px;z-index:99999;background:#222;color:#fff;padding:10px;border-radius:10px;font-size:12px;line-height:1.4;";
+    d.textContent = "DIAG v" + APP_VERSION + " | anuncios=" + ads.length + " | elegiveis-feed=" + adsForPlace("feed").length + " | posts-normais=" + _dn + " | " + info + " (toque pra fechar)";
+    d.onclick = function() { d.remove(); };
+    document.body.appendChild(d);
+  } catch (e) {} }, 3000); } /*DIAG-FIM*/
   // 2.5 (personalização): dispara em segundo plano a busca do perfil de
   // afinidade (não bloqueia — ver ensureMyAffinityLoaded). Enquanto não
   // volta, affinityMap fica vazio e o feed roda só no score global.
@@ -4503,7 +4512,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.23.10";
+var APP_VERSION = "2026.10.23.11";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
