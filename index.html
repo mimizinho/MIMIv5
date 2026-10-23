@@ -4489,7 +4489,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.23.01";
+var APP_VERSION = "2026.10.23.03";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -11638,6 +11638,7 @@ function bindStoriesEvents() {
       var idx = parseInt(ring.getAttribute("data-story-ring"), 10);
       var list = allStoriesList();
       var entry = list[idx];
+      if (!entry) return;
       if (entry.empty) {
         abrirSeletorStory();
         return;
