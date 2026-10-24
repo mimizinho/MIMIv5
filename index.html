@@ -4547,7 +4547,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.24.14";
+var APP_VERSION = "2026.10.24.15";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -6730,6 +6730,10 @@ function _bumpAuthorAffinity(authorId, eventType, value) {
 // Debounce de curtidas (posts/vibes): toques rápidos viram UMA gravação
 // (estado final). Grava na hora se o app for pro segundo plano.
 var _likeNotified = {};
+// Memória no aparelho de quantos avisos de curtida já mandei por publicação (1 = curtiu, 2 = curtiu de novo)
+function _likeMemo(pid) { try { var m = JSON.parse(localStorage.getItem("mimiLikeMemo_" + ME_ID) || "{}"); return { n: (m && m[pid]) || 0 }; } catch (e) { return { n: 0 }; } }
+function _likeMemoSet(pid, n) { try { var k = "mimiLikeMemo_" + ME_ID; var m = JSON.parse(localStorage.getItem(k) || "{}") || {}; m[pid] = n; localStorage.setItem(k, JSON.stringify(m)); } catch (e) {} }
+var _RELIKE_SVG = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>';
 var _likeTimers = {}, _likePending = {};
 function _flushLike(k) {
   clearTimeout(_likeTimers[k]); delete _likeTimers[k];
@@ -13691,11 +13695,11 @@ function bindPostCardEvents(root) {
         // Notifica o dono do post que alguém curtiu
         if (post.authorId !== ME_ID && !_likeNotified[pid]) {
           _likeNotified[pid] = true;
-          addNotif("like", ME_ID, "curtiu sua publicação");
-          FB.pushNotif(post.authorId, "like", "curtiu sua publicação");
+          var _lk = _likeMemo(pid);
+          if (_lk.n < 2) { FB.pushNotif(post.authorId, _lk.n ? "relike" : "like", _lk.n ? "mudou de ideia e curtiu de novo" : "curtiu sua publicação", { postId: pid }); _likeMemoSet(pid, _lk.n + 1); }
           
-          // Criar notificação no Firestore
-          if (typeof FB !== "undefined" && FB.db) {
+          // (aviso já gravado acima por FB.pushNotif)
+          if (false) {
             var createdAt = new Date().toISOString();
             FB.db.collection("notifications").doc(post.authorId).collection("items").add({
               type: "like",
@@ -13712,7 +13716,7 @@ function bindPostCardEvents(root) {
           }
         }
       } else {
-        post.likedBy.splice(idx,1);
+        post.likedBy.splice(idx,1); delete _likeNotified[pid]; _likeMemoSet(pid, Math.max(_likeMemo(pid).n, 1));
       }
       FB.likePost(pid, idx === -1);
       syncReactionButtons(post);
@@ -14928,7 +14932,7 @@ function renderNotifsPage() {
     html += '<div class="notif-swipe" style="position:relative;overflow:hidden;"><div class="notif-swipe-bg" style="position:absolute;top:0;bottom:0;left:0;right:0;background:#E5484D;display:none;align-items:center;justify-content:flex-end;padding-right:22px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg></div>' +
       '<div class="notif-row '+(n.read?"":"unread")+'" data-notif-id="'+n.id+'" style="position:relative;touch-action:pan-y;">' +
       '<div style="position:relative;cursor:pointer;" data-open-author="'+n.userId+'">' + avatarHtml(avatar, 46, false, false, false, null, null, getUserFrame(u)) +
-        (n.type === "birthday"
+        (n.type === "relike" ? '<div class="notif-badge" style="background:#ffb454;display:flex;align-items:center;justify-content:center;">'+_RELIKE_SVG+'</div>' : n.type === "birthday"
           ? '<div class="notif-badge" style="background:#ff5fa8;display:flex;align-items:center;justify-content:center;">'+icoSvg("cake",13,"#fff")+'</div>'
           : '<div class="notif-badge" style="background:'+(colMap[n.type]||C.accent)+';">'+icoSvg(iconMap[n.type]||"bell",11,"#fff")+'</div>') +
       '</div>' +
@@ -21966,7 +21970,7 @@ var _NOTIF_TIPOS = [
   ["birthday", "Aniversários", "Lembretes de aniversário"]
 ];
 function _notifPrefs() { try { var p = JSON.parse(localStorage.getItem("mimiNotifPrefs") || "{}"); return (p && typeof p === "object") ? p : {}; } catch (e) { return {}; } }
-function _notifOn(type) { return _notifPrefs()[type] !== false; }
+function _notifOn(type) { return _notifPrefs()[type === "relike" ? "like" : type] !== false; }
 function _notifVisible() { return NOTIFS.filter(function(n) { return _notifOn(n.type); }); }
 function openNotifPrefs() {
   var cs = getComputedStyle(document.body);
