@@ -4547,7 +4547,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.24.09";
+var APP_VERSION = "2026.10.24.10";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -21868,8 +21868,16 @@ function _secPost(path, body) {
     method: "POST", headers: idpHeaders(), body: JSON.stringify(body)
   }).then(function(r) { return r.json(); });
 }
+var _SC_EYE_ON = _icoL('<path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0"/><circle cx="12" cy="12" r="3"/>');
+var _SC_EYE_OFF = _icoL('<path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/>');
+var _scBox = null;
+function _scMsg(t) {
+  if (!_scBox || !document.body.contains(_scBox)) { showToast(t); return; }
+  var m = _scBox.querySelector("[data-sc-msg]");
+  if (m) { m.textContent = t; m.style.display = "block"; }
+}
 function openSecurityForm(kind) {
-  if (!_idToken) { showToast("Faça login novamente."); return; }
+  if (!_idToken) { _scMsg("Faça login novamente."); return; }
   var isPw = kind === "senha";
   var cs = getComputedStyle(document.body);
   var bg = cs.backgroundColor; if (!bg || bg === "rgba(0, 0, 0, 0)") bg = "#fff";
@@ -21883,25 +21891,29 @@ function openSecurityForm(kind) {
   var h = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"><span style="font-size:18px;font-weight:700;">' + (isPw ? "Trocar senha" : "Trocar e-mail") + '</span><button type="button" data-sc-close style="border:0;background:none;color:inherit;font-size:22px;padding:4px 8px;cursor:pointer;">✕</button></div>';
   h += '<div style="font-size:13px;opacity:.65;margin-bottom:6px;">' + (isPw ? "Por segurança, confirme a senha atual." : "O novo e-mail passa a ser o seu login. Confirme a senha atual.") + '</div>';
   fields.forEach(function(f) {
-    h += '<div style="margin-top:12px;font-size:13px;opacity:.75;">' + f[1] + '</div><input data-sc-f="' + f[0] + '" type="' + f[2] + '" autocomplete="' + f[3] + '" autocapitalize="none" style="width:100%;height:44px;border-radius:12px;border:1px solid #ff6fa5;background:transparent;color:inherit;padding:0 12px;font-size:15px;box-sizing:border-box;margin-top:4px;">';
+    h += '<div style="margin-top:12px;font-size:13px;opacity:.75;">' + f[1] + '</div><div style="position:relative;"><input data-sc-f="' + f[0] + '" type="' + f[2] + '" autocomplete="' + f[3] + '" autocapitalize="none" style="width:100%;height:44px;border-radius:12px;border:1px solid #ff6fa5;background:transparent;color:inherit;padding:0 44px 0 12px;font-size:15px;box-sizing:border-box;margin-top:4px;">' + (f[2] === "password" ? '<button type="button" data-sc-eye style="position:absolute;right:6px;top:8px;width:36px;height:36px;border:0;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;">' + _SC_EYE_ON + '</button>' : '') + '</div>';
   });
+  h += '<div data-sc-msg style="display:none;margin-top:14px;padding:10px 12px;border-radius:12px;background:#ffe3ec;color:#c2185b;font-size:13px;line-height:1.4;"></div>';
   h += '<button type="button" data-sc-save style="width:100%;height:46px;margin-top:18px;border:0;border-radius:99px;background:linear-gradient(135deg,#ff6fa5,#c06cf0);color:#fff;font-weight:700;font-size:15px;cursor:pointer;">Salvar</button>';
   box.innerHTML = h;
   ov.appendChild(box);
-  var btn = box.querySelector("[data-sc-save]");
+  var btn = box.querySelector("[data-sc-save]"); _scBox = box;
   function val(n) { var i = box.querySelector('[data-sc-f="' + n + '"]'); return i ? i.value : ""; }
-  function fim(msg) { btn.disabled = false; btn.textContent = "Salvar"; if (msg) showToast(msg); }
+  function fim(msg) { btn.disabled = false; btn.textContent = "Salvar"; if (msg) _scMsg(msg); }
   ov.addEventListener("click", function(e) {
+    var eye = e.target.closest && e.target.closest("[data-sc-eye]");
+    if (eye) { var inp = eye.parentNode.querySelector("input"); var ver = inp.type === "password"; inp.type = ver ? "text" : "password"; eye.innerHTML = ver ? _SC_EYE_OFF : _SC_EYE_ON; return; }
     if (e.target === ov || (e.target.closest && e.target.closest("[data-sc-close]"))) ov.remove();
   });
   btn.addEventListener("click", function() {
     var atual = val("atual"), nova = val("nova"), conf = val("conf"), email = val("email").trim().toLowerCase();
-    if (!atual) { showToast("Digite a senha atual."); return; }
+    if (!atual) { _scMsg("Digite a senha atual."); return; }
     if (isPw) {
-      if (nova.length < 6) { showToast("A nova senha precisa ter pelo menos 6 caracteres."); return; }
-      if (nova !== conf) { showToast("As senhas novas não são iguais."); return; }
-      if (nova === atual) { showToast("A nova senha precisa ser diferente da atual."); return; }
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast("Digite um e-mail válido."); return; }
+      if (nova.length < 6) { _scMsg("A nova senha precisa ter pelo menos 6 caracteres."); return; }
+      if (nova !== conf) { _scMsg("As senhas novas não são iguais."); return; }
+      if (nova === atual) { _scMsg("A nova senha precisa ser diferente da atual."); return; }
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { _scMsg("Digite um e-mail válido."); return; }
+    var _mm = box.querySelector("[data-sc-msg]"); if (_mm) _mm.style.display = "none";
     btn.disabled = true; btn.textContent = "Salvando...";
     Promise.resolve(typeof refreshIdToken === "function" ? refreshIdToken() : null).catch(function() {}).then(function() {
       return _secPost("lookup", { idToken: _idToken });
@@ -21930,7 +21942,7 @@ function openSecurityForm(kind) {
             } catch (e) {}
           }
           ov.remove();
-          showToast(isPw ? "Senha alterada" : "E-mail alterado");
+          _scMsg(isPw ? "Senha alterada" : "E-mail alterado");
         });
       });
     }).catch(function(e) {
