@@ -203,6 +203,24 @@
   .bottom-nav { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:480px; background:var(--surface); border-top:1px solid var(--border); display:flex; z-index:100; padding-bottom:env(safe-area-inset-bottom); box-shadow:0 -4px 16px rgba(255,111,165,.08); }
   .nav-btn { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:16px 4px; background:none; border:none; cursor:pointer; color:var(--muted); position:relative; }
   .nav-btn.active { color:var(--accent); }
+  .cfg-acc{margin:0 0 10px;border:1px solid var(--border);border-radius:18px;overflow:hidden}
+  .cfg-acc-h{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:0 14px;border:0;background:transparent;color:inherit;font:inherit;font-weight:600;font-size:15px;text-align:left;cursor:pointer}
+  .cfg-acc-t{flex:1}
+  .cfg-acc-ch{width:18px;height:18px;fill:none;stroke:var(--muted);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .15s}
+  .cfg-acc.open .cfg-acc-ch{transform:rotate(90deg)}
+  .cfg-acc-body{display:none;border-top:1px solid var(--border)}
+  .cfg-acc.open .cfg-acc-body{display:block}
+  .cfg-acc-body .cfg-item{margin:0;border:0;border-radius:0;box-shadow:none;min-height:48px;padding-top:10px;padding-bottom:10px;border-top:1px solid var(--border)}
+  .cfg-acc-body .cfg-item:first-child{border-top:0}
+  .cfg-acc-body .cfg-item-icon{display:none}
+  .cfg-acc[data-k="Privacidade"] .cfg-item-sub,.cfg-acc[data-k="Segurança"] .cfg-item-sub{display:none}
+  .cfg-acc-body .cfg-item:has(input) .cfg-item-sub{display:block}
+  .cfg-acc-tile{width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.6);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 5px 12px rgba(200,50,120,.25);display:flex;align-items:center;justify-content:center;flex:none;position:relative;overflow:hidden}
+  .cfg-acc-tile:before{content:"";position:absolute;inset:0;background:linear-gradient(150deg,rgba(255,255,255,.45),rgba(255,255,255,.08) 45%,transparent 60%)}
+  .cfg-acc-tile svg{width:20px;height:20px;fill:none;stroke:#fff;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;position:relative}
+  .cfg-acc.open .cfg-acc-tile svg{animation:cfgPop .5s ease}
+  @keyframes cfgPop{0%{transform:none}40%{transform:scale(1.25) rotate(-8deg)}100%{transform:none}}
+
   .nav-btn.nav-anim svg { transform-origin:50% 50%; }
   .nav-btn.nav-anim[data-nav="feed"] svg { animation:navHop .6s ease; }
   .nav-btn.nav-anim[data-nav="vibes"] svg { animation:navShine .8s ease; }
@@ -4517,7 +4535,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.24.02";
+var APP_VERSION = "2026.10.24.03";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -11441,6 +11459,53 @@ function renderBottomNav(unreadNotifs, unreadMsgs) {
     setTimeout(run,0);
   },true);
   new MutationObserver(run).observe(document.documentElement,{childList:true,subtree:true});
+})();
+
+(function(){
+  var OPEN={"Privacidade":1};
+  var P={
+    palette:'<circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 011.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>',
+    lock:'<path d="M12 14v2m-4-6V8a4 4 0 118 0v2m-9 9h10a1 1 0 001-1v-7a1 1 0 00-1-1H7a1 1 0 00-1 1v7a1 1 0 001 1z"/>',
+    shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
+    mega:'<path d="m3 11 18-5v12L3 14v-3zm8.6 5.8a3 3 0 11-5.8-1.6"/>',
+    buoy:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="m4.93 4.93 4.24 4.24m5.66 5.66 4.24 4.24m-4.24-9.9 4.24-4.24m-4.24 4.24 3.53-3.53M4.93 19.07l4.24-4.24"/>',
+    flag:'<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>'
+  };
+  var G={"aparência":["palette","#FF8FBF","#E8438C"],"privacidade":["lock","#C08CFF","#8250DC"],"segurança":["shield","#FF7FB5","#D6337B"],"ferramentas":["mega","#FF8CC6","#CC2F94"],"suporte":["buoy","#FF8FA3","#DC3A66"],"moderação":["flag","#EE5A8E","#9E1648"]};
+  function build(body){
+    if(body.getAttribute("data-acc")) return;
+    if(!body.querySelector("[data-toggle-hide-followers]")) return;
+    body.setAttribute("data-acc","1");
+    var kids=[].slice.call(body.children);
+    for(var i=0;i<kids.length;i++){
+      var t=kids[i];
+      if(!t.classList||!t.classList.contains("cfg-section-title")) continue;
+      var name=t.textContent.trim(), g=G[name.toLowerCase()];
+      if(!g) continue;
+      var grp=[], j=i+1;
+      while(j<kids.length&&!(kids[j].classList&&kids[j].classList.contains("cfg-section-title"))){grp.push(kids[j]);j++;}
+      var box=document.createElement("div");
+      box.className="cfg-acc"+(OPEN[name]?" open":"");
+      box.setAttribute("data-k",name);
+      var h=document.createElement("button");
+      h.type="button"; h.className="cfg-acc-h";
+      h.innerHTML='<span class="cfg-acc-tile" style="background:linear-gradient(145deg,'+g[1]+','+g[2]+')"><svg viewBox="0 0 24 24" aria-hidden="true">'+P[g[0]]+'</svg></span><span class="cfg-acc-t">'+name+'</span><svg class="cfg-acc-ch" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>';
+      var inner=document.createElement("div");
+      inner.className="cfg-acc-body";
+      body.insertBefore(box,t);
+      box.appendChild(h); box.appendChild(inner);
+      grp.forEach(function(n){inner.appendChild(n);});
+      body.removeChild(t);
+    }
+  }
+  document.addEventListener("click",function(e){
+    var h=e.target.closest&&e.target.closest(".cfg-acc-h"); if(!h) return;
+    var box=h.parentNode; box.classList.toggle("open");
+    OPEN[box.getAttribute("data-k")]=box.classList.contains("open")?1:0;
+  });
+  new MutationObserver(function(){
+    [].forEach.call(document.querySelectorAll(".cfg-body"),build);
+  }).observe(document.documentElement,{childList:true,subtree:true});
 })();
 
 function bindGlobalHandlers() {
