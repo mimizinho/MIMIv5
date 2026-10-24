@@ -4547,7 +4547,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.24.08";
+var APP_VERSION = "2026.10.24.09";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -21845,6 +21845,104 @@ function _mimiLegalP(txt) {
   p.innerHTML = txt.replace("Termos de Uso", '<a data-open-legal="termos" style="text-decoration:underline;cursor:pointer;">Termos de Uso</a>');
   return p;
 }
+// Segurança: trocar senha e trocar e-mail (confirma com a senha atual)
+function _secErr(d) {
+  var c = String((d && d.error && (d.error.message || d.error)) || "");
+  var m = {
+    EMAIL_EXISTS: "Esse e-mail já está em uso por outra conta.",
+    INVALID_EMAIL: "E-mail inválido.",
+    WEAK_PASSWORD: "Senha fraca. Use pelo menos 6 caracteres.",
+    INVALID_PASSWORD: "Senha atual incorreta.",
+    INVALID_LOGIN_CREDENTIALS: "Senha atual incorreta.",
+    CREDENTIAL_TOO_OLD_LOGIN_AGAIN: "Por segurança, saia da conta, entre de novo e tente outra vez.",
+    TOKEN_EXPIRED: "Sua sessão expirou. Entre de novo e tente outra vez.",
+    INVALID_ID_TOKEN: "Sua sessão expirou. Entre de novo e tente outra vez.",
+    OPERATION_NOT_ALLOWED: "Essa alteração não está liberada no servidor.",
+    TOO_MANY_ATTEMPTS_TRY_LATER: "Muitas tentativas. Espere um pouco e tente de novo."
+  };
+  for (var k in m) { if (c.indexOf(k) === 0) return m[k]; }
+  return (typeof translateAuthError === "function") ? translateAuthError(d && d.error) : "Não foi possível concluir.";
+}
+function _secPost(path, body) {
+  return fetch(FIRE_AUTH + ":" + path + "?key=" + CFG.apiKey, {
+    method: "POST", headers: idpHeaders(), body: JSON.stringify(body)
+  }).then(function(r) { return r.json(); });
+}
+function openSecurityForm(kind) {
+  if (!_idToken) { showToast("Faça login novamente."); return; }
+  var isPw = kind === "senha";
+  var cs = getComputedStyle(document.body);
+  var bg = cs.backgroundColor; if (!bg || bg === "rgba(0, 0, 0, 0)") bg = "#fff";
+  var fields = isPw
+    ? [["atual", "Senha atual", "password", "current-password"], ["nova", "Nova senha (mínimo 6 caracteres)", "password", "new-password"], ["conf", "Repita a nova senha", "password", "new-password"]]
+    : [["email", "Novo e-mail", "email", "email"], ["atual", "Senha atual", "password", "current-password"]];
+  var ov = document.createElement("div");
+  ov.style.cssText = "position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;";
+  var box = document.createElement("div");
+  box.style.cssText = "width:100%;max-width:480px;max-height:90vh;overflow:auto;border-radius:22px 22px 0 0;padding:16px 18px calc(24px + env(safe-area-inset-bottom,0px));box-sizing:border-box;background:" + bg + ";color:" + cs.color + ";";
+  var h = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"><span style="font-size:18px;font-weight:700;">' + (isPw ? "Trocar senha" : "Trocar e-mail") + '</span><button type="button" data-sc-close style="border:0;background:none;color:inherit;font-size:22px;padding:4px 8px;cursor:pointer;">✕</button></div>';
+  h += '<div style="font-size:13px;opacity:.65;margin-bottom:6px;">' + (isPw ? "Por segurança, confirme a senha atual." : "O novo e-mail passa a ser o seu login. Confirme a senha atual.") + '</div>';
+  fields.forEach(function(f) {
+    h += '<div style="margin-top:12px;font-size:13px;opacity:.75;">' + f[1] + '</div><input data-sc-f="' + f[0] + '" type="' + f[2] + '" autocomplete="' + f[3] + '" autocapitalize="none" style="width:100%;height:44px;border-radius:12px;border:1px solid #ff6fa5;background:transparent;color:inherit;padding:0 12px;font-size:15px;box-sizing:border-box;margin-top:4px;">';
+  });
+  h += '<button type="button" data-sc-save style="width:100%;height:46px;margin-top:18px;border:0;border-radius:99px;background:linear-gradient(135deg,#ff6fa5,#c06cf0);color:#fff;font-weight:700;font-size:15px;cursor:pointer;">Salvar</button>';
+  box.innerHTML = h;
+  ov.appendChild(box);
+  var btn = box.querySelector("[data-sc-save]");
+  function val(n) { var i = box.querySelector('[data-sc-f="' + n + '"]'); return i ? i.value : ""; }
+  function fim(msg) { btn.disabled = false; btn.textContent = "Salvar"; if (msg) showToast(msg); }
+  ov.addEventListener("click", function(e) {
+    if (e.target === ov || (e.target.closest && e.target.closest("[data-sc-close]"))) ov.remove();
+  });
+  btn.addEventListener("click", function() {
+    var atual = val("atual"), nova = val("nova"), conf = val("conf"), email = val("email").trim().toLowerCase();
+    if (!atual) { showToast("Digite a senha atual."); return; }
+    if (isPw) {
+      if (nova.length < 6) { showToast("A nova senha precisa ter pelo menos 6 caracteres."); return; }
+      if (nova !== conf) { showToast("As senhas novas não são iguais."); return; }
+      if (nova === atual) { showToast("A nova senha precisa ser diferente da atual."); return; }
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast("Digite um e-mail válido."); return; }
+    btn.disabled = true; btn.textContent = "Salvando...";
+    Promise.resolve(typeof refreshIdToken === "function" ? refreshIdToken() : null).catch(function() {}).then(function() {
+      return _secPost("lookup", { idToken: _idToken });
+    }).then(function(L) {
+      if (L.error || !L.users || !L.users[0]) throw { msg: _secErr(L) };
+      var u = L.users[0];
+      var temSenha = (u.providerUserInfo || []).some(function(x) { return x.providerId === "password"; });
+      if (!temSenha) throw { msg: "Sua conta entra com login social (Google, Facebook ou Microsoft), então não há senha ou e-mail para alterar aqui." };
+      if (!isPw && email === String(u.email || "").toLowerCase()) throw { msg: "Esse já é o seu e-mail atual." };
+      return _secPost("signInWithPassword", { email: u.email, password: atual, returnSecureToken: true }).then(function(S) {
+        if (S.error) throw { msg: _secErr(S) };
+        var tok = S.idToken || _idToken;
+        var corpo = isPw ? { idToken: tok, password: nova, returnSecureToken: true } : { idToken: tok, email: email, returnSecureToken: true };
+        return _secPost("update", corpo).then(function(R) {
+          if (R.error) throw { msg: _secErr(R) };
+          if (R.idToken) {
+            _idToken = R.idToken;
+            _refreshToken = R.refreshToken || _refreshToken;
+            try { localStorage.setItem("mimi_session", JSON.stringify({ idToken: _idToken, uid: _fbUid, refreshToken: _refreshToken })); } catch (e) {}
+          }
+          if (typeof _tryEstablishRealtimeSession === "function") _tryEstablishRealtimeSession(isPw ? u.email : email, isPw ? nova : atual);
+          if (!isPw) {
+            try {
+              if (USERS[_fbUid]) USERS[_fbUid].email = email;
+              if (typeof FB !== "undefined" && FB.db) FB.db.collection("users").doc(_fbUid).update({ email: email }).catch(function() {});
+            } catch (e) {}
+          }
+          ov.remove();
+          showToast(isPw ? "Senha alterada" : "E-mail alterado");
+        });
+      });
+    }).catch(function(e) {
+      fim((e && e.msg) || "Não foi possível concluir. Tente de novo.");
+    });
+  });
+  document.body.appendChild(ov);
+}
+document.addEventListener("click", function(e) {
+  var b = e.target.closest && e.target.closest("[data-open-sec]");
+  if (b) openSecurityForm(b.getAttribute("data-open-sec"));
+});
 function _icoL(p) { return '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#ff6fa5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>'; }
 // Estilo de ícone das Configurações (Padrão / Linha), salvo no aparelho
 try { if (localStorage.getItem("mimiIcoStyle") !== "vidro") document.documentElement.classList.add("ico-pastel"); } catch (e) { document.documentElement.classList.add("ico-pastel"); }
@@ -21979,6 +22077,17 @@ function renderSettingsPage() {
       '<div class="cfg-item-label">Verificação de idade</div>' +
       '<div class="cfg-item-sub">'+(me.ageVerified ? ("Verificada <span style=\"display:inline-flex;vertical-align:-2px\">"+icoSvg("check",13,"#2ecc71")+"</span>") : "Confirme sua idade com um documento pra liberar todos os recursos")+'</div>' +
     '</div>' +
+    icoSvg("share",16,"var(--muted)") +
+  '</div>' +
+
+  '<div class="cfg-item" data-open-sec="senha" style="cursor:pointer;">' +
+    '<div class="cfg-item-icon" style="background:#fff0f6;">'+_icoL('<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>')+'</div>' +
+    '<div class="grow"><div class="cfg-item-label">Trocar senha</div></div>' +
+    icoSvg("share",16,"var(--muted)") +
+  '</div>' +
+  '<div class="cfg-item" data-open-sec="email" style="cursor:pointer;">' +
+    '<div class="cfg-item-icon" style="background:#fff0f6;">'+_icoL('<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>')+'</div>' +
+    '<div class="grow"><div class="cfg-item-label">Trocar e-mail</div></div>' +
     icoSvg("share",16,"var(--muted)") +
   '</div>' +
 
