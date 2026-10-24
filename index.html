@@ -1262,6 +1262,25 @@
   .create-toolbar { display:flex; padding:12px 16px; border-top:1px solid var(--border); padding-bottom:calc(12px + env(safe-area-inset-bottom)); align-items:center; }
   .create-tool-btn { background:none; border:none; cursor:pointer; color:var(--accent); padding:8px 14px; border-radius:10px; display:flex; align-items:center; position:relative; }
   .char-count { font-size:13px; color:var(--muted); margin-left:auto; }
+/* np-nova-publicacao */
+.create-overlay.np{background:#fff0f6;}
+.np .create-header{border-bottom:none;gap:12px;}
+.np .create-header>span{flex:1;text-align:center;}
+.np .create-header .icon-btn{width:44px;height:44px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(217,44,128,.15);justify-content:center;}
+.np [data-submit-post]{height:44px;padding:0 22px;border-radius:22px;border:none;background:linear-gradient(135deg,#d92c80,#9a4de3)!important;color:#fff!important;font-weight:800;font-size:16px;box-shadow:0 6px 16px rgba(217,44,128,.33);}
+.np .create-body{padding:4px 16px 16px;}
+.np .np-card{background:#fff;border:1px solid #f7d3e5;border-radius:24px;padding:16px;margin-bottom:12px;}
+.np .create-textarea{font-size:19px;min-height:92px;margin-top:12px;}
+.np .create-preview-wrap{border-radius:18px;}
+.np .np-row{display:flex;align-items:center;gap:12px;padding:14px 16px;min-height:44px;cursor:pointer;}
+.np .np-ico{width:40px;height:40px;border-radius:12px;background:#fff0f6;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.np .np-t{font-weight:800;font-size:15px;}
+.np .np-d{font-size:13px;color:#7a5a70;}
+.np .np-sep{height:1px;background:#f7d3e5;margin:0 16px;}
+.np [data-toggle-comments-allowed]{padding:14px 0!important;margin-top:0!important;}
+.np .create-toolbar{background:#fff;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));}
+.np .create-tool-btn{flex:1;flex-direction:column;justify-content:center;gap:3px;height:56px;padding:0;border-radius:14px;background:#fff0f6;color:#b01e66;font-size:12px;font-weight:800;}
+.np .char-count{margin-left:4px;font-weight:800;min-width:34px;text-align:center;}
 
   /* Menu de seleção do tipo de publicação (aberto pelo botão "+ Publicar") */
   .publish-menu-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:250; display:flex; align-items:flex-end; justify-content:center; animation:publishFadeIn .18s ease; }
@@ -4547,7 +4566,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.24.15";
+var APP_VERSION = "2026.10.24.16";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -21422,36 +21441,38 @@ function renderCreatePost() {
         '<div style="font-weight:700;font-size:13px;">Permitir comentários</div>' +
         '<div style="font-size:11.5px;color:var(--muted);line-height:1.4;">'+(compose.isAd?"Desative para não receber comentários neste anúncio":"Desative para não receber comentários nesta publicação")+'</div>' +
       '</div>' +
-      '<div style="flex-shrink:0;width:42px;height:24px;border-radius:12px;background:'+(compose.commentsEnabled!==false?"#1abc9c":"var(--border)")+';position:relative;transition:background .2s;">' +
+      '<div style="flex-shrink:0;width:42px;height:24px;border-radius:12px;background:'+(compose.commentsEnabled!==false?"linear-gradient(135deg,#d92c80,#9a4de3)":"var(--border)")+';position:relative;transition:background .2s;">' +
         '<div style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:'+(compose.commentsEnabled!==false?"21px":"3px")+';transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);"></div>' +
       '</div>' +
     '</div>';
 
-  return '<div class="create-overlay fade-in">' +
+  return '<div class="create-overlay np fade-in">' +
     '<div class="create-header">' +
       '<button class="icon-btn" data-close-create style="color:var(--sub);">'+icoSvg("back",22)+'</button>' +
       '<span style="font-weight:800;font-size:16px;">'+(compose.isAd?"Novo anúncio":"Nova publicação")+'</span>' +
       '<button class="btn btn-sm btn-primary" data-submit-post>Publicar</button>' +
     '</div>' +
     '<div class="create-body">' +
-      '<div class="row" style="gap:12px;align-items:flex-start;">' +
-        avatarHtml(ME.avatar, 40, false, false, false, null, null, getUserFrame(ME)) +
-        '<div class="grow">' +
-          '<div style="font-weight:700;font-size:14px;margin-bottom:6px;">'+esc(ME.name)+'</div>' +
-          '<div class="create-textarea-wrap" style="position:relative;">' +
-            '<textarea class="create-textarea" placeholder="'+(compose.isAd?"Descreva o anúncio…":"O que está acontecendo?")+'" data-post-text></textarea>' +
-            '<span data-post-sparkle style="position:absolute;top:2px;right:0;pointer-events:none;opacity:.55;">'+icoSvg("sparkle",18,C.accent)+'</span>' +
-          '</div>' +
-          mediaPreview + locPreview + adToggle + commentsToggle +
+      '<div class="np-card">' +
+        '<div class="row" style="gap:12px;align-items:center;">' +
+          avatarHtml(ME.avatar, 44, false, false, false, null, null, getUserFrame(ME)) +
+          '<div class="grow" style="font-weight:800;font-size:16px;">'+esc(ME.name)+'</div>' +
+          '<span data-post-sparkle style="pointer-events:none;opacity:.7;">'+icoSvg("sparkle",20,C.accent)+'</span>' +
         '</div>' +
+        '<textarea class="create-textarea" placeholder="'+(compose.isAd?"Descreva o anúncio…":"O que está acontecendo?")+'" data-post-text></textarea>' +
+        mediaPreview + locPreview +
+      '</div>' +
+      adToggle +
+      '<div class="np-card" style="padding:0;">' +
+        (compose.isAd ? "" : '<div class="np-row" data-pick-loc><span class="np-ico">'+icoSvg("loc",20,C.accent)+'</span><div class="grow"><div class="np-t">Local</div><div class="np-d">'+(compose.loc?"Toque para trocar":"Nenhum local adicionado")+'</div></div></div><div class="np-sep"></div>') +
+        '<div class="np-row" style="cursor:default;padding:0 16px;"><span class="np-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="'+C.accent+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg></span><div class="grow">'+commentsToggle+'</div></div>' +
       '</div>' +
     '</div>' +
     '<div class="create-toolbar">' +
-      '<button class="create-tool-btn" data-pick-media="image" title="Foto">'+icoSvg("img",22,C.accent)+'</button>' +
-      '<button class="create-tool-btn" data-pick-media="video" title="Vídeo">'+icoSvg("video",22,C.accent)+'</button>' +
-      (compose.isAd || !FEED_MUSIC_POSTS_ENABLED ? "" : '<button class="create-tool-btn" data-pick-media="audio" title="Áudio">'+icoSvg("music",22,C.accent)+'</button>') +
-      '<button class="create-tool-btn" data-pick-emoji title="Emoji">'+icoSvg("emoji",22,C.accent)+'</button>' +
-      (compose.isAd ? "" : '<button class="create-tool-btn" data-pick-loc title="Local">'+icoSvg("loc",22,C.accent)+'</button>') +
+      '<button class="create-tool-btn" data-pick-media="image" title="Foto">'+icoSvg("img",22,C.accent)+'<span>Foto</span></button>' +
+      '<button class="create-tool-btn" data-pick-media="video" title="Vídeo">'+icoSvg("video",22,C.accent)+'<span>Vídeo</span></button>' +
+      (compose.isAd || !FEED_MUSIC_POSTS_ENABLED ? "" : '<button class="create-tool-btn" data-pick-media="audio" title="Áudio">'+icoSvg("music",22,C.accent)+'<span>Áudio</span></button>') +
+      '<button class="create-tool-btn" data-pick-emoji title="Emoji">'+icoSvg("emoji",22,C.accent)+'<span>Emoji</span></button>' +
       '<input type="file" data-create-file-input class="hidden">' +
       '<span class="char-count" data-char-count>280</span>' +
     '</div>' +
