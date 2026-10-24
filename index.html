@@ -4517,7 +4517,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.24.01";
+var APP_VERSION = "2026.10.24.02";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -11415,6 +11415,33 @@ function renderBottomNav(unreadNotifs, unreadMsgs) {
   html += '</div>';
   return html;
 }
+
+(function(){
+  var FX={
+    feed:{d:600,e:'ease',o:'50% 50%',f:[{transform:'none'},{transform:'translateY(1px) scale(1.08,.88)',offset:.25},{transform:'translateY(-6px) scale(.95,1.08)',offset:.55},{transform:'scale(1.05,.94)',offset:.8},{transform:'none'}]},
+    vibes:{d:800,e:'ease',o:'50% 50%',f:[{transform:'none'},{transform:'rotate(180deg) scale(1.3)',offset:.45},{transform:'rotate(360deg)'}]},
+    explore:{d:900,e:'ease-in-out',o:'50% 50%',f:[{transform:'none'},{transform:'translate(3px,3px) scale(.75)',offset:.45},{transform:'none'}]},
+    notifs:{d:900,e:'ease',o:'50% 10%',f:[{transform:'none'},{transform:'rotate(22deg)',offset:.15},{transform:'rotate(-20deg)',offset:.3},{transform:'rotate(15deg)',offset:.45},{transform:'rotate(-10deg)',offset:.6},{transform:'rotate(5deg)',offset:.75},{transform:'none'}]},
+    msgs:{d:800,e:'ease',o:'50% 50%',f:[{transform:'none'},{transform:'scale(.85)',offset:.2},{transform:'scale(1.15)',offset:.4},{transform:'scale(.95)',offset:.55},{transform:'scale(1.1)',offset:.7},{transform:'none'}]},
+    profile:{d:600,e:'ease',o:'50% 50%',f:[{transform:'none'},{transform:'translateY(-4px) scale(1.1)',offset:.3},{transform:'translateY(1px) scale(.94)',offset:.6},{transform:'none'}]}
+  };
+  function run(){
+    var id=window._navFx; if(!id||!FX[id]) return;
+    var c=FX[id], t=Date.now()-window._navFxAt;
+    if(t>=c.d){window._navFx=null;return;}
+    var b=document.querySelector('.nav-btn[data-nav="'+id+'"]'), svg=b&&b.querySelector('svg');
+    if(!svg||!svg.animate||svg._fx) return;
+    svg.style.transformOrigin=c.o;
+    var a=svg.animate(c.f,{duration:c.d,easing:c.e}); a.currentTime=t; svg._fx=a;
+  }
+  document.addEventListener('click',function(ev){
+    var b=ev.target.closest&&ev.target.closest('.nav-btn'); if(!b) return;
+    var sv=b.querySelector('svg'); if(sv) sv._fx=null;
+    window._navFx=b.getAttribute('data-nav'); window._navFxAt=Date.now();
+    setTimeout(run,0);
+  },true);
+  new MutationObserver(run).observe(document.documentElement,{childList:true,subtree:true});
+})();
 
 function bindGlobalHandlers() {
   appEl.querySelectorAll("[data-nav]").forEach(function(btn) {
