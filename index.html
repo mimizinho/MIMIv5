@@ -4547,7 +4547,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.24.06";
+var APP_VERSION = "2026.10.24.07";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -21741,6 +21741,48 @@ function applyTheme(theme) {
   try { localStorage.setItem("mimi_theme", theme); } catch(e){}
 }
 
+// Usuários bloqueados: lista com Desbloquear
+function openBlockedUsers() {
+  var ids = Object.keys(BLOCKED_USERS).filter(function(id) { return BLOCKED_USERS[id]; });
+  var cs = getComputedStyle(document.body);
+  var bg = cs.backgroundColor; if (!bg || bg === "rgba(0, 0, 0, 0)") bg = "#fff";
+  function esc(t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;"); }
+  var ov = document.createElement("div");
+  ov.style.cssText = "position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;";
+  var box = document.createElement("div");
+  box.style.cssText = "width:100%;max-width:480px;max-height:80vh;overflow:auto;border-radius:22px 22px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px));box-sizing:border-box;background:" + bg + ";color:" + cs.color + ";";
+  box.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;"><span style="font-size:18px;font-weight:700;">Usuários bloqueados</span><button type="button" data-bl-close style="border:0;background:none;color:inherit;font-size:22px;padding:4px 8px;cursor:pointer;">✕</button></div><div data-bl-list></div>';
+  ov.appendChild(box);
+  var list = box.querySelector("[data-bl-list]");
+  function draw() {
+    list.innerHTML = ids.length ? ids.map(function(id) {
+      var u = USERS[id];
+      var av = avatarHtml((u && u.avatar) || DEFAULT_AVATAR, 40, false, false, false, null, null, u ? getUserFrame(u) : null);
+      var nm = (u && u.name) || "Usuário", un = (u && u.username) || "";
+      var sid = esc(id);
+      return '<div style="display:flex;align-items:center;gap:12px;padding:8px 0;">' + av +
+        '<div style="flex:1;min-width:0;"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(nm) + '</div>' +
+        (un ? '<div style="font-size:13px;opacity:.6;">' + esc(un) + '</div>' : '') + '</div>' +
+        '<button type="button" data-bl-unblock="' + sid + '" style="height:36px;padding:0 16px;border-radius:99px;border:1px solid #ff6fa5;background:none;color:#ff6fa5;font-weight:600;cursor:pointer;">Desbloquear</button></div>';
+    }).join("") : '<div style="padding:24px 0;text-align:center;opacity:.6;">Você não bloqueou ninguém.</div>';
+  }
+  draw();
+  ov.addEventListener("click", function(e) {
+    if (e.target === ov || (e.target.closest && e.target.closest("[data-bl-close]"))) { ov.remove(); return; }
+    var b = e.target.closest && e.target.closest("[data-bl-unblock]");
+    if (!b) return;
+    var id = b.getAttribute("data-bl-unblock");
+    unblockUserId(id);
+    ids = ids.filter(function(x) { return x !== id; });
+    draw();
+    showToast("Usuário desbloqueado");
+    if (typeof renderSoon === "function") renderSoon();
+  });
+  document.body.appendChild(ov);
+}
+document.addEventListener("click", function(e) {
+  if (e.target.closest && e.target.closest("[data-open-blocked]")) openBlockedUsers();
+});
 function _icoL(p) { return '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#ff6fa5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>'; }
 // Estilo de ícone das Configurações (Padrão / Linha), salvo no aparelho
 try { if (localStorage.getItem("mimiIcoStyle") !== "vidro") document.documentElement.classList.add("ico-pastel"); } catch (e) { document.documentElement.classList.add("ico-pastel"); }
@@ -21825,6 +21867,11 @@ function renderSettingsPage() {
   '</div>') : "") +
 
   // Ferramentas
+  '<div class="cfg-item" data-open-blocked style="cursor:pointer;">' +
+    '<div class="cfg-item-icon" style="background:#fff0f6;">'+_icoL('<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>')+'</div>' +
+    '<div class="grow"><div class="cfg-item-label">Usuários bloqueados</div></div>' +
+  '</div>' +
+
   '<div class="cfg-section-title">Ferramentas</div>' +
   '<div class="cfg-item" data-open-my-ads style="cursor:pointer;">' +
     '<div class="cfg-item-icon" style="background:#e9fbf3;">'+_icoL('<path d="m3 11 18-5v12L3 14v-3zm8.6 5.8a3 3 0 11-5.8-1.6"/>')+'</div>' +
