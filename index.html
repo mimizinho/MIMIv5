@@ -1411,6 +1411,12 @@
   .cfg-item-sub { font-size:12px; color:var(--muted); margin-top:2px; }
   .cfg-item-right { color:var(--muted); }
   /* Estilo de ícone: Linha (sem fundo) */
+  .ico-style-box { padding:4px 14px 14px; }
+  .ico-style-lbl { font-size:12px; font-weight:700; color:var(--muted); margin:10px 0 8px; }
+  html.ico-linha .cfg-acc-tile { background:transparent !important; border:0; box-shadow:none; width:28px; height:28px; }
+  html.ico-linha .cfg-acc-tile:before { display:none; }
+  html.ico-linha .cfg-acc-tile svg { width:24px; height:24px; stroke:#ff6fa5; stroke-width:1.8; }
+  html.ico-linha .cfg-acc-body .cfg-item-icon { display:flex; }
   html.ico-linha .cfg-item-icon { background:transparent !important; width:28px; height:28px; }
   .ico-style-picker { display:flex; gap:8px; margin:0 0 4px; }
   .ico-style-opt { flex:1; height:44px; border-radius:99px; border:1px solid var(--border); background:var(--surface); color:var(--muted); font-weight:600; font-size:14px; font-family:inherit; cursor:pointer; }
@@ -4540,7 +4546,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.24.04";
+var APP_VERSION = "2026.10.24.05";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -21733,6 +21739,7 @@ function applyTheme(theme) {
   try { localStorage.setItem("mimi_theme", theme); } catch(e){}
 }
 
+function _icoL(p) { return '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#ff6fa5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>'; }
 // Estilo de ícone das Configurações (Padrão / Linha), salvo no aparelho
 try { if (localStorage.getItem("mimiIcoStyle") === "linha") document.documentElement.classList.add("ico-linha"); } catch (e) {}
 document.addEventListener("click", function(e) {
@@ -21773,15 +21780,14 @@ function renderSettingsPage() {
   html += '</div>' +
 
   // Privacidade
-  '<div class="cfg-section-title">Estilo dos ícones</div>' +
-  '<div class="ico-style-picker">' +
+  '<div class="ico-style-box"><div class="ico-style-lbl">Estilo dos ícones</div><div class="ico-style-picker">' +
     '<button class="ico-style-opt" data-set-ico-style="padrao">Padrão</button>' +
     '<button class="ico-style-opt" data-set-ico-style="linha">Linha</button>' +
-  '</div>' +
+  '</div></div>' +
 
   '<div class="cfg-section-title">Privacidade</div>' +
   '<div class="cfg-item" data-toggle-hide-followers style="cursor:pointer;">' +
-    '<div class="cfg-item-icon" style="background:#fff0f6;">'+icoSvg("user",20,C.accent)+'</div>' +
+    '<div class="cfg-item-icon" style="background:#fff0f6;">'+_icoL('<path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75M3 3l18 18"/>')+'</div>' +
     '<div class="grow">' +
       '<div class="cfg-item-label">Ocultar lista de seguidores e seguindo</div>' +
       '<div class="cfg-item-sub">O número continua visível para todos; só o acesso às listas fica bloqueado</div>' +
@@ -21792,7 +21798,7 @@ function renderSettingsPage() {
   '</div>' +
 
   '<div class="cfg-item" data-toggle-hide-likes style="cursor:pointer;">' +
-    '<div class="cfg-item-icon" style="background:#fff0f6;">'+icoSvg("user",20,C.accent)+'</div>' +
+    '<div class="cfg-item-icon" style="background:#fff0f6;">'+_icoL('<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0016.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 002 8.5c0 2.3 1.5 4.05 3 5.5l7 7z"/><path d="M3 3l18 18"/>')+'</div>' +
     '<div class="grow">' +
       '<div class="cfg-item-label">Ocultar minhas curtidas no perfil</div>' +
       '<div class="cfg-item-sub">A aba "curtidas" do seu perfil fica visível só pra você; outras pessoas não veem o que você curtiu</div>' +
@@ -21805,7 +21811,7 @@ function renderSettingsPage() {
 
   (ME_ID === MIMI_OFFICIAL_UID ? (
   '<div class="cfg-item" style="cursor:default;align-items:flex-start;">' +
-    '<div class="cfg-item-icon" style="background:#fff0f6;">'+icoSvg("user",20,C.accent)+'</div>' +
+    '<div class="cfg-item-icon" style="background:#fff0f6;">'+_icoL('<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>')+'</div>' +
     '<div class="grow">' +
       '<div class="cfg-item-label">Seguidores exibidos no perfil</div>' +
       '<div class="cfg-item-sub" style="margin-bottom:8px;">Deixe em branco para mostrar o número real de seguidores</div>' +
@@ -21819,7 +21825,7 @@ function renderSettingsPage() {
   // Ferramentas
   '<div class="cfg-section-title">Ferramentas</div>' +
   '<div class="cfg-item" data-open-my-ads style="cursor:pointer;">' +
-    '<div class="cfg-item-icon" style="background:#e9fbf3;">'+icoSvg("megaphone",20,"#1abc9c")+'</div>' +
+    '<div class="cfg-item-icon" style="background:#e9fbf3;">'+_icoL('<path d="m3 11 18-5v12L3 14v-3zm8.6 5.8a3 3 0 11-5.8-1.6"/>')+'</div>' +
     '<div class="grow">' +
       '<div class="cfg-item-label">Meus Anúncios</div>' +
       '<div class="cfg-item-sub">Gerencie os anúncios que você publicou e sua visibilidade no perfil</div>' +
@@ -21830,7 +21836,7 @@ function renderSettingsPage() {
   // Suporte
   '<div class="cfg-section-title">Suporte</div>' +
   '<div class="cfg-item" data-open-support style="cursor:pointer;">' +
-    '<div class="cfg-item-icon" style="background:#fff0f6;">'+icoSvg("mail",20,C.accent)+'</div>' +
+    '<div class="cfg-item-icon" style="background:#fff0f6;">'+_icoL('<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="m4.93 4.93 4.24 4.24m5.66 5.66 4.24 4.24m-4.24-9.9 4.24-4.24m-4.24 4.24 3.53-3.53M4.93 19.07l4.24-4.24"/>')+'</div>' +
     '<div class="grow">' +
       '<div class="cfg-item-label">Central de ajuda</div>' +
       '<div class="cfg-item-sub">Perguntas frequentes, e-mail e WhatsApp</div>' +
@@ -21841,7 +21847,7 @@ function renderSettingsPage() {
   // Segurança
   '<div class="cfg-section-title">Segurança</div>' +
   '<div class="cfg-item" data-open-mfa-enroll style="cursor:pointer;">' +
-    '<div class="cfg-item-icon" style="background:#fff0f6;">'+icoSvg("shield",20,C.accent)+'</div>' +
+    '<div class="cfg-item-icon" style="background:#fff0f6;">'+_icoL('<rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01M9.5 9.5l2 2 3-3.5"/>')+'</div>' +
     '<div class="grow">' +
       '<div class="cfg-item-label">Verificação em duas etapas (SMS)</div>' +
       '<div class="cfg-item-sub">'+(me.mfaEnabled ? ("Ativada <span style=\"display:inline-flex;vertical-align:-2px\">"+icoSvg("check",13,"#2ecc71")+"</span> — pedimos um código por SMS em aparelhos novos") : "Adicione seu telefone como uma camada extra de proteção no login")+'</div>' +
@@ -21849,7 +21855,7 @@ function renderSettingsPage() {
     icoSvg("share",16,"var(--muted)") +
   '</div>' +
   '<div class="cfg-item" data-open-age-verify style="cursor:pointer;">' +
-    '<div class="cfg-item-icon" style="background:#fff0f6;">'+icoSvg("user",20,C.accent)+'</div>' +
+    '<div class="cfg-item-icon" style="background:#fff0f6;">'+_icoL('<rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="11" r="2"/><path d="M5 16c.5-1.3 1.6-2 3-2s2.5.7 3 2M14 10h5M14 14h3"/>')+'</div>' +
     '<div class="grow">' +
       '<div class="cfg-item-label">Verificação de idade</div>' +
       '<div class="cfg-item-sub">'+(me.ageVerified ? ("Verificada <span style=\"display:inline-flex;vertical-align:-2px\">"+icoSvg("check",13,"#2ecc71")+"</span>") : "Confirme sua idade com um documento pra liberar todos os recursos")+'</div>' +
@@ -21861,7 +21867,7 @@ function renderSettingsPage() {
   (isAppOwner(me) ?
     '<div class="cfg-section-title">Moderação</div>' +
     '<div class="cfg-item" data-open-moderation-panel style="cursor:pointer;">' +
-      '<div class="cfg-item-icon" style="background:#fff0f6;">'+icoSvg("bell",20,C.accent)+'</div>' +
+      '<div class="cfg-item-icon" style="background:#fff0f6;">'+_icoL('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4M12 16h.01"/>')+'</div>' +
       '<div class="grow">' +
         '<div class="cfg-item-label">Central de Moderação</div>' +
         '<div class="cfg-item-sub">Denúncias pendentes e números de engajamento acumulado</div>' +
@@ -21869,7 +21875,7 @@ function renderSettingsPage() {
       icoSvg("share",16,"var(--muted)") +
     '</div>' +
     '<div class="cfg-item" data-open-users-panel style="cursor:pointer;">' +
-      '<div class="cfg-item-icon" style="background:#fff0f6;">'+icoSvg("user",20,C.accent)+'</div>' +
+      '<div class="cfg-item-icon" style="background:#fff0f6;">'+_icoL('<path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>')+'</div>' +
       '<div class="grow">' +
         '<div class="cfg-item-label">Usuários da plataforma</div>' +
         '<div class="cfg-item-sub">Ver todas as contas do MIMI, com busca por nome, @ ou e-mail</div>' +
