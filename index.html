@@ -4547,7 +4547,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.24.07";
+var APP_VERSION = "2026.10.24.08";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -21783,6 +21783,68 @@ function openBlockedUsers() {
 document.addEventListener("click", function(e) {
   if (e.target.closest && e.target.closest("[data-open-blocked]")) openBlockedUsers();
 });
+
+// Termos de Uso e Política de Privacidade (telas dentro do app)
+var LEGAL_DOCS = {
+  termos: { t: "Termos de Uso", s: [
+    ["Última atualização", "24 de outubro de 2026."],
+    ["1. Aceitação", "Ao criar uma conta ou usar a Mimi, você concorda com estes Termos de Uso. Se não concordar, não utilize o app."],
+    ["2. Quem pode usar", "A Mimi é voltada a pessoas com 13 anos ou mais. Menores de 18 anos devem usar o app com o conhecimento e a supervisão de um responsável."],
+    ["3. Sua conta", "Você é responsável pelas informações da sua conta e por tudo o que acontece nela. Mantenha sua senha em segurança e avise o suporte se suspeitar de uso indevido. Cada pessoa deve ter uma única conta, com dados verdadeiros."],
+    ["4. Conduta e conteúdo proibido", "Não é permitido publicar ou enviar conteúdo ilegal, de ódio, assédio, ameaça, nudez ou conteúdo sexual explícito, violência gráfica, golpes, spam, nem conteúdo que viole direitos de terceiros (como direitos autorais ou de imagem). Também é proibido se passar por outra pessoa ou tentar burlar a segurança do app."],
+    ["5. Seus conteúdos", "Fotos, vídeos, textos e demais conteúdos que você publica continuam sendo seus. Ao publicar, você autoriza a Mimi a armazenar, exibir e distribuir esse conteúdo dentro do app, conforme a sua configuração de privacidade, apenas para o funcionamento do serviço."],
+    ["6. Denúncias e moderação", "Qualquer pessoa pode denunciar conteúdos e perfis. A equipe da Mimi pode remover conteúdos, limitar recursos, suspender ou encerrar contas que violem estes Termos, com ou sem aviso prévio nos casos graves."],
+    ["7. Assinatura e verificação", "A assinatura é cobrada mensalmente e pode ser cancelada a qualquer momento. O badge de verificação é ativado logo após a confirmação do pagamento e permanece enquanto a assinatura estiver ativa e a conta cumprir estes Termos."],
+    ["8. Anúncios", "Anúncios publicados na Mimi devem seguir as mesmas regras de conduta. Anúncios podem ser removidos se forem enganosos, ilegais ou ofensivos."],
+    ["9. Encerramento", "Você pode parar de usar a Mimi quando quiser. Podemos suspender ou encerrar contas que violem estes Termos ou que coloquem outras pessoas em risco."],
+    ["10. Alterações", "Podemos atualizar estes Termos. Quando houver mudanças relevantes, avisaremos pelo app. Continuar usando a Mimi depois da atualização significa que você concorda com a nova versão."],
+    ["11. Contato", "Dúvidas ou solicitações: use a opção Suporte nas Configurações do app."]
+  ] },
+  privacidade: { t: "Política de Privacidade", s: [
+    ["Última atualização", "24 de outubro de 2026."],
+    ["1. Compromisso", "Respeitamos a sua privacidade e tratamos seus dados conforme a Lei Geral de Proteção de Dados (LGPD, Lei 13.709/2018)."],
+    ["2. Dados que coletamos", "Dados de conta (nome, nome de usuário, e-mail, foto de perfil); conteúdos que você publica (fotos, vídeos, textos, comentários, curtidas); interações no app (seguidores, bloqueios, denúncias, mensagens); e dados técnicos básicos do aparelho e do uso do app, necessários para o funcionamento e a segurança."],
+    ["3. Para que usamos", "Para criar e manter sua conta, mostrar seus conteúdos conforme sua privacidade, enviar avisos, processar assinaturas, exibir anúncios, moderar conteúdos e proteger o app contra fraude e abuso."],
+    ["4. Serviços que processam dados", "A Mimi usa serviços de terceiros para funcionar: Firebase (autenticação e banco de dados), Supabase, ImageKit e Backblaze (armazenamento e entrega de imagens e vídeos). Esses serviços recebem apenas os dados necessários para executar sua função."],
+    ["5. Compartilhamento", "Não vendemos seus dados pessoais. Seu perfil e suas publicações ficam visíveis conforme as suas configurações. Podemos compartilhar dados quando exigido por lei ou ordem judicial."],
+    ["6. Segurança e armazenamento", "Adotamos medidas técnicas para proteger seus dados. Nenhum sistema é totalmente seguro, mas trabalhamos para reduzir riscos. Guardamos os dados enquanto sua conta existir ou pelo tempo exigido por lei."],
+    ["7. Seus direitos", "Você pode pedir acesso aos seus dados, correção, exclusão da conta e dos dados, portabilidade e a revogação de consentimentos. Para exercer esses direitos, use a opção Suporte nas Configurações."],
+    ["8. Bloqueio e controle", "Você pode bloquear usuários, denunciar conteúdos e gerenciar quem vê o que você publica, nas Configurações."],
+    ["9. Crianças e adolescentes", "A Mimi é voltada a maiores de 13 anos. Menores de 18 devem ter a ciência de um responsável. Se identificarmos conta de criança menor de 13 anos, ela poderá ser removida."],
+    ["10. Alterações", "Esta Política pode ser atualizada. Mudanças relevantes serão avisadas no app."],
+    ["11. Contato", "Dúvidas sobre privacidade: use a opção Suporte nas Configurações do app."]
+  ] }
+};
+function openLegalDoc(kind) {
+  var d = LEGAL_DOCS[kind]; if (!d) return;
+  var cs = getComputedStyle(document.body);
+  var bg = cs.backgroundColor; if (!bg || bg === "rgba(0, 0, 0, 0)") bg = "#fff";
+  var ov = document.createElement("div");
+  ov.style.cssText = "position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;";
+  var box = document.createElement("div");
+  box.style.cssText = "width:100%;max-width:480px;max-height:90vh;overflow:auto;border-radius:22px 22px 0 0;padding:16px 18px calc(24px + env(safe-area-inset-bottom,0px));box-sizing:border-box;background:" + bg + ";color:" + cs.color + ";";
+  var h = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;"><span style="font-size:18px;font-weight:700;">' + d.t + '</span><button type="button" data-lg-close style="border:0;background:none;color:inherit;font-size:22px;padding:4px 8px;cursor:pointer;">✕</button></div>';
+  d.s.forEach(function(x, i) {
+    h += '<div style="font-weight:700;margin:14px 0 4px;' + (i === 0 ? 'opacity:.6;font-size:13px;font-weight:600;' : 'color:#ff6fa5;') + '">' + x[0] + '</div><div style="font-size:14px;line-height:1.5;' + (i === 0 ? 'opacity:.6;' : 'opacity:.9;') + '">' + x[1] + '</div>';
+  });
+  box.innerHTML = h;
+  ov.appendChild(box);
+  ov.addEventListener("click", function(e) {
+    if (e.target === ov || (e.target.closest && e.target.closest("[data-lg-close]"))) ov.remove();
+  });
+  document.body.appendChild(ov);
+}
+document.addEventListener("click", function(e) {
+  var b = e.target.closest && e.target.closest("[data-open-legal]");
+  if (b) openLegalDoc(b.getAttribute("data-open-legal"));
+});
+// Parágrafo legal da assinatura com "Termos de Uso" clicável
+function _mimiLegalP(txt) {
+  var p = document.createElement("p");
+  p.className = "mpx-legal";
+  p.innerHTML = txt.replace("Termos de Uso", '<a data-open-legal="termos" style="text-decoration:underline;cursor:pointer;">Termos de Uso</a>');
+  return p;
+}
 function _icoL(p) { return '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#ff6fa5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>'; }
 // Estilo de ícone das Configurações (Padrão / Linha), salvo no aparelho
 try { if (localStorage.getItem("mimiIcoStyle") !== "vidro") document.documentElement.classList.add("ico-pastel"); } catch (e) { document.documentElement.classList.add("ico-pastel"); }
@@ -21870,6 +21932,14 @@ function renderSettingsPage() {
   '<div class="cfg-item" data-open-blocked style="cursor:pointer;">' +
     '<div class="cfg-item-icon" style="background:#fff0f6;">'+_icoL('<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>')+'</div>' +
     '<div class="grow"><div class="cfg-item-label">Usuários bloqueados</div></div>' +
+  '</div>' +
+  '<div class="cfg-item" data-open-legal="termos" style="cursor:pointer;">' +
+    '<div class="cfg-item-icon" style="background:#f3eefe;">'+_icoL('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/>')+'</div>' +
+    '<div class="grow"><div class="cfg-item-label">Termos de Uso</div></div>' +
+  '</div>' +
+  '<div class="cfg-item" data-open-legal="privacidade" style="cursor:pointer;">' +
+    '<div class="cfg-item-icon" style="background:#eaf4ff;">'+_icoL('<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>')+'</div>' +
+    '<div class="grow"><div class="cfg-item-label">Política de Privacidade</div></div>' +
   '</div>' +
 
   '<div class="cfg-section-title">Ferramentas</div>' +
@@ -22249,7 +22319,7 @@ function renderSubsPage() {
     }
   }
 
-  html += '<p class="subs-terms">Ao assinar você concorda com os Termos de Uso da Mimi. A cobrança é mensal e pode ser cancelada a qualquer momento. O badge de verificação é ativado imediatamente após o pagamento ser confirmado.</p>';
+  html += '<p class="subs-terms">Ao assinar você concorda com os <a data-open-legal="termos" style="text-decoration:underline;cursor:pointer;">Termos de Uso</a> da Mimi. A cobrança é mensal e pode ser cancelada a qualquer momento. O badge de verificação é ativado imediatamente após o pagamento ser confirmado.</p>';
 
   html += '</div></div>';
   return html;
@@ -26283,7 +26353,7 @@ setTimeout(function () { BirthdayNotifier.init(); }, 2000);
       wrap.appendChild(buildCompare());
       wrap.appendChild(buildTestimonials());
       wrap.appendChild(buildFaq());
-      wrap.appendChild(el('p', 'mpx-legal', 'Ao assinar você concorda com os Termos de Uso da Mimi. A cobrança é mensal e pode ser cancelada a qualquer momento. O badge de verificação é ativado imediatamente após o pagamento ser confirmado.'));
+      wrap.appendChild(_mimiLegalP('Ao assinar você concorda com os Termos de Uso da Mimi. A cobrança é mensal e pode ser cancelada a qualquer momento. O badge de verificação é ativado imediatamente após o pagamento ser confirmado.'));
       main.appendChild(wrap);
       root.appendChild(main);
       if (opts.semBotao) main.style.paddingBottom = '40px'; else root.appendChild(buildBar());
