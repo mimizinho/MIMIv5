@@ -1410,6 +1410,11 @@
   .cfg-item-label { font-weight:600; font-size:14px; color:var(--text); flex:1; }
   .cfg-item-sub { font-size:12px; color:var(--muted); margin-top:2px; }
   .cfg-item-right { color:var(--muted); }
+  /* Estilo de ícone: Linha (sem fundo) */
+  html.ico-linha .cfg-item-icon { background:transparent !important; width:28px; height:28px; }
+  .ico-style-picker { display:flex; gap:8px; margin:0 0 4px; }
+  .ico-style-opt { flex:1; height:44px; border-radius:99px; border:1px solid var(--border); background:var(--surface); color:var(--muted); font-weight:600; font-size:14px; font-family:inherit; cursor:pointer; }
+  html.ico-linha .ico-style-opt[data-set-ico-style="linha"], html:not(.ico-linha) .ico-style-opt[data-set-ico-style="padrao"] { background:#ff6fa5; border-color:transparent; color:#fff; }
 
   /* ── Perfil ↔ Configurações (deslizável) ─────────────────────
      Perfil e Configurações ficam lado a lado num trilho de 200% de
@@ -4535,7 +4540,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.24.03";
+var APP_VERSION = "2026.10.24.04";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -21728,6 +21733,15 @@ function applyTheme(theme) {
   try { localStorage.setItem("mimi_theme", theme); } catch(e){}
 }
 
+// Estilo de ícone das Configurações (Padrão / Linha), salvo no aparelho
+try { if (localStorage.getItem("mimiIcoStyle") === "linha") document.documentElement.classList.add("ico-linha"); } catch (e) {}
+document.addEventListener("click", function(e) {
+  var b = e.target.closest && e.target.closest("[data-set-ico-style]");
+  if (!b) return;
+  var l = b.getAttribute("data-set-ico-style") === "linha";
+  document.documentElement.classList.toggle("ico-linha", l);
+  try { localStorage.setItem("mimiIcoStyle", l ? "linha" : "padrao"); } catch (e2) {}
+});
 function renderSettingsPage() {
   var me = ME_obj();
   var t = state.appTheme;
@@ -21759,6 +21773,12 @@ function renderSettingsPage() {
   html += '</div>' +
 
   // Privacidade
+  '<div class="cfg-section-title">Estilo dos ícones</div>' +
+  '<div class="ico-style-picker">' +
+    '<button class="ico-style-opt" data-set-ico-style="padrao">Padrão</button>' +
+    '<button class="ico-style-opt" data-set-ico-style="linha">Linha</button>' +
+  '</div>' +
+
   '<div class="cfg-section-title">Privacidade</div>' +
   '<div class="cfg-item" data-toggle-hide-followers style="cursor:pointer;">' +
     '<div class="cfg-item-icon" style="background:#fff0f6;">'+icoSvg("user",20,C.accent)+'</div>' +
