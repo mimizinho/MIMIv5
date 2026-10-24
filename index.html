@@ -4031,7 +4031,7 @@ function addNotif(type, fromUserId, text, targetUserId) {
   NOTIFS.unshift(n);
   // Atualiza badge da nav sem re-render completo
   var badge = document.querySelector(".nav-btn[data-nav='notifs'] .nav-badge");
-  var unread = NOTIFS.filter(function(x){ return !x.read; }).length;
+  var unread = _notifVisible().filter(function(x){ return !x.read; }).length;
   if (!badge) {
     var navBtn = document.querySelector(".nav-btn[data-nav='notifs']");
     if (navBtn) {
@@ -4047,7 +4047,7 @@ function addNotif(type, fromUserId, text, targetUserId) {
   var fromUser = USERS[fromUserId];
   var uname = fromUser ? fromUser.name : "Alguém";
   var uavatar = fromUser ? fromUser.avatar : DEFAULT_AVATAR;
-  showNotifBanner(uname, uavatar, text);
+  if (_notifOn(type)) showNotifBanner(uname, uavatar, text);
 }
 
 var CONVOS = [
@@ -4547,7 +4547,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.24.12";
+var APP_VERSION = "2026.10.24.13";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -9896,9 +9896,9 @@ function startNotifPolling() {
         }
 
         // Toast + badge
-        showNotifBanner(doc.fromName||"Alguém", doc.fromAvatar||DEFAULT_AVATAR, doc.text||"");
+        if (_notifOn(n.type)) showNotifBanner(doc.fromName||"Alguém", doc.fromAvatar||DEFAULT_AVATAR, doc.text||"");
         var badge = document.querySelector(".nav-btn[data-nav='notifs'] .nav-badge");
-        var unread = NOTIFS.filter(function(x){ return !x.read; }).length;
+        var unread = _notifVisible().filter(function(x){ return !x.read; }).length;
         if (badge) {
           badge.textContent = unread;
         } else {
@@ -11177,7 +11177,7 @@ function _renderImpl() {
   meRefresh();
 
   mimiAvatarGate();
-  var unreadNotifs = NOTIFS.filter(function(n){ return !n.read; }).length;
+  var unreadNotifs = _notifVisible().filter(function(n){ return !n.read; }).length;
   var unreadMsgs = CONVOS.reduce(function(a,c){ return a + ((c && !_convoHidden(c) && c.unread) || 0); }, 0);
 
   var pageHtml = "";
@@ -14912,16 +14912,16 @@ function renderNotifsPage() {
   var colMap  = { like:C.pink, follow:C.accent, comment:C.green, mention:"#ffb454" };
   var html = '<div class="page-header row" style="justify-content:space-between;">' +
     '<span class="display" style="font-size:18px;">Notificações</span>' +
-    (NOTIFS.length ? '<button data-clear-all-notifs aria-label="Limpar todas as notificações" style="background:none;border:none;padding:6px;cursor:pointer;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg></button>' : "") +
+    (_notifVisible().length ? '<button data-clear-all-notifs aria-label="Limpar todas as notificações" style="background:none;border:none;padding:6px;cursor:pointer;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg></button>' : "") +
   '</div>';
-  if (!NOTIFS.length) {
+  if (!_notifVisible().length) {
     html += '<div style="padding:60px 20px;text-align:center;color:var(--muted);">' +
       '<div style="width:64px;height:64px;margin:0 auto 12px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;">'+icoSvg("bell",30,"var(--sub)")+'</div>' +
       '<p style="font-weight:700;margin:0 0 6px;color:var(--sub);">Sem notificações</p>' +
       '<p style="font-size:13px;margin:0;">Quando alguém curtir, comentar ou te seguir, aparecerá aqui.</p>' +
     '</div>';
   }
-  NOTIFS.forEach(function(n) {
+  _notifVisible().forEach(function(n) {
     var u = USERS[n.userId];
     var name   = u ? u.name   : (n._fromName   || "Alguém");
     var avatar = u ? u.avatar : (n._fromAvatar || DEFAULT_AVATAR);
@@ -21957,6 +21957,50 @@ document.addEventListener("click", function(e) {
   var b = e.target.closest && e.target.closest("[data-open-sec]");
   if (b) openSecurityForm(b.getAttribute("data-open-sec"));
 });
+// Notificacoes: escolher quais tipos de aviso aparecem (salvo no aparelho)
+var _NOTIF_TIPOS = [
+  ["like", "Curtidas", "Quando curtirem suas publicações"],
+  ["follow", "Novos seguidores", "Quando alguém começar a te seguir"],
+  ["comment", "Comentários", "Quando comentarem nas suas publicações"],
+  ["mention", "Menções", "Quando te mencionarem em um comentário"],
+  ["birthday", "Aniversários", "Lembretes de aniversário"]
+];
+function _notifPrefs() { try { var p = JSON.parse(localStorage.getItem("mimiNotifPrefs") || "{}"); return (p && typeof p === "object") ? p : {}; } catch (e) { return {}; } }
+function _notifOn(type) { return _notifPrefs()[type] !== false; }
+function _notifVisible() { return NOTIFS.filter(function(n) { return _notifOn(n.type); }); }
+function openNotifPrefs() {
+  var cs = getComputedStyle(document.body);
+  var bg = cs.backgroundColor; if (!bg || bg === "rgba(0, 0, 0, 0)") bg = "#fff";
+  var ov = document.createElement("div");
+  ov.style.cssText = "position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;";
+  var box = document.createElement("div");
+  box.style.cssText = "width:100%;max-width:480px;max-height:85vh;overflow:auto;border-radius:22px 22px 0 0;padding:16px 18px calc(24px + env(safe-area-inset-bottom,0px));box-sizing:border-box;background:" + bg + ";color:" + cs.color + ";";
+  box.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"><span style="font-size:18px;font-weight:700;">Notificações</span><button type="button" data-np-close style="border:0;background:none;color:inherit;font-size:22px;padding:4px 8px;cursor:pointer;">✕</button></div><div style="font-size:13px;opacity:.65;">Avisos desligados somem da lista, do selo e do banner. Ao ligar de novo, eles voltam.</div><div data-np-list></div>';
+  ov.appendChild(box);
+  var list = box.querySelector("[data-np-list]");
+  function draw() {
+    var pr = _notifPrefs();
+    list.innerHTML = _NOTIF_TIPOS.map(function(t) {
+      var on = pr[t[0]] !== false;
+      return '<div style="display:flex;align-items:center;gap:12px;padding:12px 0;"><div style="flex:1;min-width:0;"><div style="font-weight:600;">' + t[1] + '</div><div style="font-size:13px;opacity:.6;">' + t[2] + '</div></div><div data-np="' + t[0] + '" role="switch" aria-checked="' + on + '" style="flex:none;width:46px;height:28px;border-radius:99px;position:relative;cursor:pointer;background:' + (on ? "linear-gradient(135deg,#ff6fa5,#c06cf0)" : "#cfcfd8") + ';"><div style="position:absolute;top:3px;left:' + (on ? "21px" : "3px") + ';width:22px;height:22px;border-radius:50%;background:#fff;transition:left .15s;"></div></div></div>';
+    }).join("");
+  }
+  draw();
+  ov.addEventListener("click", function(e) {
+    if (e.target === ov || (e.target.closest && e.target.closest("[data-np-close]"))) { ov.remove(); return; }
+    var sw = e.target.closest && e.target.closest("[data-np]");
+    if (!sw) return;
+    var k = sw.getAttribute("data-np"), pr = _notifPrefs();
+    pr[k] = pr[k] === false;
+    try { localStorage.setItem("mimiNotifPrefs", JSON.stringify(pr)); } catch (er) {}
+    draw();
+    if (typeof renderSoon === "function") renderSoon();
+  });
+  document.body.appendChild(ov);
+}
+document.addEventListener("click", function(e) {
+  if (e.target.closest && e.target.closest("[data-open-notif-prefs]")) openNotifPrefs();
+});
 function _icoL(p) { return '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#ff6fa5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>'; }
 // Estilo de ícone das Configurações (Padrão / Linha), salvo no aparelho
 try { if (localStorage.getItem("mimiIcoStyle") !== "vidro") document.documentElement.classList.add("ico-pastel"); } catch (e) { document.documentElement.classList.add("ico-pastel"); }
@@ -22055,6 +22099,11 @@ function renderSettingsPage() {
   '</div>' +
 
   '<div class="cfg-section-title">Ferramentas</div>' +
+  '<div class="cfg-item" data-open-notif-prefs style="cursor:pointer;">' +
+    '<div class="cfg-item-icon" style="background:#fff4e0;">'+_icoL('<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>')+'</div>' +
+    '<div class="grow"><div class="cfg-item-label">Notificações</div><div class="cfg-item-sub">Escolha quais avisos receber</div></div>' +
+    icoSvg("share",16,"var(--muted)") +
+  '</div>' +
   '<div class="cfg-item" data-open-my-ads style="cursor:pointer;">' +
     '<div class="cfg-item-icon" style="background:#e9fbf3;">'+_icoL('<path d="m3 11 18-5v12L3 14v-3zm8.6 5.8a3 3 0 11-5.8-1.6"/>')+'</div>' +
     '<div class="grow">' +
@@ -25769,7 +25818,7 @@ var BirthdayNotifier = (function () {
 
   function updateNotifBadge() {
     var badge = document.querySelector(".nav-btn[data-nav='notifs'] .nav-badge");
-    var unread = NOTIFS.filter(function (x) { return !x.read; }).length;
+    var unread = _notifVisible().filter(function (x) { return !x.read; }).length;
     if (!badge) {
       var navBtn = document.querySelector(".nav-btn[data-nav='notifs']");
       if (navBtn && unread > 0) {
