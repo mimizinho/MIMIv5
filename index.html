@@ -1413,14 +1413,15 @@
   /* Estilo de ícone: Linha (sem fundo) */
   .ico-style-box { padding:4px 14px 14px; }
   .ico-style-lbl { font-size:12px; font-weight:700; color:var(--muted); margin:10px 0 8px; }
-  html.ico-linha .cfg-acc-tile { background:transparent !important; border:0; box-shadow:none; width:28px; height:28px; }
-  html.ico-linha .cfg-acc-tile:before { display:none; }
-  html.ico-linha .cfg-acc-tile svg { width:24px; height:24px; stroke:#ff6fa5; stroke-width:1.8; }
-  html.ico-linha .cfg-acc-body .cfg-item-icon { display:flex; }
-  html.ico-linha .cfg-item-icon { background:transparent !important; width:28px; height:28px; }
+  html.ico-pastel .cfg-acc-tile { background:color-mix(in srgb,#ff6fa5 16%,transparent) !important; border:0; box-shadow:none; }
+  html.ico-pastel .cfg-acc-tile:before { display:none; }
+  html.ico-pastel .cfg-acc-tile svg { width:21px; height:21px; stroke:#ec4c88; stroke-width:1.8; }
+  html.ico-pastel .cfg-acc-body .cfg-item-icon { display:flex; }
+  html.ico-pastel .cfg-item-icon { background:color-mix(in srgb,#ff6fa5 16%,transparent) !important; }
+  html.ico-pastel .cfg-acc-body .cfg-item-icon svg { stroke:#ec4c88; }
   .ico-style-picker { display:flex; gap:8px; margin:0 0 4px; }
   .ico-style-opt { flex:1; height:44px; border-radius:99px; border:1px solid var(--border); background:var(--surface); color:var(--muted); font-weight:600; font-size:14px; font-family:inherit; cursor:pointer; }
-  html.ico-linha .ico-style-opt[data-set-ico-style="linha"], html:not(.ico-linha) .ico-style-opt[data-set-ico-style="padrao"] { background:#ff6fa5; border-color:transparent; color:#fff; }
+  html.ico-pastel .ico-style-opt[data-set-ico-style="pastel"], html:not(.ico-pastel) .ico-style-opt[data-set-ico-style="vidro"] { background:#ff6fa5; border-color:transparent; color:#fff; }
 
   /* ── Perfil ↔ Configurações (deslizável) ─────────────────────
      Perfil e Configurações ficam lado a lado num trilho de 200% de
@@ -4546,7 +4547,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.24.05";
+var APP_VERSION = "2026.10.24.06";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -11475,6 +11476,7 @@ function renderBottomNav(unreadNotifs, unreadMsgs) {
 (function(){
   var OPEN={"Privacidade":1};
   var P={
+    wr:'<path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>',
     palette:'<circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 011.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>',
     lock:'<path d="M12 14v2m-4-6V8a4 4 0 118 0v2m-9 9h10a1 1 0 001-1v-7a1 1 0 00-1-1H7a1 1 0 00-1 1v7a1 1 0 001 1z"/>',
     shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
@@ -11482,7 +11484,7 @@ function renderBottomNav(unreadNotifs, unreadMsgs) {
     buoy:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="m4.93 4.93 4.24 4.24m5.66 5.66 4.24 4.24m-4.24-9.9 4.24-4.24m-4.24 4.24 3.53-3.53M4.93 19.07l4.24-4.24"/>',
     flag:'<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>'
   };
-  var G={"aparência":["palette","#FF8FBF","#E8438C"],"privacidade":["lock","#C08CFF","#8250DC"],"segurança":["shield","#FF7FB5","#D6337B"],"ferramentas":["mega","#FF8CC6","#CC2F94"],"suporte":["buoy","#FF8FA3","#DC3A66"],"moderação":["flag","#EE5A8E","#9E1648"]};
+  var G={"aparência":["palette","#FF8FBF","#E8438C"],"privacidade":["lock","#C08CFF","#8250DC"],"segurança":["shield","#FF7FB5","#D6337B"],"ferramentas":["wr","#FF8CC6","#CC2F94"],"suporte":["buoy","#FF8FA3","#DC3A66"],"moderação":["flag","#EE5A8E","#9E1648"]};
   function build(body){
     if(body.getAttribute("data-acc")) return;
     if(!body.querySelector("[data-toggle-hide-followers]")) return;
@@ -21741,13 +21743,13 @@ function applyTheme(theme) {
 
 function _icoL(p) { return '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#ff6fa5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>'; }
 // Estilo de ícone das Configurações (Padrão / Linha), salvo no aparelho
-try { if (localStorage.getItem("mimiIcoStyle") === "linha") document.documentElement.classList.add("ico-linha"); } catch (e) {}
+try { if (localStorage.getItem("mimiIcoStyle") !== "vidro") document.documentElement.classList.add("ico-pastel"); } catch (e) { document.documentElement.classList.add("ico-pastel"); }
 document.addEventListener("click", function(e) {
   var b = e.target.closest && e.target.closest("[data-set-ico-style]");
   if (!b) return;
-  var l = b.getAttribute("data-set-ico-style") === "linha";
-  document.documentElement.classList.toggle("ico-linha", l);
-  try { localStorage.setItem("mimiIcoStyle", l ? "linha" : "padrao"); } catch (e2) {}
+  var l = b.getAttribute("data-set-ico-style") === "pastel";
+  document.documentElement.classList.toggle("ico-pastel", l);
+  try { localStorage.setItem("mimiIcoStyle", l ? "pastel" : "vidro"); } catch (e2) {}
 });
 function renderSettingsPage() {
   var me = ME_obj();
@@ -21781,8 +21783,8 @@ function renderSettingsPage() {
 
   // Privacidade
   '<div class="ico-style-box"><div class="ico-style-lbl">Estilo dos ícones</div><div class="ico-style-picker">' +
-    '<button class="ico-style-opt" data-set-ico-style="padrao">Padrão</button>' +
-    '<button class="ico-style-opt" data-set-ico-style="linha">Linha</button>' +
+    '<button class="ico-style-opt" data-set-ico-style="vidro">Vidro</button>' +
+    '<button class="ico-style-opt" data-set-ico-style="pastel">Pastel</button>' +
   '</div></div>' +
 
   '<div class="cfg-section-title">Privacidade</div>' +
