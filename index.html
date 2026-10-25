@@ -1483,12 +1483,10 @@
   .vp-trk:before { content:""; position:absolute; left:0; right:0; top:-14px; bottom:-14px; }
   .vp-fill { position:absolute; left:0; top:0; bottom:0; border-radius:9px; background:#FF6FA5; }
   .vp-th { position:absolute; top:50%; width:16px; height:16px; margin:-8px 0 0 -8px; border-radius:50%; background:#FF6FA5; box-shadow:0 2px 6px rgba(0,0,0,.25); }
-  .create-textarea.vcap { border:1.5px solid var(--border); border-radius:18px; padding:12px 14px; font-size:16px; outline:none; box-sizing:border-box; width:100%; }
+  .create-textarea.vcap { display:block; width:100%; max-width:100%; box-sizing:border-box; margin:10px 0 0; border:1.5px solid var(--border); border-radius:18px; padding:12px 14px; font-size:16px; outline:none; }
+  .vp { max-width:100%; box-sizing:border-box; }
+  @media (max-width:380px) { .vp-bar { gap:4px; padding:0 6px; left:8px; right:8px; bottom:8px; } .vp-bar button { width:32px; } .vp-t { font-size:11.5px; } .vp-big { width:72px; height:72px; margin:-36px 0 0 -36px; } }
   .create-textarea.vcap:focus { border-color:#ff6fa5; box-shadow:0 0 0 3px rgba(255,111,165,.25); }
-  .vcap-row { display:flex; align-items:center; gap:8px; margin-top:8px; }
-  .vcap-em { display:flex; gap:6px; flex:1; overflow-x:auto; }
-  .vcap-em button { flex:none; width:38px; height:38px; border-radius:50%; border:0; background:color-mix(in srgb,#ff6fa5 16%,transparent); font-size:19px; padding:0; cursor:pointer; }
-  .vcap-cnt { font-size:12.5px; color:var(--muted); white-space:nowrap; }
   /* Estilo de ícone: Linha (sem fundo) */
   .ico-style-box { padding:4px 14px 14px; }
   .ico-style-lbl { font-size:12px; font-weight:700; color:var(--muted); margin:10px 0 8px; }
@@ -4631,7 +4629,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.25.05";
+var APP_VERSION = "2026.10.25.06";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -21516,27 +21514,6 @@ function bindVibePlayer() {
   mic.innerHTML = v.muted ? MUTE : VOL;
   setIco(); upd();
 }
-// Legenda da Nova Vibe: emojis rápidos e contador (usa o mesmo textarea de antes)
-function bindVibeCaptionExtras(textarea) {
-  if (!textarea || textarea._extras) return;
-  textarea._extras = true;
-  var cnt = appEl.querySelector("[data-vibe-cnt]");
-  function c() { if (cnt) cnt.textContent = textarea.value.length + " caracteres"; }
-  textarea.addEventListener("input", c);
-  c();
-  appEl.querySelectorAll("[data-vibe-em]").forEach(function(b) {
-    b.addEventListener("pointerdown", function(e) { e.preventDefault(); });
-    b.addEventListener("click", function() {
-      var x = b.textContent, a = textarea.selectionStart, z = textarea.selectionEnd;
-      if (a == null) { a = z = textarea.value.length; }
-      textarea.value = textarea.value.slice(0, a) + x + textarea.value.slice(z);
-      textarea.selectionStart = textarea.selectionEnd = a + x.length;
-      textarea.dispatchEvent(new Event("input"));
-      textarea.focus();
-    });
-  });
-}
-
 function renderVibeComposePage() {
   var draft = state.vibeDraft;
   if (!draft) return "";
@@ -21558,14 +21535,11 @@ function renderVibeComposePage() {
           '<button type="button" data-vp-fs aria-label="Tela cheia"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg></button>' +
         '</div>' +
       '</div>' +
-      '<div class="row" style="gap:12px;align-items:flex-start;margin-top:16px;">' +
+      '<div class="row" style="gap:12px;align-items:center;margin-top:16px;">' +
         avatarHtml(ME.avatar, 40, false, false, false, null, null, getUserFrame(ME)) +
-        '<div class="grow">' +
-          '<div style="font-weight:700;font-size:14px;margin-bottom:6px;">'+esc(ME.name)+'</div>' +
-          '<textarea class="create-textarea vcap" style="min-height:84px;" placeholder="Escreva uma legenda para sua vibe… ✨" data-vibe-caption>'+esc(draft.caption)+'</textarea>' +
-          '<div class="vcap-row"><div class="vcap-em"><button type="button" data-vibe-em>😭</button><button type="button" data-vibe-em>💔</button><button type="button" data-vibe-em>✨</button><button type="button" data-vibe-em>🌸</button><button type="button" data-vibe-em>💖</button><button type="button" data-vibe-em>🥺</button><button type="button" data-vibe-em>🍇</button></div><span class="vcap-cnt" data-vibe-cnt></span></div>' +
-        '</div>' +
+        '<div style="font-weight:700;font-size:16px;min-width:0;">'+esc(ME.name)+'</div>' +
       '</div>' +
+      '<textarea class="create-textarea vcap" style="min-height:84px;" placeholder="Escreva uma legenda para sua vibe… ✨" data-vibe-caption>'+esc(draft.caption)+'</textarea>' +
     '</div>' +
   '</div>';
 }
@@ -21589,7 +21563,6 @@ function bindVibeComposePage() {
     textarea.addEventListener("blur", function() { _editingPostField = false; });
   }
   bindVibePlayer();
-  bindVibeCaptionExtras(textarea);
   var submitBtn = appEl.querySelector("[data-submit-vibe]");
   if (submitBtn) submitBtn.addEventListener("click", function() {
     if (draft._busy) return;
