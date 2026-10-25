@@ -811,6 +811,8 @@
   .sticker-pick { background:none; border:none; font-size:34px; line-height:1; padding:6px; border-radius:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; aspect-ratio:1; }
   .sticker-pick:active { background:var(--bg); }
   .sticker-pick img { width:100%; height:100%; object-fit:contain; }
+  .sticker-pick.sticker-soft { background:linear-gradient(160deg,#ffe6f1,#efe3ff); border-radius:18px; }
+  .sticker-pick.sticker-soft:active { background:linear-gradient(160deg,#ffe6f1,#efe3ff); filter:brightness(.95); }
 
   /* 🔄 PUXAR PRA ATUALIZAR — necessário porque, dentro do APK (WebView),
      não existe "recarregar pelo navegador"; é assim que o usuário força
@@ -4638,7 +4640,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.25.09";
+var APP_VERSION = "2026.10.25.10";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -16134,7 +16136,7 @@ function bindMsgsPage() {
     } else {
       grid = (pack ? pack.stickers : []).map(function(s) {
         var thumb = looksLikeImageSrc(s.src) ? '<img src="'+esc(s.src)+'" alt="">' : esc(s.src);
-        return '<button class="sticker-pick" data-sticker-pick="'+esc(s.id)+'">'+thumb+'</button>';
+        return '<button class="sticker-pick'+(pack && pack.id === "mimi_exclusiva" ? " sticker-soft" : "")+'" data-sticker-pick="'+esc(s.id)+'">'+thumb+'</button>';
       }).join("");
     }
     return '<div class="sticker-panel" data-sticker-panel>' +
