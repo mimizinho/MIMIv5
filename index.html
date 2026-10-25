@@ -1124,6 +1124,10 @@
   .profile-insights-right{font-size:13px;font-weight:800;color:var(--accent);}
   .profile-tab{font-size:14px;font-weight:800;padding:14px 4px;color:var(--sub);}
   .profile-tab.active{color:var(--accent);border-bottom-width:3px;}
+  /* np-perfil3 */
+  .profile-plus-row .btn-mimiplus{justify-content:flex-start;padding:0 16px;gap:10px;}
+  .profile-plus-row .mp-spark{display:none!important;}
+  .profile-plus-row .mp-crown{display:flex;align-items:center;}
   /* np-perfil2 */
   .profile-avatar-wrap{transform:scale(1.2);transform-origin:left bottom;}
   .profile-plus-row{margin-top:12px;}
@@ -4586,7 +4590,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.24.19";
+var APP_VERSION = "2026.10.24.20";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -19240,7 +19244,7 @@ function renderProfilePage(userId) {
   var plusDividerHtml = showGlow ? '<div class="profile-plus-divider'+(ringThemeKey==="fire"?" theme-fire":"")+'" style="--ring-colors:'+ringColors+';"></div>' : "";
   var plusRowHtml = isMe ? '<div class="profile-plus-row"><button class="btn btn-sm btn-mimiplus" data-open-subs>' +
     '<span class="mp-spark mp-spark-1">✦</span><span class="mp-spark mp-spark-2">✦</span><span class="mp-spark mp-spark-3">✦</span>' +
-    '<span class="mp-crown">'+mimiPlusIcon("crown",16)+'</span> MIMI Plus</button></div>' : "";
+    '<span class="mp-crown"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 8 5 4 5-8 5 8 5-4-2 12H4Z"/></svg></span> MIMI Plus<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto;"><path d="m9 18 6-6-6-6"/></svg></button></div>' : "";
   var html = '<div class="profile-cover"'+coverBgPathAttr+' style="'+coverStyle+'">'+coverVideoHtml+backBtn+coverBtn+'</div>' +
     plusDividerHtml +
     '<div class="profile-info">' +
