@@ -531,6 +531,12 @@
   .mi-chip { border:1px solid var(--border); background:var(--surface); color:var(--sub); border-radius:20px; padding:6px 13px; font-size:12.5px; font-weight:700; white-space:nowrap; display:flex; gap:6px; align-items:center; cursor:pointer; font-family:inherit; }
   .mi-chip.active { background:var(--accent); color:#fff; border-color:var(--accent); box-shadow:0 2px 10px rgba(255,111,165,.35); }
   .mi-chip i { font-style:normal; font-size:11px; opacity:.85; }
+  .mi-sw { position:relative; overflow:hidden; }
+  .mi-acts { position:absolute; right:0; top:0; bottom:0; width:168px; display:flex; }
+  .mi-acts button { flex:1; border:0; color:#fff; display:flex; flex-direction:column; gap:3px; align-items:center; justify-content:center; font-size:10.5px; font-weight:700; font-family:inherit; cursor:pointer; }
+  .mi-act-p { background:var(--accent); } .mi-act-r { background:var(--accentL); } .mi-act-d { background:#e0507a; }
+  .mi-sw .convo-row { background:var(--bg); position:relative; }
+  .convo-pinned-wrap .mi-sw .convo-row { background:var(--card); }
   .mi-empty-tip { margin:18px 16px 0; padding:12px 14px; border:1.5px dashed var(--border); border-radius:16px; display:flex; gap:10px; align-items:center; font-size:12.5px; color:var(--sub); line-height:1.4; }
 
   /* ── Modal de confirmação de apagar ────────────────────── */
@@ -4601,7 +4607,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.24.22";
+var APP_VERSION = "2026.10.24.23";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -15279,7 +15285,11 @@ function renderConvoRow(c, insideCard) {
   var u = USERS[c.userId] || { name: c.userId, username: "", avatar: DEFAULT_AVATAR };
   var isMyTurn = shouldShowReplyPrompt(c);
 
-  return '<div class="convo-row" data-open-convo="'+c.id+'" data-convo-id="'+c.id+'" data-convo-longpress="'+c.id+'">' +
+  return '<div class="mi-sw"><div class="mi-acts">' +
+    '<button class="mi-act-p" data-mi-act="pin" data-mi-id="'+c.id+'">'+icoSvg("pin",20,"#fff",true)+(c.pinned ? "Desafixar" : "Fixar")+'</button>' +
+    '<button class="mi-act-r" data-mi-act="ar" data-mi-id="'+c.id+'">'+icoSvg(c.archived ? "unarchive" : "archive",20,"#fff")+(c.archived ? "Restaurar" : "Arquivar")+'</button>' +
+    '<button class="mi-act-d" data-mi-act="del" data-mi-id="'+c.id+'">'+icoSvg("trash",20,"#fff")+'Apagar</button>' +
+  '</div><div class="convo-row" data-open-convo="'+c.id+'" data-convo-id="'+c.id+'" data-convo-longpress="'+c.id+'">' +
     '<div data-open-author="'+c.userId+'">'+avatarHtml(u.avatar, 50, c.online, false, false, null, null, getUserFrame(u))+'</div>' +
     '<div class="grow" style="overflow:hidden;">' +
       '<div class="convo-name-row"'+(isMyTurn ? ' style="align-items:flex-start;"' : '')+'>' +
@@ -15296,6 +15306,7 @@ function renderConvoRow(c, insideCard) {
       '<p class="convo-last '+(c.unread?"unread":"")+'">'+renderConvoLastPreview(c.last)+'</p>' +
     '</div>' +
     (c.unread > 0 ? '<div class="convo-unread-badge">'+c.unread+'</div>' : "") +
+    '</div>' +
   '</div>';
 }
 
@@ -15723,19 +15734,20 @@ function bindMsgsPage() {
 
   appEl.querySelectorAll("[data-convo-longpress]").forEach(function(row) {
     var sx = 0, sy = 0, dx = 0, mode = 0;
+    var base = 0;
     row.style.touchAction = "pan-y";
     row.addEventListener("touchstart", function(e) {
-      var t = e.touches[0]; sx = t.clientX; sy = t.clientY; dx = 0; mode = 0;
+      var t = e.touches[0]; sx = t.clientX; sy = t.clientY; base = row.style.transform.indexOf("-168") > -1 ? -168 : 0; dx = base; mode = 0; appEl.querySelectorAll("[data-convo-longpress]").forEach(function(o){ if (o !== row) o.style.transform = ""; });
       row.style.transition = "none";
     }, { passive: true });
     row.addEventListener("touchmove", function(e) {
       var t = e.touches[0]; var mx = t.clientX - sx, my = t.clientY - sy;
       if (mode === 0) {
-        if (mx < -10 && Math.abs(mx) > Math.abs(my) * 1.5) { mode = 1; row.dispatchEvent(new Event("touchcancel")); }
+        if ((mx < -10 || (base && mx > 10)) && Math.abs(mx) > Math.abs(my) * 1.5) { mode = 1; row.dispatchEvent(new Event("touchcancel")); }
         else if (Math.abs(my) > 10) { mode = 2; }
       }
       if (mode !== 1) return;
-      dx = Math.min(0, mx);
+      dx = Math.max(-168, Math.min(0, base + mx));
       row.style.transform = "translateX(" + dx + "px)";
     }, { passive: true });
     row.addEventListener("touchend", function() {
@@ -15743,18 +15755,22 @@ function bindMsgsPage() {
       mode = 0;
       row._swipedAt = Date.now();
       var convoId = row.getAttribute("data-convo-longpress");
-      if (dx <= -80) {
-        _hideConvo(convoId); render();
-        _undoToast("Conversa apagada", function() { _unhideConvo(convoId); render(); });
-      } else {
-        row.style.transition = "transform .2s"; row.style.transform = "";
-      }
+      if (dx <= -70) { row.style.transition = "transform .2s"; row.style.transform = "translateX(-168px)"; } else { row.style.transition = "transform .2s"; row.style.transform = ""; }
     });
     row.addEventListener("click", function(e) {
-      if (row._swipedAt && Date.now() - row._swipedAt < 500) { e.stopImmediatePropagation(); e.preventDefault(); }
+      if (row._swipedAt && Date.now() - row._swipedAt < 500) { e.stopImmediatePropagation(); e.preventDefault(); } else if (row.style.transform.indexOf("-168") > -1) { row.style.transition = "transform .2s"; row.style.transform = ""; e.stopImmediatePropagation(); e.preventDefault(); }
     }, true);
   });
 
+  appEl.querySelectorAll("[data-mi-act]").forEach(function(b) {
+    b.addEventListener("click", function(e) {
+      e.stopPropagation();
+      var id = b.getAttribute("data-mi-id"), a = b.getAttribute("data-mi-act");
+      if (a === "pin") togglePinConvo(id);
+      else if (a === "ar") toggleArchiveConvo(id);
+      else { _hideConvo(id); render(); _undoToast("Conversa apagada", function() { _unhideConvo(id); render(); }); }
+    });
+  });
   appEl.querySelectorAll("[data-msg-filter]").forEach(function(b) {
     b.addEventListener("click", function() { state.msgFilter = b.getAttribute("data-msg-filter"); render(); });
   });
