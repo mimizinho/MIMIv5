@@ -4607,7 +4607,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.24.28";
+var APP_VERSION = "2026.10.24.29";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -10450,6 +10450,9 @@ function _updateRtIndicator() {
 }
 
 function attachRealtimeMessages(convoId) {
+  var _rr = _attachRealtimeMessagesInner(convoId); _typingOpen(convoId); return _rr;
+}
+function _attachRealtimeMessagesInner(convoId) {
   detachRealtimeMessages();
   _updateRtIndicator();
   if (!convoId || !_rtdbReady || typeof firebase === "undefined" || !firebase.firestore) return;
@@ -15655,6 +15658,7 @@ function bindMsgsPage() {
         }
         if (state.jumpMsgId) setTimeout(function() { state.jumpMsgId = null; }, 4000);
       }
+      _typingOpen(convoId);
       var _jq = state.msgQuery || "";
       _lastAutoScrolledConvoId = null; // FIX: garante scroll pro fim ao (re)abrir a conversa
       startChatPolling();
@@ -15845,6 +15849,14 @@ function bindMsgsPage() {
     chatInput.addEventListener("keydown", function(e) {
       if (e.key === "Enter" && !e.isComposing && e.keyCode !== 229) sendChatMessage();
     });
+    chatInput.addEventListener("input", function() {
+      if (_typingConvoId !== state.activeConvoId) _typingOpen(state.activeConvoId);
+      _typingOnInput(chatInput.value);
+    });
+    chatInput.addEventListener("keydown", function(e) {
+      if (e.key === "Enter" && !e.isComposing && e.keyCode !== 229) _typingSend(false);
+    });
+    if (sendBtn) sendBtn.addEventListener("click", function() { _typingSend(false); });
     // REMOVIDO: efeito demo que simulava "o outro digitando" quando o
     // PRÓPRIO usuário digitava (estava invertido — mostrava o indicador
     // do lado errado da conversa e não refletia nenhum dado real).
@@ -17833,6 +17845,60 @@ function _preloadSearchCache() {
     });
   }
   next();
+}
+var _typingChannel = null, _typingConvoId = null, _typingSentOn = false, _typingSendAt = 0, _typingHideTimer = null, _typingStopTimer = null;
+function _typingClose() {
+  clearTimeout(_typingHideTimer); clearTimeout(_typingStopTimer);
+  if (_typingChannel) { try { var c = _supabaseRealtimeClient(); if (c) c.removeChannel(_typingChannel); } catch (e) {} }
+  _typingChannel = null; _typingConvoId = null; _typingSentOn = false; _isTyping = false;
+}
+function _typingOpen(convoId) {
+  if (!convoId || (_typingConvoId === convoId && _typingChannel)) return;
+  _typingClose();
+  var client = _supabaseRealtimeClient();
+  if (!client) return;
+  try {
+    _typingConvoId = convoId;
+    _typingChannel = client.channel("typing-" + convoId, { config: { broadcast: { self: false } } })
+      .on("broadcast", { event: "typing" }, function(msg) {
+        var pl = msg && msg.payload;
+        if (!pl || pl.from === ME_ID || state.activeConvoId !== convoId) return;
+        _typingShow(!!pl.on);
+      })
+      .subscribe();
+  } catch (e) { _typingChannel = null; _typingConvoId = null; }
+}
+function _typingShow(on) {
+  clearTimeout(_typingHideTimer);
+  _isTyping = on;
+  var box = appEl.querySelector("[data-chat-msgs]");
+  if (!box) return;
+  var ind = box.querySelector(".typing-indicator");
+  var card = ind ? ind.closest(".msg-card") : null;
+  if (on) {
+    if (!card) {
+      var near = (box.scrollHeight - box.scrollTop - box.clientHeight) < 140;
+      var w = document.createElement("div");
+      w.innerHTML = '<div class="msg-card"><div class="msg-avatar" style="background:linear-gradient(135deg,var(--accent),var(--accentL));">' + icoSvg("user",18,"#fff") + '</div><div class="msg-wrapper"><div class="msg-content" style="padding:10px 14px;"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div></div></div>';
+      box.appendChild(w.firstChild);
+      if (near) box.scrollTop = box.scrollHeight;
+    }
+    _typingHideTimer = setTimeout(function() { _typingShow(false); }, 5000);
+  } else if (card) {
+    card.remove();
+  }
+}
+function _typingSend(on) {
+  if (!_typingChannel || !_typingConvoId) return;
+  if (!on && !_typingSentOn) return;
+  try { _typingChannel.send({ type: "broadcast", event: "typing", payload: { from: ME_ID, on: on } }); } catch (e) {}
+  _typingSentOn = on; _typingSendAt = Date.now();
+}
+function _typingOnInput(v) {
+  clearTimeout(_typingStopTimer);
+  if (!v || !v.trim()) { _typingSend(false); return; }
+  if (!_typingSentOn || Date.now() - _typingSendAt > 3000) _typingSend(true);
+  _typingStopTimer = setTimeout(function() { _typingSend(false); }, 3500);
 }
 function jumpToSearchedMsg(attempt) {
   var id = state.jumpMsgId;
