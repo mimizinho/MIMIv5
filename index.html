@@ -4612,7 +4612,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.25.03";
+var APP_VERSION = "2026.10.25.04";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -16572,7 +16572,10 @@ btn.innerHTML = icoSvg("pause",14, btn.style.color || C.accent, true);
               // mostra o aviso se esse áudio já tinha tocado com sucesso
               // antes (uma falha depois dessa é erro de verdade).
               if (audioEl._playedOnce && !(err && err.name === "AbortError")) {
-                showToast("Erro audio: " + (err && err.name) + " - " + (err && err.message) + " | audioEl.error: " + (audioEl.error && audioEl.error.code));
+                // ALTERAÇÃO 25/10/2026: toast de debug trocado por texto de produção;
+                // o detalhe técnico continua no console (console.error).
+                console.error("Erro audio:", err && err.name, err && err.message, "| audioEl.error:", audioEl.error && audioEl.error.code);
+                showToast("Não foi possível reproduzir este áudio.");
               }
             });
           } else {
