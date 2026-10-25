@@ -4607,7 +4607,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.24.23";
+var APP_VERSION = "2026.10.24.24";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -15169,10 +15169,14 @@ function renderMsgsPage() {
 var html = '<div class="page-header" style="border-bottom:1px solid var(--border);">' +
     '<div class="row" style="gap:10px;">' +
       '<div class="grow"><span class="display" style="font-size:18px;display:block;">Mensagens</span>' + (_sub ? '<span style="font-size:11.5px;color:var(--sub);">'+_sub+'</span>' : "") + '</div>' +
+      '<button class="icon-btn" data-msg-search-toggle aria-label="Buscar" style="color:var(--accent);">'+icoSvg("search",22)+'</button>' +
       '<button class="icon-btn" data-delete-all aria-label="Apagar todas" style="color:var(--accent);">' +
       '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg></button>' +
     '<button class="icon-btn" data-new-chat style="color:var(--accent);font-size:24px;">+</button>' +
     '</div>' +
+    (state.msgSearchOpen ?
+      '<div style="margin-top:10px;"><div class="search-box"><span class="search-icon">'+icoSvg("search",16,"var(--muted)")+'</span><input class="search-input" placeholder="Buscar por nome ou mensagem..." data-msg-search-input value="'+esc(state.msgQuery||"")+'"></div></div>'
+    : "") +
     (state.userSearchOpen ?
       '<div style="margin-top:10px;">' +
         '<div class="search-box">' +
@@ -15209,8 +15213,13 @@ var html = '<div class="page-header" style="border-bottom:1px solid var(--border
   else if (_f === "on") { pinnedConvos = pinnedConvos.filter(function(c){ return c.online; }); activeConvos = activeConvos.filter(function(c){ return c.online; }); archivedConvos = []; }
   else if (_f === "ar") { pinnedConvos = []; activeConvos = []; }
   
-var hasNormalConvos = pinnedConvos.length > 0 || activeConvos.length > 0;
-  if (!hasNormalConvos && !state.userSearchOpen && _f === "all") {
+var _q = (state.msgQuery || "").toLowerCase().trim();
+  if (_q) {
+    var _mq = function(c) { var u = USERS[c.userId] || {}; return ((u.name || "") + " " + (c.last || "")).toLowerCase().indexOf(_q) > -1; };
+    pinnedConvos = pinnedConvos.filter(_mq); activeConvos = activeConvos.filter(_mq); archivedConvos = archivedConvos.filter(_mq);
+  }
+  var hasNormalConvos = pinnedConvos.length > 0 || activeConvos.length > 0;
+  if (!hasNormalConvos && !state.userSearchOpen && _f === "all" && !_q) {
     html += '<div class="mi-empty-hero"><div class="mi-empty-ico">'+icoSvg("msg",26,"var(--accent)")+'</div><div><b>Nenhuma conversa ainda</b><span>Busque alguém para começar a conversar.</span></div></div>' +
       '<div class="search-box mi-empty-search"><span class="search-icon">'+icoSvg("search",16,"var(--muted)")+'</span><input class="search-input" placeholder="Buscar por @nome de utilizador..." data-user-search-input></div>' +
       '<div data-search-results-box style="margin:8px 16px 0;"></div>' +
@@ -15223,7 +15232,11 @@ var hasNormalConvos = pinnedConvos.length > 0 || activeConvos.length > 0;
   }
 
   
-// ✅ Renderizar conversas fixadas (em cartão destacado)
+if (_q && !pinnedConvos.length && !activeConvos.length && !archivedConvos.length) {
+    html += '<div class="mi-empty-hero"><div class="mi-empty-ico">'+icoSvg("search",26,"var(--accent)")+'</div><div><b>Nada encontrado</b><span>Tente buscar por outro nome ou palavra.</span></div></div>';
+  }
+
+  // ✅ Renderizar conversas fixadas (em cartão destacado)
   if (pinnedConvos.length > 0) {
     html += '<div class="convo-section-label">'+icoSvg("pinFill",13,"var(--accent)",true)+'Fixadas</div>';
     html += '<div class="convo-pinned-wrap">';
@@ -15762,6 +15775,19 @@ function bindMsgsPage() {
     }, true);
   });
 
+  var _msBtn = appEl.querySelector("[data-msg-search-toggle]");
+  if (_msBtn) _msBtn.addEventListener("click", function() {
+    state.msgSearchOpen = !state.msgSearchOpen;
+    if (!state.msgSearchOpen) state.msgQuery = "";
+    render();
+    var i = appEl.querySelector("[data-msg-search-input]"); if (i) i.focus();
+  });
+  var _msInp = appEl.querySelector("[data-msg-search-input]");
+  if (_msInp) _msInp.addEventListener("input", function() {
+    var v = _msInp.value; state.msgQuery = v; render();
+    var i = appEl.querySelector("[data-msg-search-input]");
+    if (i) { i.focus(); try { i.setSelectionRange(v.length, v.length); } catch (e) {} }
+  });
   appEl.querySelectorAll("[data-mi-act]").forEach(function(b) {
     b.addEventListener("click", function(e) {
       e.stopPropagation();
