@@ -4607,7 +4607,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.24.27";
+var APP_VERSION = "2026.10.24.28";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -15215,7 +15215,7 @@ var html = '<div class="page-header" style="border-bottom:1px solid var(--border
   
 var _q = (state.msgQuery || "").toLowerCase().trim();
   if (_q) {
-    var _mq = function(c) { var u = USERS[c.userId] || {}; var _h = (typeof chatHistories !== "undefined" && chatHistories[c.id]) ? chatHistories[c.id].map(function(m){ return (!m.deleted && m.text) ? m.text : ""; }).join(" ") : ""; return ((u.name || "") + " " + (c.last || "") + " " + _h).toLowerCase().indexOf(_q) > -1; };
+    var _mq = function(c) { var u = USERS[c.userId] || {}; var _h = (typeof chatHistories !== "undefined" && chatHistories[c.id]) ? chatHistories[c.id].map(function(m){ return (!m.deleted && m.text) ? m.text : ""; }).join(" ") : ""; return ((u.name || "") + " " + (c.last || "") + " " + _h + " " + ((state.msgSearchCache && state.msgSearchCache[c.id]) || "")).toLowerCase().indexOf(_q) > -1; };
     pinnedConvos = pinnedConvos.filter(_mq); activeConvos = activeConvos.filter(_mq); archivedConvos = archivedConvos.filter(_mq);
   }
   var hasNormalConvos = pinnedConvos.length > 0 || activeConvos.length > 0;
@@ -15788,7 +15788,7 @@ function bindMsgsPage() {
   var _msBtn = appEl.querySelector("[data-msg-search-toggle]");
   if (_msBtn) _msBtn.addEventListener("click", function() {
     state.msgSearchOpen = !state.msgSearchOpen;
-    if (!state.msgSearchOpen) state.msgQuery = "";
+    if (!state.msgSearchOpen) state.msgQuery = ""; if (state.msgSearchOpen) _preloadSearchCache();
     render();
     var i = appEl.querySelector("[data-msg-search-input]"); if (i) i.focus();
   });
@@ -17808,6 +17808,32 @@ function closeMazeModal() {
   if (_pendingBackgroundRender) { _pendingBackgroundRender = false; render(); }
 }
 
+var _searchPreloading = false;
+function _preloadSearchCache() {
+  if (_searchPreloading || !_idToken) return;
+  state.msgSearchCache = state.msgSearchCache || {};
+  var todo = CONVOS.filter(function(c){ return state.msgSearchCache[c.id] === undefined; });
+  if (!todo.length) return;
+  _searchPreloading = true;
+  var idx = 0;
+  function next() {
+    if (idx >= todo.length) { _searchPreloading = false; return; }
+    var c = todo[idx++];
+    FB.loadMessages(c.id).then(function(msgs) {
+      state.msgSearchCache[c.id] = (msgs || []).map(function(m) {
+        return (!m.deleted && (!m.type || m.type === "text")) ? (m.content || m.text || "") : "";
+      }).join(" ");
+    }).catch(function(){}).then(function() {
+      if (state.msgSearchOpen && state.msgQuery && !state.activeConvoId) {
+        render();
+        var i = appEl.querySelector("[data-msg-search-input]");
+        if (i) { var v = i.value; i.focus(); try { i.setSelectionRange(v.length, v.length); } catch (e) {} }
+      }
+      next();
+    });
+  }
+  next();
+}
 function jumpToSearchedMsg(attempt) {
   var id = state.jumpMsgId;
   if (!id) return;
