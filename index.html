@@ -4607,7 +4607,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.24.25";
+var APP_VERSION = "2026.10.24.26";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -15646,6 +15646,15 @@ function bindMsgsPage() {
       }
       state.activeConvoId = convoId;
       if (conv) conv.unread = 0;
+      state.jumpMsgId = null;
+      if (state.msgQuery) {
+        var _hq = state.msgQuery.toLowerCase().trim(), _hh = chatHistories[convoId] || [];
+        for (var _hi = _hh.length - 1; _hi >= 0; _hi--) {
+          var _hm = _hh[_hi];
+          if (!_hm.deleted && _hm.text && _hm.text.toLowerCase().indexOf(_hq) > -1) { state.jumpMsgId = _hm.id; break; }
+        }
+        if (state.jumpMsgId) setTimeout(function() { state.jumpMsgId = null; }, 4000);
+      }
       _lastAutoScrolledConvoId = null; // FIX: garante scroll pro fim ao (re)abrir a conversa
       startChatPolling();
       window.scrollTo(0,0);
@@ -17798,7 +17807,20 @@ function closeMazeModal() {
   if (_pendingBackgroundRender) { _pendingBackgroundRender = false; render(); }
 }
 
+function jumpToSearchedMsg(attempt) {
+  var id = state.jumpMsgId;
+  if (!id) return;
+  var el = appEl.querySelector('[data-msg-id="' + id + '"]');
+  if (el) {
+    el.scrollIntoView({ block: "center" });
+    el.style.background = "rgba(255, 111, 165, 0.15)";
+    setTimeout(function() { el.style.background = ""; }, 1800);
+    return;
+  }
+  if ((attempt || 0) < 10) setTimeout(function() { jumpToSearchedMsg((attempt || 0) + 1); }, 250);
+}
 function scrollChatToBottom() {
+  if (state.jumpMsgId) { jumpToSearchedMsg(0); return; }
   function doScroll() {
     var box = appEl.querySelector("[data-chat-msgs]");
     if (box) box.scrollTop = box.scrollHeight;
