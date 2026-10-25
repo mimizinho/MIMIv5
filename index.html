@@ -4607,7 +4607,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.24.26";
+var APP_VERSION = "2026.10.24.27";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -15655,6 +15655,7 @@ function bindMsgsPage() {
         }
         if (state.jumpMsgId) setTimeout(function() { state.jumpMsgId = null; }, 4000);
       }
+      var _jq = state.msgQuery || "";
       _lastAutoScrolledConvoId = null; // FIX: garante scroll pro fim ao (re)abrir a conversa
       startChatPolling();
       window.scrollTo(0,0);
@@ -15696,7 +15697,7 @@ function bindMsgsPage() {
               changed = true;
             }
           });
-          if (changed) { render(); scrollChatToBottom(); }
+          if (changed) { if (_jq && !state.jumpMsgId) { var _q2=_jq.toLowerCase().trim(); for (var _i2=chat.length-1;_i2>=0;_i2--) { var _m2=chat[_i2]; if (!_m2.deleted && _m2.text && _m2.text.toLowerCase().indexOf(_q2)>-1) { state.jumpMsgId=_m2.id; setTimeout(function(){ state.jumpMsgId=null; },4000); break; } } } render(); scrollChatToBottom(); }
         }).catch(function(){});
       }
     });
