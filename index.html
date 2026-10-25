@@ -12557,6 +12557,23 @@ function hasOpenOverlay() {
 //    otimização — Cloudinary consegue entregar uma versão bem mais leve
 //    (formato/qualidade automáticos por aparelho) só adicionando
 //    "q_auto,f_auto" na URL, sem precisar reprocessar nada no upload.
+// ══ ALTERAÇÃO 25/10/2026 — ECONOMIA DE BANDA/CLOUDINARY (resumo do dia) ══
+// Para achar tudo: grep -n "ALTERAÇÃO 25/10/2026" index.html
+// Motivo: cota do Cloudinary quase estourada (banda de entrega 22,3 GB).
+// 1) Esta função (q_auto,f_auto,w_720,c_limit) JÁ existia, mas só era usada
+//    em posts, vibes e player. Agora também é aplicada em: stories, vídeo
+//    do chat (2 lugares, com preload metadata), capa de perfil em vídeo
+//    (2 lugares), grade/lista de posts do perfil (2 lugares) e anúncios
+//    (2 lugares). Procure por "optimizeCloudinaryVideoUrl(" nesses <video>.
+// 2) Upload: public_id fixo por arquivo (file._mimiPid) para o retry não
+//    criar cópia órfã. Ver uploadDirectFile.
+// 3) Vibes: o vídeo só sobe ao tocar em Publicar (antes subia ao escolher
+//    o arquivo e deixava órfão se a pessoa desistisse).
+// 4) Vídeo NOVO sobe para a 2a conta Cloudinary (videoCloudName/videoPreset
+//    em cloudinaryWidget). Vídeos antigos continuam na conta antiga.
+// Para DESFAZER: git log --oneline (commits de 25/10/2026) e git revert do
+// commit desejado. Backups locais: index.html.bak_pid, .bak_opt, .bak_vibe,
+// .bak_conta2, .bak_coment (ficam em ~/MIMIv5, não vão pro app).
 function optimizeCloudinaryVideoUrl(src) {
   if (!src || src.indexOf("res.cloudinary.com") === -1) return src;
   if (src.indexOf("/upload/q_auto") !== -1 || src.indexOf("/upload/f_auto") !== -1) return src;
@@ -21396,6 +21413,9 @@ function bindPublishMenu() {
         }
         state.publishMenu = false;
         render();
+        // ALTERAÇÃO 25/10/2026: ao escolher o video NAO sobe mais pro Cloudinary.
+        // Guardamos o arquivo (file) e uma previa local (createObjectURL).
+        // O upload acontece so em Publicar (ver bindVibeComposePage).
         state.vibeDraft = { videoUrl: URL.createObjectURL(file), file: file, caption: "" };
         render();
       });
@@ -21452,6 +21472,9 @@ function renderVibeComposePage() {
   '</div>';
 }
 
+// ALTERAÇÃO 25/10/2026: o upload da vibe acontece AQUI, ao tocar em
+// Publicar. draft._busy trava o botao e o voltar durante o envio (sem toque
+// duplo); se o envio falhar (onFail) o botao volta e o rascunho continua.
 function bindVibeComposePage() {
   var draft = state.vibeDraft;
   if (!draft) return;
@@ -24729,6 +24752,9 @@ var cloudinaryWidget = {
     });
   },
 
+  // ALTERAÇÃO 25/10/2026: novo 4o parametro opcional onFail. E chamado so
+  // quando o upload falha de vez (sem mais tentativas). Quem nao passa
+  // onFail continua funcionando igual a antes.
   uploadDirectFile: function(file, mediaType, callback, onFail) {
     var self = this;
     var maxRetries = 3;
@@ -24760,6 +24786,9 @@ var cloudinaryWidget = {
       // public_id (e portanto a mesma URL) para arquivos com o mesmo nome,
       // fazendo a troca de foto de perfil/capa parecer que "não mudou nada"
       // (o app manda a mesma URL de antes e/ou o CDN serve a versão em cache).
+      // ALTERAÇÃO 25/10/2026: o public_id agora e gerado UMA vez por arquivo
+      // (guardado em file._mimiPid) e reaproveitado nos retries. Antes cada
+      // tentativa criava um id novo e a anterior ficava orfa no Cloudinary.
       formData.append("public_id", (file._mimiPid = file._mimiPid || (mediaType + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8))));
       
       showToast(toastWithIcon("Enviando " + mediaType + "... (tentativa " + attempt + ")", "upload", "before"), true);
