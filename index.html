@@ -521,6 +521,12 @@
   .convo-pinned-wrap .convo-row { border-bottom:none; }
   .convo-pinned-wrap .convo-row:last-child { border-bottom:none; }
   .convo-pinned-wrap .convo-row:hover { background:transparent; }
+  .mi-empty-hero { display:flex; gap:14px; align-items:center; padding:22px 16px 6px; }
+  .mi-empty-ico { width:48px; height:48px; border-radius:16px; background:rgba(255,111,165,.15); background:color-mix(in srgb, var(--accent) 15%, transparent); display:grid; place-items:center; flex-shrink:0; }
+  .mi-empty-hero b { display:block; font-size:18px; font-weight:800; letter-spacing:-.4px; }
+  .mi-empty-hero span { font-size:13px; color:var(--sub); line-height:1.4; }
+  .mi-empty-search { margin:12px 16px 0; }
+  .mi-empty-tip { margin:18px 16px 0; padding:12px 14px; border:1.5px dashed var(--border); border-radius:16px; display:flex; gap:10px; align-items:center; font-size:12.5px; color:var(--sub); line-height:1.4; }
 
   /* ── Modal de confirmação de apagar ────────────────────── */
   .delete-modal { position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:flex-end; z-index:1000; animation:fadeIn 0.2s ease; }
@@ -4590,7 +4596,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.24.20";
+var APP_VERSION = "2026.10.24.21";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -15178,12 +15184,11 @@ function renderMsgsPage() {
   var archivedConvos = CONVOS.filter(function(c) { return c.archived && !_convoHidden(c); });
 
   var hasNormalConvos = pinnedConvos.length > 0 || activeConvos.length > 0;
-  if (hasNormalConvos === 0 && !state.userSearchOpen) {
-    html += '<div style="padding:60px 20px;text-align:center;color:var(--muted);">' +
-      '<div style="margin-bottom:12px;display:flex;justify-content:center;">'+icoSvg("msg",40,"var(--muted)")+'</div>' +
-      '<p style="font-weight:700;margin:0 0 6px;color:var(--sub);">Nenhuma conversa ainda</p>' +
-      '<p style="font-size:13px;margin:0;">Toca no + para encontrar alguém</p>' +
-    '</div>';
+  if (!hasNormalConvos && !state.userSearchOpen) {
+    html += '<div class="mi-empty-hero"><div class="mi-empty-ico">'+icoSvg("msg",26,"var(--accent)")+'</div><div><b>Nenhuma conversa ainda</b><span>Busque alguém para começar a conversar.</span></div></div>' +
+      '<div class="search-box mi-empty-search"><span class="search-icon">'+icoSvg("search",16,"var(--muted)")+'</span><input class="search-input" placeholder="Buscar por @nome de utilizador..." data-user-search-input></div>' +
+      '<div data-search-results-box style="margin:8px 16px 0;"></div>' +
+      '<div class="mi-empty-tip">'+icoSvg("sparkle",20,"var(--accentL)",true)+'<span>Depois de conversar, deslize uma conversa para a esquerda para apagar, ou segure para fixar e arquivar.</span></div>';
   }
 
   // ✅ Renderizar conversas fixadas (em cartão destacado)
