@@ -1515,6 +1515,11 @@
   .typing-dot:nth-child(2) { animation-delay:.2s; }
   .typing-dot:nth-child(3) { animation-delay:.4s; }
   @keyframes typingBounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+  .typing-bub { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:0 13px; height:34px; display:inline-flex; align-items:center; gap:4px; }
+  .typing-bub i { width:7px; height:7px; border-radius:50%; background:var(--accent); display:block; animation:typingPulse 1.2s infinite ease-in-out; }
+  .typing-bub i:nth-child(2) { animation-delay:.2s; }
+  .typing-bub i:nth-child(3) { animation-delay:.4s; }
+  @keyframes typingPulse { 0%,70%,100%{transform:scale(.6);opacity:.4} 35%{transform:scale(1.25);opacity:1} }
 
   /* ── follow list ───────────────────────────────────────── */
   .follow-row { display:flex; align-items:center; gap:12px; padding:12px 16px; border-bottom:1px solid var(--border); cursor:pointer; }
@@ -4607,7 +4612,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.24.29";
+var APP_VERSION = "2026.10.24.30";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -5010,6 +5015,7 @@ var _rtdbReady = false;
 function _teardownRealtimeSession() {
   detachRealtimeMessages();
   detachRealtimeConvoList();
+  _typingTeardown();
   stopMessageCleanupSchedule();
   _rtdbReady = false;
   try {
@@ -5026,6 +5032,7 @@ function _tryEstablishRealtimeSession(email, pw) {
       console.log("✅ Sessão de tempo real (Firestore) estabelecida");
       if (state.activeConvoId) attachRealtimeMessages(state.activeConvoId);
       attachRealtimeConvoList(); // migra a lista de conversas do polling REST pro listener
+      _typingStartInbox();
     }).catch(function(err) {
       _rtdbReady = false;
       console.warn("ℹ️ Tempo real indisponível agora (usando polling normal):", err && err.code);
@@ -15319,7 +15326,7 @@ function renderConvoRow(c, insideCard) {
           '<div class="convo-time-col"><span class="convo-turn-chip">Responder</span><span class="convo-time-sub">'+esc(c.time)+'</span></div>' :
           '<span style="font-size:11px;color:var(--muted); margin-left:auto;">'+esc(c.time)+'</span>') +
       '</div>' +
-      '<p class="convo-last '+(c.unread?"unread":"")+'">'+renderConvoLastPreview(c.last)+'</p>' +
+      '<p class="convo-last '+(c.unread?"unread":"")+'">'+(_typingByConvo[c.id] ? '<span style="color:var(--accent);font-weight:600;">Digitando...</span>' : renderConvoLastPreview(c.last))+'</p>' +
     '</div>' +
     (c.unread > 0 ? '<div class="convo-unread-badge">'+c.unread+'</div>' : "") +
     '</div>' +
@@ -15573,7 +15580,8 @@ function renderChatView(conv) {
     html += renderChatMsgCardHtml(m, conv);
   });
   // Indicador "digitando..."
-  if (_isTyping) {
+  if (_typingByConvo[state.activeConvoId]) { html += _typingBubbleHtml(); }
+  if (false) {
     html += '<div class="msg-card">' +
       '<div class="msg-avatar" style="background:linear-gradient(135deg,var(--accent),var(--accentL));">' +
         icoSvg("user",18,"#fff") +
@@ -17846,52 +17854,100 @@ function _preloadSearchCache() {
   }
   next();
 }
-var _typingChannel = null, _typingConvoId = null, _typingSentOn = false, _typingSendAt = 0, _typingHideTimer = null, _typingStopTimer = null;
-function _typingClose() {
-  clearTimeout(_typingHideTimer); clearTimeout(_typingStopTimer);
-  if (_typingChannel) { try { var c = _supabaseRealtimeClient(); if (c) c.removeChannel(_typingChannel); } catch (e) {} }
-  _typingChannel = null; _typingConvoId = null; _typingSentOn = false; _isTyping = false;
-}
-function _typingOpen(convoId) {
-  if (!convoId || (_typingConvoId === convoId && _typingChannel)) return;
-  _typingClose();
-  var client = _supabaseRealtimeClient();
-  if (!client) return;
+var _typingConvoId = null, _typingInbox = null, _typingInboxFor = null, _typingByConvo = {}, _typingTimers = {}, _typingOut = {}, _typingSentOn = false, _typingSendAt = 0, _typingStopTimer = null;
+function _typingTeardown() {
   try {
-    _typingConvoId = convoId;
-    _typingChannel = client.channel("typing-" + convoId, { config: { broadcast: { self: false } } })
-      .on("broadcast", { event: "typing" }, function(msg) {
-        var pl = msg && msg.payload;
-        if (!pl || pl.from === ME_ID || state.activeConvoId !== convoId) return;
-        _typingShow(!!pl.on);
+    var c = _supabaseRealtimeClient();
+    if (c) {
+      if (_typingInbox) c.removeChannel(_typingInbox);
+      Object.keys(_typingOut).forEach(function(k) { c.removeChannel(_typingOut[k].ch); });
+    }
+  } catch (e) {}
+  Object.keys(_typingTimers).forEach(function(k) { clearTimeout(_typingTimers[k]); });
+  clearTimeout(_typingStopTimer);
+  _typingInbox = null; _typingInboxFor = null; _typingOut = {}; _typingByConvo = {}; _typingTimers = {}; _typingConvoId = null; _typingSentOn = false;
+}
+function _typingStartInbox() {
+  if (!ME_ID) return;
+  if (_typingInbox && _typingInboxFor === ME_ID) return;
+  var c = _supabaseRealtimeClient();
+  if (!c) return;
+  try {
+    _typingInboxFor = ME_ID;
+    _typingInbox = c.channel("typing-" + ME_ID, { config: { broadcast: { self: false } } })
+      .on("broadcast", { event: "typing" }, function(m) {
+        var pl = m && m.payload;
+        if (pl && pl.convoId && pl.from !== ME_ID) _typingSet(pl.convoId, !!pl.on);
       })
       .subscribe();
-  } catch (e) { _typingChannel = null; _typingConvoId = null; }
+  } catch (e) { _typingInbox = null; _typingInboxFor = null; }
 }
-function _typingShow(on) {
-  clearTimeout(_typingHideTimer);
-  _isTyping = on;
+function _typingBubbleHtml() {
+  return '<div data-typing-card style="display:flex;padding:4px 12px;"><div class="typing-bub"><i></i><i></i><i></i></div></div>';
+}
+function _typingChatDom(on) {
   var box = appEl.querySelector("[data-chat-msgs]");
   if (!box) return;
-  var ind = box.querySelector(".typing-indicator");
-  var card = ind ? ind.closest(".msg-card") : null;
-  if (on) {
-    if (!card) {
-      var near = (box.scrollHeight - box.scrollTop - box.clientHeight) < 140;
-      var w = document.createElement("div");
-      w.innerHTML = '<div class="msg-card"><div class="msg-avatar" style="background:linear-gradient(135deg,var(--accent),var(--accentL));">' + icoSvg("user",18,"#fff") + '</div><div class="msg-wrapper"><div class="msg-content" style="padding:10px 14px;"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div></div></div>';
-      box.appendChild(w.firstChild);
-      if (near) box.scrollTop = box.scrollHeight;
-    }
-    _typingHideTimer = setTimeout(function() { _typingShow(false); }, 5000);
-  } else if (card) {
-    card.remove();
+  var ex = box.querySelector("[data-typing-card]");
+  if (on && !ex) {
+    var near = (box.scrollHeight - box.scrollTop - box.clientHeight) < 140;
+    var w = document.createElement("div");
+    w.innerHTML = _typingBubbleHtml();
+    box.appendChild(w.firstChild);
+    if (near) box.scrollTop = box.scrollHeight;
+  } else if (!on && ex) {
+    ex.remove();
   }
 }
+function _typingSet(convoId, on) {
+  clearTimeout(_typingTimers[convoId]);
+  if (on) {
+    _typingByConvo[convoId] = true;
+    _typingTimers[convoId] = setTimeout(function() { _typingSet(convoId, false); }, 5000);
+  } else {
+    delete _typingByConvo[convoId];
+  }
+  if (state.activeConvoId === convoId) { _typingChatDom(on); return; }
+  var row = appEl.querySelector('[data-open-convo="' + convoId + '"] .convo-last');
+  if (row) {
+    var cv = CONVOS.find(function(c) { return c.id === convoId; });
+    row.innerHTML = on ? '<span style="color:var(--accent);font-weight:600;">Digitando...</span>' : renderConvoLastPreview(cv ? cv.last : "");
+  }
+}
+function _typingPush(o, p) {
+  try { o.ch.send({ type: "broadcast", event: "typing", payload: p }); } catch (e) {}
+}
+function _typingOutFor(userId) {
+  var o = _typingOut[userId];
+  if (o) return o;
+  var c = _supabaseRealtimeClient();
+  if (!c) return null;
+  o = { ready: false, pending: null };
+  o.ch = c.channel("typing-" + userId, { config: { broadcast: { self: false } } }).subscribe(function(st) {
+    if (st === "SUBSCRIBED") {
+      o.ready = true;
+      if (o.pending) { var pp = o.pending; o.pending = null; _typingPush(o, pp); }
+    }
+  });
+  _typingOut[userId] = o;
+  return o;
+}
+function _typingOpen(convoId) {
+  _typingStartInbox();
+  if (!convoId) return;
+  _typingConvoId = convoId;
+  var cv = CONVOS.find(function(c) { return c.id === convoId; });
+  if (cv) _typingOutFor(cv.userId);
+}
 function _typingSend(on) {
-  if (!_typingChannel || !_typingConvoId) return;
+  var cid = state.activeConvoId;
+  var cv = CONVOS.find(function(c) { return c.id === cid; });
+  if (!cv) return;
   if (!on && !_typingSentOn) return;
-  try { _typingChannel.send({ type: "broadcast", event: "typing", payload: { from: ME_ID, on: on } }); } catch (e) {}
+  var o = _typingOutFor(cv.userId);
+  if (!o) return;
+  var p = { from: ME_ID, convoId: cid, on: on };
+  if (o.ready) _typingPush(o, p); else o.pending = p;
   _typingSentOn = on; _typingSendAt = Date.now();
 }
 function _typingOnInput(v) {
