@@ -4612,7 +4612,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.25.02";
+var APP_VERSION = "2026.10.25.03";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -24514,6 +24514,18 @@ window.addEventListener("online", function() {
 
 // ─── CLOUDINARY FUNCTIONS ─────────────────────────────────
 var cloudinaryWidget = {
+  // ══ ALTERAÇÃO 25/10/2026 — 2a CONTA CLOUDINARY SÓ PARA VÍDEO NOVO ══
+  // Motivo: cota (25 créditos) da conta antiga quase estourada.
+  // Vídeo novo sobe para a conta abaixo; vídeos ANTIGOS continuam na conta
+  // antiga (o link de cada vídeo já tem o nome da conta, nada quebra).
+  // Imagem e áudio continuam na conta antiga (cloudName abaixo).
+  // Usado em uploadDirectFile (quando mediaType === "video").
+  // Preset "mimi_unsigned" (conta nova): Unsigned, pasta mimi_app,
+  // incoming transformation q_auto,c_limit,w_720.
+  // PARA VOLTAR À CONTA ANTIGA: videoCloudName = "nglzrxwd" e
+  // videoPreset = "video_upload".
+  videoCloudName: "qwqq67kj",
+  videoPreset: "mimi_unsigned",
   cloudName: "nglzrxwd",
   apiKey: "322258179494869",
   
@@ -24721,7 +24733,8 @@ var cloudinaryWidget = {
     var self = this;
     var maxRetries = 3;
     var attempt = 0;
-    var cloudName = self.cloudName;
+    // ALTERAÇÃO 25/10/2026: vídeo usa a 2a conta (videoCloudName); o resto, a antiga.
+    var cloudName = (mediaType === "video") ? self.videoCloudName : self.cloudName;
     var uploadPresets = self.uploadPresets;
     
     function doUpload() {
@@ -24729,7 +24742,8 @@ var cloudinaryWidget = {
       console.log("📤 Iniciando upload direto para Cloudinary (tentativa " + attempt + "/" + maxRetries + ")...", file.name);
       
       var resourceType = mediaType === "audio" ? "video" : mediaType === "video" ? "video" : "image";
-      var presetName = uploadPresets[mediaType];
+      // ALTERAÇÃO 25/10/2026: vídeo usa o preset da 2a conta (videoPreset).
+      var presetName = (mediaType === "video") ? self.videoPreset : uploadPresets[mediaType];
       
       if (!presetName) {
         console.error("❌ Preset não encontrado para tipo:", mediaType);
