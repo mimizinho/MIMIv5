@@ -4638,7 +4638,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.25.08";
+var APP_VERSION = "2026.10.25.09";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -25459,8 +25459,17 @@ var VibesModule = {
     if (!vibe || vibe.userId !== ME_ID) return;
     this.hideVibeSlideEl(idx);
     markVibeNotInterested(vibe.id);
-    if (typeof FB !== "undefined" && FB.deleteVibe) FB.deleteVibe(vibe.id).catch(function(){});
-    showToast("Vibe apagada.");
+    var vid = vibe.id;
+    fsQuery("vibeChunks", "vibeId", "EQUAL", vid).then(function(chunks) {
+      return Promise.all((chunks || []).map(function(c) { return fsDelete("vibeChunks/" + c._id).catch(function() {}); }));
+    }).catch(function() {}).then(function() {
+      return fsDelete("vibes/" + vid);
+    }).then(function() {
+      showToast("Vibe apagada.");
+    }).catch(function(err) {
+      console.error("Erro ao apagar vibe no servidor:", err);
+      showToast("Não consegui apagar no servidor: " + ((err && err.message) || err));
+    });
   },
   bindActionSheetDom: function() {
     var self = this;
