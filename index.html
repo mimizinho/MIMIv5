@@ -4612,7 +4612,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.25.01";
+var APP_VERSION = "2026.10.25.02";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -21396,10 +21396,8 @@ function bindPublishMenu() {
         }
         state.publishMenu = false;
         render();
-        cloudinaryWidget.uploadDirectFile(file, "video", function(url) {
-          state.vibeDraft = { videoUrl: url, caption: "" };
-          render();
-        });
+        state.vibeDraft = { videoUrl: URL.createObjectURL(file), file: file, caption: "" };
+        render();
       });
     });
   }
@@ -21458,7 +21456,7 @@ function bindVibeComposePage() {
   var draft = state.vibeDraft;
   if (!draft) return;
   var closeBtn = appEl.querySelector("[data-close-vibe-draft]");
-  if (closeBtn) closeBtn.addEventListener("click", function() {
+  if (closeBtn) closeBtn.addEventListener("click", function() { if (draft._busy) return;
     state.vibeDraft = null;
     render();
   });
@@ -21471,11 +21469,19 @@ function bindVibeComposePage() {
   }
   var submitBtn = appEl.querySelector("[data-submit-vibe]");
   if (submitBtn) submitBtn.addEventListener("click", function() {
-    var videoUrl = draft.videoUrl;
+    if (draft._busy) return;
+    draft._busy = true;
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Enviando…";
     var caption = draft.caption;
-    state.vibeDraft = null;
-    showToast("Publicando sua vibe…");
-    publishVibeItem(videoUrl, caption);
+    cloudinaryWidget.uploadDirectFile(draft.file, "video", function(url) {
+      state.vibeDraft = null;
+      publishVibeItem(url, caption);
+    }, function() {
+      draft._busy = false;
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Publicar";
+    });
   });
 }
 
@@ -24711,7 +24717,7 @@ var cloudinaryWidget = {
     });
   },
 
-  uploadDirectFile: function(file, mediaType, callback) {
+  uploadDirectFile: function(file, mediaType, callback, onFail) {
     var self = this;
     var maxRetries = 3;
     var attempt = 0;
@@ -24781,14 +24787,14 @@ var cloudinaryWidget = {
             if (attempt < maxRetries) {
               doUpload();
             } else {
-              showToast(toastWithIcon("Erro: " + (data.error.message || "Desconhecido"), "error", "before"), true);
+              if (typeof onFail === "function") onFail(); showToast(toastWithIcon("Erro: " + (data.error.message || "Desconhecido"), "error", "before"), true);
             }
           } else {
             console.error("❌ Resposta inválida:", data);
             if (attempt < maxRetries) {
               doUpload();
             } else {
-              showToast(toastWithIcon("Erro ao enviar arquivo", "error", "before"), true);
+              if (typeof onFail === "function") onFail(); showToast(toastWithIcon("Erro ao enviar arquivo", "error", "before"), true);
             }
           }
         })
@@ -24799,7 +24805,7 @@ var cloudinaryWidget = {
             console.log("🔄 Tentando novamente...");
             doUpload();
           } else {
-            showToast(toastWithIcon("Falha na conexão: " + err.message + " [" + (file.type || "sem tipo") + ", " + Math.round(file.size/1024) + "KB]" + " [" + (file.type || "sem tipo") + ", " + Math.round(file.size/1024) + "KB]", "error", "before"), true);
+            if (typeof onFail === "function") onFail(); showToast(toastWithIcon("Falha na conexão: " + err.message + " [" + (file.type || "sem tipo") + ", " + Math.round(file.size/1024) + "KB]" + " [" + (file.type || "sem tipo") + ", " + Math.round(file.size/1024) + "KB]", "error", "before"), true);
           }
         });
     }
