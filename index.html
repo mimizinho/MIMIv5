@@ -4612,7 +4612,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.24.30";
+var APP_VERSION = "2026.10.24.31";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -15861,6 +15861,7 @@ function bindMsgsPage() {
       if (_typingConvoId !== state.activeConvoId) _typingOpen(state.activeConvoId);
       _typingOnInput(chatInput.value);
     });
+    chatInput.addEventListener("blur", function() { clearTimeout(_typingStopTimer); _typingSend(false); });
     chatInput.addEventListener("keydown", function(e) {
       if (e.key === "Enter" && !e.isComposing && e.keyCode !== 229) _typingSend(false);
     });
@@ -17903,7 +17904,7 @@ function _typingSet(convoId, on) {
   clearTimeout(_typingTimers[convoId]);
   if (on) {
     _typingByConvo[convoId] = true;
-    _typingTimers[convoId] = setTimeout(function() { _typingSet(convoId, false); }, 5000);
+    _typingTimers[convoId] = setTimeout(function() { _typingSet(convoId, false); }, 2200);
   } else {
     delete _typingByConvo[convoId];
   }
@@ -17953,8 +17954,8 @@ function _typingSend(on) {
 function _typingOnInput(v) {
   clearTimeout(_typingStopTimer);
   if (!v || !v.trim()) { _typingSend(false); return; }
-  if (!_typingSentOn || Date.now() - _typingSendAt > 3000) _typingSend(true);
-  _typingStopTimer = setTimeout(function() { _typingSend(false); }, 3500);
+  if (!_typingSentOn || Date.now() - _typingSendAt > 1000) _typingSend(true);
+  _typingStopTimer = setTimeout(function() { _typingSend(false); }, 1500);
 }
 function jumpToSearchedMsg(attempt) {
   var id = state.jumpMsgId;
