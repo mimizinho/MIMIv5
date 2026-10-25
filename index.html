@@ -4612,7 +4612,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.24.31";
+var APP_VERSION = "2026.10.25.01";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -11972,7 +11972,7 @@ function renderStoryViewer() {
   // frame, o que faz parecer que é uma foto estática para quem está vendo o
   // story de outra pessoa. O botão de som permite desmutar manualmente.
   var mediaHtml = item.type === "video"
-    ? '<video src="'+esc(item.src)+'" autoplay playsinline muted data-story-media draggable="false" oncontextmenu="return false;" ' +
+    ? '<video src="'+esc(optimizeCloudinaryVideoUrl(item.src))+'" autoplay playsinline muted data-story-media draggable="false" oncontextmenu="return false;" ' +
       'style="max-width:100%;max-height:100%;object-fit:contain;" ' +
       'onerror="console.error(\'Erro ao carregar video\')"></video>' +
       '<button class="icon-btn" data-story-mute-toggle style="position:absolute;bottom:78px;right:12px;color:#fff;background:rgba(0,0,0,.35);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;z-index:3;">'+icoSvg("micOff",18,"#fff")+'</button>'
@@ -15077,7 +15077,7 @@ function renderAppAdBanner(slot) {
     ? '<img '+imageTagAttrs(ad.img)+' alt="" style="width:52px;height:52px;border-radius:12px;object-fit:cover;flex-shrink:0;">'
     : '<div style="width:52px;height:52px;border-radius:12px;background:#e9fbf3;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+icoSvg("megaphone",22,"#1abc9c")+'</div>';
   var media = ad.video
-    ? '<video src="'+ad.video+'" playsinline muted loop autoplay style="display:block;width:100%;height:auto;max-height:190px;object-fit:cover;"></video>'
+    ? '<video src="'+optimizeCloudinaryVideoUrl(ad.video)+'" playsinline muted loop autoplay style="display:block;width:100%;height:auto;max-height:190px;object-fit:cover;"></video>'
     : (ad.img
         ? '<img '+imageTagAttrs(ad.img)+' alt="" style="display:block;width:100%;height:auto;max-height:190px;object-fit:cover;">'
         : '<div style="height:120px;background:#e9fbf3;display:flex;align-items:center;justify-content:center;">'+icoSvg("megaphone",26,"#1abc9c")+'</div>');
@@ -15121,7 +15121,7 @@ function maybeShowTakeoverAd() {
   try { if (typeof noteAdImpression === "function") noteAdImpression(ad.id); } catch (e) {}
 
   var media = ad.video
-    ? '<video src="' + esc(ad.video) + '" autoplay muted loop playsinline></video>'
+    ? '<video src="' + esc(optimizeCloudinaryVideoUrl(ad.video)) + '" autoplay muted loop playsinline></video>'
     : '<img ' + imageTagAttrs(ad.img) + ' alt="">';
 
   var el = document.createElement("div");
@@ -15437,7 +15437,7 @@ function renderChatBubbleContent(m) {
       ? '<img class="bubble-img" data-imgpath="'+esc(m.src)+'" src="" alt="">'
       : '<img class="bubble-img" src="'+esc(m.src)+'" alt="">';
   }
-  if (m.type === "video") return '<video class="bubble-video" src="'+esc(m.src)+'" controls playsinline></video>';
+  if (m.type === "video") return '<video class="bubble-video" preload="metadata" src="'+esc(optimizeCloudinaryVideoUrl(m.src))+'" controls playsinline></video>';
   if (m.type === "sticker") {
     return looksLikeImageSrc(m.src)
       ? '<img class="bubble-sticker" src="'+esc(m.src)+'" alt="">'
@@ -15968,7 +15968,7 @@ function bindMsgsPage() {
           '<div class="msg-time">'+_relTime(createdAt)+'</div></div>';
       } else if (mediaType === "video") {
         msgCard.innerHTML = '<div class="msg-avatar" '+avatarDivAttrs+'></div>' +
-          '<div class="msg-wrapper"><div class="msg-content"><video class="bubble-video" src="' + esc(src) + '" controls playsinline></video></div>' +
+          '<div class="msg-wrapper"><div class="msg-content"><video class="bubble-video" preload="metadata" src="' + esc(optimizeCloudinaryVideoUrl(src)) + '" controls playsinline></video></div>' +
           '<div class="msg-time">'+_relTime(createdAt)+'</div></div>';
       }
       
@@ -19474,7 +19474,7 @@ function renderProfilePage(userId) {
   var coverIsFp = !!(u.cover && !isCoverVideo && ImageGateway.isFilePath(u.cover));
   var coverStyle = (u.cover && !isCoverVideo && !coverIsFp) ? 'background-image:url('+u.cover+');background-size:cover;background-position:center;' : '';
   var coverBgPathAttr = coverIsFp ? ' data-bgpath="'+esc(u.cover)+'"' : '';
-  var coverVideoHtml = isCoverVideo ? '<video src="'+u.cover+'" autoplay muted loop playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"></video>' : '';
+  var coverVideoHtml = isCoverVideo ? '<video src="'+optimizeCloudinaryVideoUrl(u.cover)+'" autoplay muted loop playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"></video>' : '';
   var backBtn = !isMe ? '<button class="icon-btn" data-back-profile style="position:absolute;top:12px;left:12px;background:rgba(255,255,255,.35);border-radius:50%;color:#fff;z-index:2;">'+icoSvg("back",20,"#fff")+'</button>' : "";
   var coverBtn = '<button class="icon-btn" data-open-profile-sheet="'+userId+'" style="position:absolute;top:12px;right:12px;background:rgba(255,255,255,.35);border-radius:50%;color:#fff;z-index:2;">'+icoSvg("more",20,"#fff")+'</button>';
 
@@ -19547,7 +19547,7 @@ function renderProfilePage(userId) {
           mediaHtml = '<img '+imageTagAttrs(thumb)+' alt="" style="width:100%;height:100%;object-fit:cover;display:block;"' +
             (p.video ? ' onerror="mimiThumbFallback(this,\''+esc(p.video).replace(/'/g,"&#39;")+'\')"' : '') + '>';
         } else if (p.video) {
-          mediaHtml = '<video src="'+esc(p.video)+'" muted preload="metadata" playsinline style="width:100%;height:100%;object-fit:cover;display:block;"></video>';
+          mediaHtml = '<video src="'+esc(optimizeCloudinaryVideoUrl(p.video))+'" muted preload="metadata" playsinline style="width:100%;height:100%;object-fit:cover;display:block;"></video>';
         } else {
           mediaHtml = '<div style="width:100%;height:100%;background:var(--bg);display:flex;align-items:center;justify-content:center;">'+icoSvg("video",24,"var(--muted)")+'</div>';
         }
@@ -20624,7 +20624,7 @@ function renderMyAdsPage() {
       var thumb = p.img ? '<img '+imageTagAttrs(p.img)+' style="width:56px;height:56px;border-radius:10px;object-fit:cover;flex-shrink:0;">' :
         p.video ? (videoThumbUrl(p.video) /*MIMI-AD-THUMB*/ ?
           '<img src="'+esc(videoThumbUrl(p.video))+'" alt="" onerror="mimiThumbFallback(this,\''+esc(p.video).replace(/'/g,"&#39;")+'\')" style="width:56px;height:56px;border-radius:10px;object-fit:cover;flex-shrink:0;">' :
-          '<video src="'+esc(p.video)+'" muted preload="metadata" playsinline style="width:56px;height:56px;border-radius:10px;object-fit:cover;flex-shrink:0;"></video>') :
+          '<video src="'+esc(optimizeCloudinaryVideoUrl(p.video))+'" muted preload="metadata" playsinline style="width:56px;height:56px;border-radius:10px;object-fit:cover;flex-shrink:0;"></video>') :
         '<div style="width:56px;height:56px;border-radius:10px;background:var(--bg);flex-shrink:0;"></div>';
       html += '<div class="cfg-item" style="align-items:center;margin-bottom:10px;">' +
         thumb +
@@ -20918,7 +20918,7 @@ function renderEditProfile() {
     '</div>' +
     '<div class="edit-body">' +
       '<div class="edit-cover-preview"'+((u.cover && u.coverType!=="video" && ImageGateway.isFilePath(u.cover))?' data-bgpath="'+esc(u.cover)+'"':'')+' style="'+((u.cover && u.coverType!=="video" && !ImageGateway.isFilePath(u.cover))?'background-image:url('+u.cover+');background-size:cover;background-position:center;':'')+'">' +
-        ((u.cover && u.coverType==="video") ? '<video src="'+u.cover+'" autoplay muted loop playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"></video>' : "") +
+        ((u.cover && u.coverType==="video") ? '<video src="'+optimizeCloudinaryVideoUrl(u.cover)+'" autoplay muted loop playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"></video>' : "") +
         '<div class="edit-cover-btn" style="opacity:.85;" data-edit-cover-2>'+icoSvg("edit",16,"#fff")+' Trocar capa</div>' +
       '</div>' +
       '<div class="edit-avatar-wrap">' +
@@ -24740,7 +24740,7 @@ var cloudinaryWidget = {
       // public_id (e portanto a mesma URL) para arquivos com o mesmo nome,
       // fazendo a troca de foto de perfil/capa parecer que "não mudou nada"
       // (o app manda a mesma URL de antes e/ou o CDN serve a versão em cache).
-      formData.append("public_id", mediaType + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8));
+      formData.append("public_id", (file._mimiPid = file._mimiPid || (mediaType + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8))));
       
       showToast(toastWithIcon("Enviando " + mediaType + "... (tentativa " + attempt + ")", "upload", "before"), true);
       
