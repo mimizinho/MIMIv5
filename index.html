@@ -1124,6 +1124,12 @@
   .profile-insights-right{font-size:13px;font-weight:800;color:var(--accent);}
   .profile-tab{font-size:14px;font-weight:800;padding:14px 4px;color:var(--sub);}
   .profile-tab.active{color:var(--accent);border-bottom-width:3px;}
+  /* np-perfil2 */
+  .profile-avatar-wrap{transform:scale(1.2);transform-origin:left bottom;}
+  .profile-plus-row{margin-top:12px;}
+  .profile-plus-row .btn-mimiplus{width:100%;height:52px;border-radius:16px;justify-content:center;font-size:16px;font-weight:800;background:linear-gradient(135deg,#d92c80,#9a4de3)!important;color:#fff!important;border:none!important;box-shadow:0 6px 16px rgba(217,44,128,.27)!important;}
+  .books-compact{display:flex;align-items:center;gap:12px;margin:12px 16px 0;padding:10px 12px;border-radius:16px;background:color-mix(in srgb,var(--accent) 8%,transparent);}
+  .books-compact-ico{width:40px;height:40px;border-radius:12px;background:var(--surface);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 
   /* ── LIVROS (perfil) ───────────────────────────────────────── */
   .books-card { margin:14px 16px 16px; background:var(--card); border:1px solid var(--border); border-radius:16px; padding:14px; }
@@ -4580,7 +4586,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.24.18";
+var APP_VERSION = "2026.10.24.19";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -19220,9 +19226,6 @@ function renderProfilePage(userId) {
 
   var actionBtns = isMe
     ? '<button class="btn btn-sm btn-secondary" data-edit-profile>'+icoSvg("edit",15)+' Editar perfil</button>' +
-      '<button class="btn btn-sm btn-mimiplus" data-open-subs>' +
-        '<span class="mp-spark mp-spark-1">✦</span><span class="mp-spark mp-spark-2">✦</span><span class="mp-spark mp-spark-3">✦</span>' +
-        '<span class="mp-crown">'+mimiPlusIcon("crown",16)+'</span> MIMI Plus</button>' +
       '<button class="btn btn-sm btn-secondary" data-share-profile>'+icoSvg("share",15)+'</button>'
     : (isFollowing(userId)
         ? '<button class="btn btn-sm btn-secondary" data-toggle-follow="'+userId+'">'+icoSvg("user",15)+' Seguindo</button>'
@@ -19235,6 +19238,9 @@ function renderProfilePage(userId) {
   var showGlow = isPlus && ringThemeKey !== "none";
   var ringColors = getRingThemeColors(u);
   var plusDividerHtml = showGlow ? '<div class="profile-plus-divider'+(ringThemeKey==="fire"?" theme-fire":"")+'" style="--ring-colors:'+ringColors+';"></div>' : "";
+  var plusRowHtml = isMe ? '<div class="profile-plus-row"><button class="btn btn-sm btn-mimiplus" data-open-subs>' +
+    '<span class="mp-spark mp-spark-1">✦</span><span class="mp-spark mp-spark-2">✦</span><span class="mp-spark mp-spark-3">✦</span>' +
+    '<span class="mp-crown">'+mimiPlusIcon("crown",16)+'</span> MIMI Plus</button></div>' : "";
   var html = '<div class="profile-cover"'+coverBgPathAttr+' style="'+coverStyle+'">'+coverVideoHtml+backBtn+coverBtn+'</div>' +
     plusDividerHtml +
     '<div class="profile-info">' +
@@ -19259,7 +19265,7 @@ function renderProfilePage(userId) {
           '<div data-open-followlist="'+userId+':followers" style="cursor:pointer;"><div class="profile-stat-num">'+fmtNum(userId === MIMI_OFFICIAL_UID && typeof u.followerCountOverride === "number" ? u.followerCountOverride : (u.followers||[]).length)+'</div><div class="profile-stat-label">seguidores'+((u.hideFollowerCount && !isMe) ? ' <span style="display:inline-flex;vertical-align:-2px;">'+icoSvg("lock",11,"var(--muted)")+'</span>' : "")+'</div></div>' +
           '<div data-open-followlist="'+userId+':following" style="cursor:pointer;"><div class="profile-stat-num">'+fmtNum((u.following||[]).length)+'</div><div class="profile-stat-label">seguindo'+((u.hideFollowerCount && !isMe) ? ' <span style="display:inline-flex;vertical-align:-2px;">'+icoSvg("lock",11,"var(--muted)")+'</span>' : "")+'</div></div>' +
         '</div>' +
-        (isMe ? '<div class="profile-insights-row" data-open-profileviewers="'+userId+'">' +
+        plusRowHtml + (isMe ? '<div class="profile-insights-row" data-open-profileviewers="'+userId+'">' +
           '<div class="profile-insights-left">'+icoSvg("eye",16,"var(--pink)")+'<span>'+fmtNum(u.profileViewCount||0)+' '+((u.profileViewCount||0) === 1 ? "visita ao seu perfil" : "visitas ao seu perfil")+'</span></div>' +
           '<div class="profile-insights-right">ver mais '+icoSvg("chevronRight",14,"var(--sub)")+'</div>' +
         '</div>' : "") +
@@ -19709,6 +19715,12 @@ function uploadEbookFile(file, callback) {
 // Card "Livros" exibido no perfil, entre a bio/stats e as abas de posts.
 function renderProfileBooksSection(u, isMe) {
   var books = u.books || [];
+  if (!books.length) {
+    return '<div class="books-compact"><span class="books-compact-ico">'+icoSvg("book",20,"var(--accent)")+'</span>' +
+      '<div style="flex:1;min-width:0;"><div style="font-weight:800;font-size:15px;">Livros</div><div style="font-size:13px;color:var(--sub);">Nenhum livro adicionado</div></div>' +
+      (isMe ? '<button class="btn btn-secondary btn-sm" data-add-books>'+icoSvg("plus",16)+' Adicionar</button>' : "") +
+    '</div>';
+  }
   var firstName = (u.name||"").split(" ")[0];
   var head = '<div class="books-card-head">' +
       '<div class="books-card-title">'+icoSvg("book",17,"var(--accent)")+' Livros</div>' +
