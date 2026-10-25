@@ -4607,7 +4607,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.24.24";
+var APP_VERSION = "2026.10.24.25";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -15215,7 +15215,7 @@ var html = '<div class="page-header" style="border-bottom:1px solid var(--border
   
 var _q = (state.msgQuery || "").toLowerCase().trim();
   if (_q) {
-    var _mq = function(c) { var u = USERS[c.userId] || {}; return ((u.name || "") + " " + (c.last || "")).toLowerCase().indexOf(_q) > -1; };
+    var _mq = function(c) { var u = USERS[c.userId] || {}; var _h = (typeof chatHistories !== "undefined" && chatHistories[c.id]) ? chatHistories[c.id].map(function(m){ return (!m.deleted && m.text) ? m.text : ""; }).join(" ") : ""; return ((u.name || "") + " " + (c.last || "") + " " + _h).toLowerCase().indexOf(_q) > -1; };
     pinnedConvos = pinnedConvos.filter(_mq); activeConvos = activeConvos.filter(_mq); archivedConvos = archivedConvos.filter(_mq);
   }
   var hasNormalConvos = pinnedConvos.length > 0 || activeConvos.length > 0;
