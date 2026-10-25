@@ -1470,6 +1470,25 @@
   .cfg-item-label { font-weight:600; font-size:14px; color:var(--text); flex:1; }
   .cfg-item-sub { font-size:12px; color:var(--muted); margin-top:2px; }
   .cfg-item-right { color:var(--muted); }
+  /* Nova Vibe: player Fofo */
+  .vp { position:relative; border-radius:30px; overflow:hidden; background:#000; border:4px solid #fff; box-shadow:0 10px 30px rgba(224,69,127,.25); }
+  .vp video { display:block; width:100%; max-height:62vh; object-fit:contain; background:#000; }
+  .vp-big { position:absolute; left:50%; top:44%; width:84px; height:84px; margin:-42px 0 0 -42px; border-radius:50%; border:0; padding:0; background:linear-gradient(135deg,#FF8FBF,#FF6FA5); color:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 20px rgba(255,111,165,.5); transition:opacity .2s; }
+  .vp-big svg { margin-left:4px; }
+  .vp.playing .vp-big { opacity:0; pointer-events:none; }
+  .vp-bar { position:absolute; left:12px; right:12px; bottom:12px; z-index:2; display:flex; align-items:center; gap:8px; height:52px; padding:0 10px; border-radius:99px; background:rgba(255,241,246,.78); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); color:#7A2D52; }
+  .vp-bar button { width:36px; height:36px; border:0; padding:0; background:none; color:inherit; display:flex; align-items:center; justify-content:center; flex:none; }
+  .vp-t { font-size:13px; font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .vp-trk { position:relative; flex:1; height:6px; border-radius:9px; background:rgba(224,69,127,.2); cursor:pointer; touch-action:none; }
+  .vp-trk:before { content:""; position:absolute; left:0; right:0; top:-14px; bottom:-14px; }
+  .vp-fill { position:absolute; left:0; top:0; bottom:0; border-radius:9px; background:#FF6FA5; }
+  .vp-th { position:absolute; top:50%; width:16px; height:16px; margin:-8px 0 0 -8px; border-radius:50%; background:#FF6FA5; box-shadow:0 2px 6px rgba(0,0,0,.25); }
+  .create-textarea.vcap { border:1.5px solid var(--border); border-radius:18px; padding:12px 14px; font-size:16px; outline:none; box-sizing:border-box; width:100%; }
+  .create-textarea.vcap:focus { border-color:#ff6fa5; box-shadow:0 0 0 3px rgba(255,111,165,.25); }
+  .vcap-row { display:flex; align-items:center; gap:8px; margin-top:8px; }
+  .vcap-em { display:flex; gap:6px; flex:1; overflow-x:auto; }
+  .vcap-em button { flex:none; width:38px; height:38px; border-radius:50%; border:0; background:color-mix(in srgb,#ff6fa5 16%,transparent); font-size:19px; padding:0; cursor:pointer; }
+  .vcap-cnt { font-size:12.5px; color:var(--muted); white-space:nowrap; }
   /* Estilo de ícone: Linha (sem fundo) */
   .ico-style-box { padding:4px 14px 14px; }
   .ico-style-lbl { font-size:12px; font-weight:700; color:var(--muted); margin:10px 0 8px; }
@@ -4612,7 +4631,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.25.04";
+var APP_VERSION = "2026.10.25.05";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -21451,6 +21470,73 @@ function checkVibeVideoDuration(file, callback) {
 }
 
 // ─── TELA DE LEGENDA DA VIBE (antes de publicar) ──────────────
+// Player Fofo da Nova Vibe (substitui os controles padrão do navegador)
+function bindVibePlayer() {
+  var box = appEl.querySelector("[data-vp]");
+  if (!box || box._vpBound) return;
+  box._vpBound = true;
+  var v = box.querySelector("[data-vp-v]");
+  var fill = box.querySelector("[data-vp-fill]"), th = box.querySelector("[data-vp-th]");
+  var tm = box.querySelector("[data-vp-time]"), trk = box.querySelector("[data-vp-trk]");
+  var ico = box.querySelector("[data-vp-ico]"), mic = box.querySelector("[data-vp-mic]");
+  var A = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">';
+  var PLAY = A + '<polygon points="6 3 20 12 6 21 6 3"/></svg>';
+  var PAUSE = A + '<rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></svg>';
+  var VOL = A + '<path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.364 18.364a9 9 0 0 0 0-12.728"/></svg>';
+  var MUTE = A + '<path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><line x1="22" x2="16" y1="9" y2="15"/><line x1="16" x2="22" y1="9" y2="15"/></svg>';
+  function fm(x) { x = Math.max(0, Math.floor(x || 0)); return Math.floor(x / 60) + ":" + ("0" + (x % 60)).slice(-2); }
+  function upd() {
+    var d = isFinite(v.duration) ? v.duration : 0, p = d ? v.currentTime / d * 100 : 0;
+    fill.style.width = p + "%"; th.style.left = p + "%";
+    tm.textContent = fm(v.currentTime) + " / " + fm(d);
+  }
+  function setIco() { box.classList.toggle("playing", !v.paused); ico.innerHTML = v.paused ? PLAY : PAUSE; }
+  function tg() { if (v.paused) { var pr = v.play(); if (pr && pr.catch) pr.catch(function() {}); } else { v.pause(); } }
+  box.querySelectorAll("[data-vp-tg]").forEach(function(b) { b.addEventListener("click", tg); });
+  v.addEventListener("click", tg);
+  ["play", "pause", "ended"].forEach(function(ev) { v.addEventListener(ev, setIco); });
+  ["timeupdate", "loadedmetadata", "durationchange"].forEach(function(ev) { v.addEventListener(ev, upd); });
+  function seek(e) {
+    var r = trk.getBoundingClientRect(), d = isFinite(v.duration) ? v.duration : 0;
+    if (!d) return;
+    v.currentTime = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * d;
+    upd();
+  }
+  var drag = false;
+  trk.addEventListener("pointerdown", function(e) { drag = true; try { trk.setPointerCapture(e.pointerId); } catch (x) {} seek(e); });
+  trk.addEventListener("pointermove", function(e) { if (drag) seek(e); });
+  trk.addEventListener("pointerup", function() { drag = false; });
+  trk.addEventListener("pointercancel", function() { drag = false; });
+  box.querySelector("[data-vp-mute]").addEventListener("click", function() { v.muted = !v.muted; mic.innerHTML = v.muted ? MUTE : VOL; });
+  box.querySelector("[data-vp-fs]").addEventListener("click", function() {
+    if (v.requestFullscreen) v.requestFullscreen();
+    else if (v.webkitEnterFullscreen) v.webkitEnterFullscreen();
+    else if (v.webkitRequestFullscreen) v.webkitRequestFullscreen();
+  });
+  mic.innerHTML = v.muted ? MUTE : VOL;
+  setIco(); upd();
+}
+// Legenda da Nova Vibe: emojis rápidos e contador (usa o mesmo textarea de antes)
+function bindVibeCaptionExtras(textarea) {
+  if (!textarea || textarea._extras) return;
+  textarea._extras = true;
+  var cnt = appEl.querySelector("[data-vibe-cnt]");
+  function c() { if (cnt) cnt.textContent = textarea.value.length + " caracteres"; }
+  textarea.addEventListener("input", c);
+  c();
+  appEl.querySelectorAll("[data-vibe-em]").forEach(function(b) {
+    b.addEventListener("pointerdown", function(e) { e.preventDefault(); });
+    b.addEventListener("click", function() {
+      var x = b.textContent, a = textarea.selectionStart, z = textarea.selectionEnd;
+      if (a == null) { a = z = textarea.value.length; }
+      textarea.value = textarea.value.slice(0, a) + x + textarea.value.slice(z);
+      textarea.selectionStart = textarea.selectionEnd = a + x.length;
+      textarea.dispatchEvent(new Event("input"));
+      textarea.focus();
+    });
+  });
+}
+
 function renderVibeComposePage() {
   var draft = state.vibeDraft;
   if (!draft) return "";
@@ -21461,14 +21547,23 @@ function renderVibeComposePage() {
       '<button class="btn btn-sm btn-primary" data-submit-vibe>Publicar</button>' +
     '</div>' +
     '<div class="create-body">' +
-      '<div class="create-preview-wrap" style="margin-top:0;">' +
-        '<video src="'+draft.videoUrl+'" controls playsinline style="max-height:400px;"></video>' +
+      '<div class="vp" data-vp>' +
+        '<video src="'+draft.videoUrl+'" playsinline preload="metadata" data-vp-v></video>' +
+        '<button type="button" class="vp-big" data-vp-tg aria-label="Tocar"><svg viewBox="0 0 24 24" width="34" height="34" fill="#fff" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg></button>' +
+        '<div class="vp-bar">' +
+          '<button type="button" data-vp-tg aria-label="Tocar ou pausar"><span data-vp-ico></span></button>' +
+          '<span class="vp-t" data-vp-time>0:00 / 0:00</span>' +
+          '<div class="vp-trk" data-vp-trk><div class="vp-fill" data-vp-fill></div><div class="vp-th" data-vp-th></div></div>' +
+          '<button type="button" data-vp-mute aria-label="Som"><span data-vp-mic></span></button>' +
+          '<button type="button" data-vp-fs aria-label="Tela cheia"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg></button>' +
+        '</div>' +
       '</div>' +
       '<div class="row" style="gap:12px;align-items:flex-start;margin-top:16px;">' +
         avatarHtml(ME.avatar, 40, false, false, false, null, null, getUserFrame(ME)) +
         '<div class="grow">' +
           '<div style="font-weight:700;font-size:14px;margin-bottom:6px;">'+esc(ME.name)+'</div>' +
-          '<textarea class="create-textarea" style="min-height:70px;" placeholder="Escreva uma legenda para sua vibe… ✨" data-vibe-caption>'+esc(draft.caption)+'</textarea>' +
+          '<textarea class="create-textarea vcap" style="min-height:84px;" placeholder="Escreva uma legenda para sua vibe… ✨" data-vibe-caption>'+esc(draft.caption)+'</textarea>' +
+          '<div class="vcap-row"><div class="vcap-em"><button type="button" data-vibe-em>😭</button><button type="button" data-vibe-em>💔</button><button type="button" data-vibe-em>✨</button><button type="button" data-vibe-em>🌸</button><button type="button" data-vibe-em>💖</button><button type="button" data-vibe-em>🥺</button><button type="button" data-vibe-em>🍇</button></div><span class="vcap-cnt" data-vibe-cnt></span></div>' +
         '</div>' +
       '</div>' +
     '</div>' +
@@ -21493,6 +21588,8 @@ function bindVibeComposePage() {
     textarea.addEventListener("focus", function() { _editingPostField = true; });
     textarea.addEventListener("blur", function() { _editingPostField = false; });
   }
+  bindVibePlayer();
+  bindVibeCaptionExtras(textarea);
   var submitBtn = appEl.querySelector("[data-submit-vibe]");
   if (submitBtn) submitBtn.addEventListener("click", function() {
     if (draft._busy) return;
