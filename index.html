@@ -4638,7 +4638,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.25.07";
+var APP_VERSION = "2026.10.25.08";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -25418,6 +25418,7 @@ var VibesModule = {
       '<div class="sheet-panel">' +
         '<div class="sheet-item" data-vibe-sheet-action="download">'+sparkleIcon("download",20,"var(--text)")+' Baixar vídeo</div>' +
         '<div class="sheet-item" data-vibe-sheet-action="notinterested">'+icoSvg("close",20,"var(--text)")+' Não tenho interesse</div>' +
+        (isMine ? '<div class="sheet-item danger" data-vibe-sheet-action="delete">'+icoSvg("trash",20,"#e0507a")+' Apagar vibe</div>' : "") +
         (!isMine ? '<div class="sheet-item danger" data-vibe-sheet-action="report">'+icoSvg("bell",20,"#e0507a")+' Denunciar</div>' : "") +
         (!isMine ? '<div class="sheet-item danger" data-vibe-sheet-action="block">'+icoSvg("close",20,"#e0507a")+' Bloquear @'+esc(vibe.username||"")+'</div>' : "") +
         '<div class="sheet-cancel" data-vibe-sheet-cancel>Cancelar</div>' +
@@ -25453,6 +25454,14 @@ var VibesModule = {
     if (vid) { try { vid.pause(); } catch (e) {} }
     slideEl.style.display = "none";
   },
+  deleteMyVibe: function(idx) {
+    var vibe = this.vibes[idx];
+    if (!vibe || vibe.userId !== ME_ID) return;
+    this.hideVibeSlideEl(idx);
+    markVibeNotInterested(vibe.id);
+    if (typeof FB !== "undefined" && FB.deleteVibe) FB.deleteVibe(vibe.id).catch(function(){});
+    showToast("Vibe apagada.");
+  },
   bindActionSheetDom: function() {
     var self = this;
     var overlay = appEl.querySelector("[data-vibe-sheet-overlay]");
@@ -25467,6 +25476,15 @@ var VibesModule = {
         var action = item.getAttribute("data-vibe-sheet-action");
         var idx = self._actionSheetIdx;
         var vibe = self.vibes[idx];
+        if (action === "delete") {
+          var pn = overlay.querySelector(".sheet-panel");
+          pn.innerHTML = '<div class="sheet-item" style="font-weight:800;">Apagar esta vibe?</div>' +
+            '<div class="sheet-item danger" data-vibe-sheet-action="delete-yes">'+icoSvg("trash",20,"#e0507a")+' Sim, apagar</div>' +
+            '<div class="sheet-cancel" data-vibe-sheet-cancel>Cancelar</div>';
+          pn.querySelector('[data-vibe-sheet-action="delete-yes"]').addEventListener("click", function() { self.closeActionSheet(); self.deleteMyVibe(idx); });
+          pn.querySelector("[data-vibe-sheet-cancel]").addEventListener("click", function() { self.closeActionSheet(); });
+          return;
+        }
         self.closeActionSheet();
         if (!vibe) return;
         if (action === "download") {
