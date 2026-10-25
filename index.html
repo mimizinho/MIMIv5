@@ -526,6 +526,11 @@
   .mi-empty-hero b { display:block; font-size:18px; font-weight:800; letter-spacing:-.4px; }
   .mi-empty-hero span { font-size:13px; color:var(--sub); line-height:1.4; }
   .mi-empty-search { margin:12px 16px 0; }
+  .mi-chips { display:flex; gap:8px; padding:10px 16px 2px; overflow-x:auto; scrollbar-width:none; }
+  .mi-chips::-webkit-scrollbar { display:none; }
+  .mi-chip { border:1px solid var(--border); background:var(--surface); color:var(--sub); border-radius:20px; padding:6px 13px; font-size:12.5px; font-weight:700; white-space:nowrap; display:flex; gap:6px; align-items:center; cursor:pointer; font-family:inherit; }
+  .mi-chip.active { background:var(--accent); color:#fff; border-color:var(--accent); box-shadow:0 2px 10px rgba(255,111,165,.35); }
+  .mi-chip i { font-style:normal; font-size:11px; opacity:.85; }
   .mi-empty-tip { margin:18px 16px 0; padding:12px 14px; border:1.5px dashed var(--border); border-radius:16px; display:flex; gap:10px; align-items:center; font-size:12.5px; color:var(--sub); line-height:1.4; }
 
   /* ── Modal de confirmação de apagar ────────────────────── */
@@ -4596,7 +4601,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.24.21";
+var APP_VERSION = "2026.10.24.22";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -15146,9 +15151,18 @@ function renderMsgsPage() {
     if (!conv) state.activeConvoId = null;
     else return renderChatView(conv);
   }
-  var html = '<div class="page-header" style="border-bottom:1px solid var(--border);">' +
+  var _vis = CONVOS.filter(function(c){ return !_convoHidden(c); });
+  var _nA = _vis.filter(function(c){ return !c.archived; });
+  var _nU = _nA.filter(function(c){ return c.unread > 0; }).length;
+  var _nO = _nA.filter(function(c){ return c.online; }).length;
+  var _nR = _vis.length - _nA.length;
+  var _f = state.msgFilter || "all";
+  var _sub = _nA.length ? (_nA.length + (_nA.length > 1 ? " conversas" : " conversa") + (_nU ? " · " + _nU + (_nU > 1 ? " não lidas" : " não lida") : " · tudo em dia")) : "";
+  var _chips = _vis.length ? '<div class="mi-chips">' + [["all","Todas",_nA.length],["un","Não lidas",_nU],["on","Online",_nO],["ar","Arquivadas",_nR]].map(function(x){ return '<button class="mi-chip'+(_f===x[0]?' active':'')+'" data-msg-filter="'+x[0]+'">'+(x[0]==="ar"?icoSvg("archive",14):'')+x[1]+(x[2]?'<i>'+x[2]+'</i>':'')+'</button>'; }).join("") + '</div>' : "";
+  
+var html = '<div class="page-header" style="border-bottom:1px solid var(--border);">' +
     '<div class="row" style="gap:10px;">' +
-      '<span class="display grow" style="font-size:18px;">Mensagens</span>' +
+      '<div class="grow"><span class="display" style="font-size:18px;display:block;">Mensagens</span>' + (_sub ? '<span style="font-size:11.5px;color:var(--sub);">'+_sub+'</span>' : "") + '</div>' +
       '<button class="icon-btn" data-delete-all aria-label="Apagar todas" style="color:var(--accent);">' +
       '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg></button>' +
     '<button class="icon-btn" data-new-chat style="color:var(--accent);font-size:24px;">+</button>' +
@@ -15178,20 +15192,32 @@ function renderMsgsPage() {
     : "") +
   '</div>';
 
+  html += _chips;
+
   // ✅ NOVO: Separar conversas em grupos
   var pinnedConvos = CONVOS.filter(function(c) { return c.pinned && !c.archived && !_convoHidden(c); });
   var activeConvos = CONVOS.filter(function(c) { return !c.pinned && !c.archived && !_convoHidden(c); });
   var archivedConvos = CONVOS.filter(function(c) { return c.archived && !_convoHidden(c); });
 
-  var hasNormalConvos = pinnedConvos.length > 0 || activeConvos.length > 0;
-  if (!hasNormalConvos && !state.userSearchOpen) {
+  if (_f === "un") { pinnedConvos = pinnedConvos.filter(function(c){ return c.unread > 0; }); activeConvos = activeConvos.filter(function(c){ return c.unread > 0; }); archivedConvos = []; }
+  else if (_f === "on") { pinnedConvos = pinnedConvos.filter(function(c){ return c.online; }); activeConvos = activeConvos.filter(function(c){ return c.online; }); archivedConvos = []; }
+  else if (_f === "ar") { pinnedConvos = []; activeConvos = []; }
+  
+var hasNormalConvos = pinnedConvos.length > 0 || activeConvos.length > 0;
+  if (!hasNormalConvos && !state.userSearchOpen && _f === "all") {
     html += '<div class="mi-empty-hero"><div class="mi-empty-ico">'+icoSvg("msg",26,"var(--accent)")+'</div><div><b>Nenhuma conversa ainda</b><span>Busque alguém para começar a conversar.</span></div></div>' +
       '<div class="search-box mi-empty-search"><span class="search-icon">'+icoSvg("search",16,"var(--muted)")+'</span><input class="search-input" placeholder="Buscar por @nome de utilizador..." data-user-search-input></div>' +
       '<div data-search-results-box style="margin:8px 16px 0;"></div>' +
       '<div class="mi-empty-tip">'+icoSvg("sparkle",20,"var(--accentL)",true)+'<span>Depois de conversar, deslize uma conversa para a esquerda para apagar, ou segure para fixar e arquivar.</span></div>';
   }
 
-  // ✅ Renderizar conversas fixadas (em cartão destacado)
+  if (_f !== "all" && !pinnedConvos.length && !activeConvos.length && !archivedConvos.length) {
+    var _em = { un:["Tudo em dia","Você não tem mensagens não lidas."], on:["Ninguém online agora","Quando alguém ficar online, aparece aqui."], ar:["Nada arquivado","Segure uma conversa e escolha Arquivar."] }[_f];
+    html += '<div class="mi-empty-hero"><div class="mi-empty-ico">'+icoSvg(_f==="ar"?"archive":(_f==="on"?"user":"check"),26,"var(--accent)")+'</div><div><b>'+_em[0]+'</b><span>'+_em[1]+'</span></div></div>';
+  }
+
+  
+// ✅ Renderizar conversas fixadas (em cartão destacado)
   if (pinnedConvos.length > 0) {
     html += '<div class="convo-section-label">'+icoSvg("pinFill",13,"var(--accent)",true)+'Fixadas</div>';
     html += '<div class="convo-pinned-wrap">';
@@ -15214,7 +15240,7 @@ function renderMsgsPage() {
     html += '<div class="convo-section-label" data-toggle-archived>' +
       'Arquivadas (' + archivedConvos.length + ')' +
     '</div>';
-    if (!state.hideArchived) {
+    if (!state.hideArchived || _f === "ar") {
       archivedConvos.forEach(function(c) {
         html += renderConvoRow(c);
       });
@@ -15729,7 +15755,12 @@ function bindMsgsPage() {
     }, true);
   });
 
-  // ✅ NOVO: Event listener para toggle de conversas arquivadas
+  appEl.querySelectorAll("[data-msg-filter]").forEach(function(b) {
+    b.addEventListener("click", function() { state.msgFilter = b.getAttribute("data-msg-filter"); render(); });
+  });
+
+  
+// ✅ NOVO: Event listener para toggle de conversas arquivadas
   var archiveToggle = appEl.querySelector("[data-toggle-archived]");
   if (archiveToggle) {
     archiveToggle.addEventListener("click", function() {
