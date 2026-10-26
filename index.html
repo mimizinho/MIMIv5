@@ -4670,7 +4670,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.26.02";
+var APP_VERSION = "2026.10.26.03";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -26026,6 +26026,19 @@ var VibesModule = {
   downloadVibe: function(vibe) {
     var url = vibe.videoUrl;
     if (!url) return;
+    if (!isSubscriptionActive(ME_obj())) {
+      state.paywallDialog = {
+        icon: "spark",
+        title: "Recurso exclusivo MIMI Plus", chips: ["Vídeos"],
+        text: "Baixar vídeos das Vibes é um benefício de assinante. Assine o MIMI Plus e leve essa vibe com você.",
+        confirmLabel: "Assinar MIMI Plus",
+        onConfirm: function() { state.subsOpen = true; }
+      };
+      // Injeta direto no DOM (sem render() completo) pra não recriar o <video> da vibe.
+      appEl.insertAdjacentHTML("beforeend", renderPaywallDialog(true));
+      bindPaywallDialog();
+      return;
+    }
     try {
       var a = document.createElement("a");
       a.href = url;
