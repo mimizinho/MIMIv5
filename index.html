@@ -1449,7 +1449,7 @@
   .audio-trim-actions { display:flex; align-items:center; gap:10px; margin-top:10px; }
   .audio-trim-play { background:var(--accent); color:#fff; border:none; border-radius:50%; width:34px; height:34px; flex-shrink:0; display:flex; align-items:center; justify-content:center; cursor:pointer; }
   .audio-trim-hint { font-size:11.5px; color:var(--sub); }
-  .subs-btn-cancel { background:transparent; color:#FF3D93; border:1.5px solid #FF3D93; box-shadow:none; font-weight:700; }
+  .subs-btn-cancel { display:flex; align-items:center; justify-content:center; gap:8px; margin:14px 0 4px; padding:14px; font-size:15px; background:rgba(255,61,147,.14); color:#FF4D9D; border:2px solid #FF3D93; box-shadow:none; font-weight:800; }
   .subs-terms { font-size:11.5px; color:var(--sub); text-align:center; line-height:1.6; }
   .subs-active-card { position:relative; overflow:hidden; background:var(--surface); border:1.5px solid rgba(255,193,7,.5); border-radius:20px; padding:16px 18px; display:flex; align-items:center; gap:14px; margin-bottom:20px; }
   .subs-active-icon { width:44px; height:44px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#FFC107; border:1.5px solid #FFC107; background:rgba(255,193,7,.08); }
@@ -4670,7 +4670,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.26.03";
+var APP_VERSION = "2026.10.26.04";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -22931,6 +22931,7 @@ function renderSubsPage() {
       '<div class="subs-active-title">Você já é MIMI Plus ativo!</div>' +
       '<div class="subs-active-sub">Sua assinatura é válida até ' + until + '.</div>' +
     '</div><span class="subs-active-dots"></span></div>';
+    html += '<button class="subs-btn subs-btn-cancel" data-cancel-subs>Cancelar assinatura</button>';
 
     var activeTheme = getRingThemeKey(me);
     html += '<div class="subs-theme-section">' +
@@ -22998,7 +22999,7 @@ function renderSubsPage() {
 
   if (!isOfficial) {
     if (hasActive) {
-      html += '<button class="subs-btn subs-btn-cancel" data-cancel-subs>Cancelar assinatura</button>';
+      // o botão de cancelar fica logo abaixo do card de status (mais visível)
     } else {
       html += '<button class="subs-btn subs-btn-gold" data-subscribe-btn>Assinar MIMI Plus por R$15/mês</button>';
     }
