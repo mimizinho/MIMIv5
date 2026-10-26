@@ -1613,35 +1613,30 @@
   .confirm-actions { display:flex; gap:10px; }
   .confirm-actions .btn { flex:1; }
 
-  /* ── paywall dialog (aviso de recurso MIMI Plus, mais caprichado) ──
-     Usa a mesma linguagem visual da tela de assinatura (fundo escuro em
-     degradê, anel dourado/roxo com a coroa, sparkles) só que compacta,
-     em formato de modal — pra ficar bem mais elegante que um alerta comum. */
-  .paywall-overlay { position:fixed; inset:0; background:rgba(10,7,16,.6); backdrop-filter:blur(2px); z-index:370; display:flex; align-items:center; justify-content:center; max-width:480px; margin:0 auto; padding:24px; }
-  .paywall-box { position:relative; overflow:hidden; width:100%; max-width:320px; padding:36px 24px 26px; text-align:center; border-radius:26px;
-    background:
-      radial-gradient(circle at 85% 92%, rgba(225,48,108,.5), transparent 55%),
-      radial-gradient(circle at 90% 8%, rgba(123,47,247,.32), transparent 45%),
-      linear-gradient(160deg,#120c1a 0%,#1c1526 55%,#221629 100%);
-    border:1px solid rgba(255,255,255,.08);
-    box-shadow:0 20px 60px rgba(0,0,0,.5);
-    animation:paywallPopIn .35s cubic-bezier(.2,.9,.3,1.25); }
-  @keyframes paywallPopIn { from{opacity:0; transform:scale(.85) translateY(8px);} to{opacity:1; transform:scale(1) translateY(0);} }
-  .paywall-close { position:absolute; top:12px; right:12px; width:26px; height:26px; border-radius:50%; background:rgba(255,255,255,.08); border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:2; }
-  .paywall-spark { position:absolute; background:#fff; border-radius:50%; pointer-events:none; opacity:.85; }
-  .paywall-spark.tw { animation:mimiPlusSparkle 3s ease-in-out infinite; }
-  .paywall-ring { position:relative; z-index:1; width:74px; height:74px; border-radius:50%; margin:0 auto 18px; display:flex; align-items:center; justify-content:center;
-    background:linear-gradient(#1c1526,#1c1526) padding-box, linear-gradient(135deg,#7B9CF7,#B57BF7,#F76FC9) border-box;
-    border:2px solid transparent;
-    box-shadow:0 0 24px rgba(160,100,240,.4), 0 0 46px rgba(225,48,108,.22);
-    animation:paywallRingPulse 2.6s ease-in-out infinite; }
-  @keyframes paywallRingPulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.05);} }
-  .paywall-ring-inner { color:#fff; filter:drop-shadow(0 0 8px rgba(199,140,255,.85)); display:flex; }
-  .paywall-title { position:relative; z-index:1; font-size:19px; font-weight:900; color:#fff; margin:0 0 8px; letter-spacing:-.2px; }
-  .paywall-text { position:relative; z-index:1; font-size:13.5px; color:#cfc4d8; line-height:1.55; margin:0 0 22px; }
-  .paywall-btn { position:relative; z-index:1; width:100%; padding:14px; border-radius:16px; border:none; background:linear-gradient(135deg,#BF953F 0%,#FCF6BA 45%,#B38728 100%); color:#5c3d00; font-size:15px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 8px 22px rgba(179,135,40,.4); margin-bottom:10px; transition:transform .2s ease; }
+  /* ── paywall dialog (aviso de recurso MIMI Plus) — painel inferior "Diamante rosa" ── */
+  .paywall-overlay { position:fixed; inset:0; background:rgba(8,3,16,.72); backdrop-filter:blur(2px); z-index:370; display:flex; align-items:flex-end; justify-content:center; }
+  .paywall-box { position:relative; width:100%; max-width:480px; box-sizing:border-box; padding:104px 28px calc(30px + env(safe-area-inset-bottom,0px)); border-radius:34px 34px 0 0; text-align:center; font-family:'Manrope',system-ui,-apple-system,sans-serif; background:radial-gradient(90% 40% at 50% 0%,rgba(255,95,168,.3),rgba(255,95,168,0) 70%),linear-gradient(180deg,#1f0b35 0%,#2f1048 55%,#4a1050 100%); box-shadow:0 -24px 70px rgba(255,95,168,.16); animation:paywallSheetIn .38s cubic-bezier(.2,.9,.3,1); }
+  @keyframes paywallSheetIn { from{transform:translateY(40px); opacity:0;} to{transform:translateY(0); opacity:1;} }
+  .paywall-box::before { content:""; position:absolute; top:0; left:24px; right:24px; height:1.5px; background:linear-gradient(90deg,transparent,#e9c46a 30%,#fbeab0 50%,#e9c46a 70%,transparent); }
+  .paywall-grab { position:absolute; top:12px; left:50%; width:44px; height:4px; margin-left:-22px; border-radius:2px; background:rgba(233,196,106,.45); }
+  .paywall-close { position:absolute; top:18px; right:18px; width:44px; height:44px; border-radius:50%; border:1px solid rgba(233,196,106,.45); background:rgba(255,255,255,.05); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; }
+  .paywall-gem { position:absolute; top:-112px; left:50%; width:260px; height:200px; margin-left:-130px; pointer-events:none; animation:paywallGemFloat 4s ease-in-out infinite; }
+  .paywall-gem svg { display:block; overflow:visible; }
+  @keyframes paywallGemFloat { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-6px);} }
+  .paywall-tw { animation:paywallTwinkle 3s ease-in-out infinite; }
+  @keyframes paywallTwinkle { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+  .paywall-eyebrow { display:flex; align-items:center; justify-content:center; gap:10px; margin:0 0 8px; color:#e9c46a; font-weight:800; font-size:11px; letter-spacing:.28em; }
+  .paywall-eyebrow span { width:30px; height:1px; background:linear-gradient(90deg,transparent,#e9c46a); }
+  .paywall-eyebrow span:last-child { background:linear-gradient(90deg,#e9c46a,transparent); }
+  .paywall-title { margin:0 0 12px; font-family:'Playfair Display',Georgia,serif; font-weight:700; font-size:26px; line-height:1.15; color:#fff; text-wrap:balance; }
+  .paywall-gold { background:linear-gradient(100deg,#fbeab0,#e2b455 55%,#c99a3c); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .paywall-text { margin:0 0 22px; font-size:14.5px; line-height:1.6; font-weight:500; color:#e6d8ee; }
+  .paywall-chips { display:flex; justify-content:center; gap:10px; margin:-6px 0 22px; }
+  .paywall-chip { display:inline-flex; align-items:center; gap:8px; height:38px; padding:0 16px 0 12px; border-radius:19px; box-sizing:border-box; background:rgba(233,196,106,.08); border:1px solid rgba(233,196,106,.45); color:#f6e3a8; font-weight:700; font-size:13.5px; letter-spacing:.04em; }
+  .paywall-btn { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; height:54px; border:0; border-radius:27px; background:linear-gradient(105deg,#f6e3a8 0%,#e9b6a0 48%,#fbd9cc 62%,#d98aa0 100%); color:#3f1630; font-family:inherit; font-weight:800; font-size:16px; letter-spacing:.02em; cursor:pointer; box-shadow:0 10px 26px rgba(233,160,160,.3),inset 0 1px 0 rgba(255,255,255,.7),inset 0 -2px 0 rgba(120,50,70,.3); }
   .paywall-btn:active { transform:scale(.97); }
-  .paywall-later { position:relative; z-index:1; background:none; border:none; color:#9c94a6; font-size:13px; font-weight:600; cursor:pointer; padding:6px; }
+  .paywall-later { display:block; width:100%; height:50px; margin-top:2px; border:0; background:none; color:#cdb8dc; font-family:inherit; font-weight:700; font-size:14.5px; cursor:pointer; }
+  @media (prefers-reduced-motion:reduce) { .paywall-gem, .paywall-tw, .paywall-box { animation:none; } }
 
   /* ── edit profile ───────────────────────────────────────── */
   .edit-overlay { position:fixed; inset:0; background:var(--bg); z-index:250; display:flex; flex-direction:column; max-width:480px; margin:0 auto; }
@@ -1985,6 +1980,7 @@
   .birthday-balloons { gap: 8px; }
 }
 </style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Manrope:wght@500;700;800&display=swap">
 </head>
 <body>
 <div id="app"></div>
@@ -4674,7 +4670,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.26.01";
+var APP_VERSION = "2026.10.26.02";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -13990,7 +13986,7 @@ function bindPostCardEvents(root) {
       } else {
         state.paywallDialog = {
           icon: "spark",
-          title: "Recurso exclusivo MIMI Plus",
+          title: "Recurso exclusivo MIMI Plus", chips: ["Fotos", "Vídeos"],
           text: "Baixar fotos e vídeos do feed é um benefício de assinante. Assine o MIMI Plus e leve essa publicação com você.",
           confirmLabel: "Assinar MIMI Plus",
           onConfirm: function() { state.subsOpen = true; }
@@ -14757,21 +14753,60 @@ function bindConfirmDialog() {
 // visual da tela de assinatura (fundo escuro em degradê, anel dourado/roxo
 // com a coroa, sparkles animados) só que compacta, como um modal. Chamado
 // via state.paywallDialog = { icon, title, text, confirmLabel }.
+function paywallGemSvg() {
+  var rA = "", rB = "", i;
+  for (i = 0; i < 12; i++) rA += '<line y1="-66" y2="-122" transform="rotate(' + (i * 30) + ')"/>';
+  for (i = 0; i < 12; i++) rB += '<line y1="-66" y2="-96" transform="rotate(' + (15 + i * 30) + ')"/>';
+  return '<svg width="260" height="200" viewBox="0 0 260 200" overflow="visible" aria-hidden="true">' +
+    '<defs><radialGradient id="pwGemH" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ff7ac8" stop-opacity=".55"/><stop offset="1" stop-color="#ff7ac8" stop-opacity="0"/></radialGradient></defs>' +
+    '<circle cx="130" cy="112" r="110" fill="url(#pwGemH)"/>' +
+    '<g transform="translate(130 114)" stroke="#e9c46a" stroke-linecap="round" fill="none"><g stroke-opacity=".4" stroke-width="1.2">' + rA + '</g><g stroke-opacity=".25" stroke-width="1">' + rB + '</g></g>' +
+    '<g transform="translate(30 24)" stroke="#fff" stroke-opacity=".75" stroke-width="1.5" stroke-linejoin="round">' +
+      '<polygon points="18,62 62,30 64,62" fill="#ffb3d9"/>' +
+      '<polygon points="62,30 100,62 64,62" fill="#ff7ab8"/>' +
+      '<polygon points="62,30 138,30 100,62" fill="#ffe0f0"/>' +
+      '<polygon points="138,30 136,62 100,62" fill="#ff5fa8"/>' +
+      '<polygon points="138,30 182,62 136,62" fill="#e04a9a"/>' +
+      '<polygon points="18,62 64,62 100,152" fill="#d4469a"/>' +
+      '<polygon points="64,62 100,62 100,152" fill="#f0609f"/>' +
+      '<polygon points="100,62 136,62 100,152" fill="#b9358f"/>' +
+      '<polygon points="136,62 182,62 100,152" fill="#8e2d9e"/>' +
+      '<polygon points="70,36 92,36 82,54" fill="#fff" fill-opacity=".55" stroke="none"/>' +
+      '<polygon points="24,62 52,62 60,44" fill="#fff" fill-opacity=".3" stroke="none"/>' +
+      '<polygon points="68,70 96,70 94,98" fill="#fff" fill-opacity=".2" stroke="none"/>' +
+    '</g>' +
+    '<path class="paywall-tw" d="M214 38 l3.5 11 11 3.5 -11 3.5 -3.5 11 -3.5 -11 -11 -3.5 11 -3.5z" fill="#fff4d0"/>' +
+    '<path class="paywall-tw" style="animation-delay:1.2s" d="M40 60 l2.5 7 7 2.5 -7 2.5 -2.5 7 -2.5 -7 -7 -2.5 7 -2.5z" fill="#e9c46a"/>' +
+    '<path class="paywall-tw" style="animation-delay:.6s" d="M224 150 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z" fill="#fff4d0"/>' +
+  '</svg>';
+}
+var PAYWALL_CHIP_ICONS = {
+  "Fotos": '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#e9c46a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M4 18l5-5 4 4 3-3 4 4"/></svg>',
+  "Vídeos": '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#e9c46a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M10 9l5 3-5 3z"/></svg>'
+};
 function renderPaywallDialog(lightweight) {
   var d = state.paywallDialog;
   if (!d) return "";
-  var icon = d.icon || "crown";
+  var titleHtml = esc(d.title)
+    .replace("%%FIRE%%", '<span style="display:inline-flex;vertical-align:middle;transform:translateY(-2px);">'+fireSvg(18,null,true)+'</span>')
+    .replace("MIMI Plus", '<span class="paywall-gold">MIMI Plus</span>');
+  var chipsHtml = "";
+  if (d.chips && d.chips.length) {
+    chipsHtml = '<div class="paywall-chips">' + d.chips.map(function(c) {
+      return '<span class="paywall-chip">' + (PAYWALL_CHIP_ICONS[c] || "") + esc(c) + '</span>';
+    }).join("") + '</div>';
+  }
+  var crown = '<svg width="22" height="22" viewBox="0 0 24 24" fill="#3f1630" aria-hidden="true"><path d="M3 18 L2 7 L7.5 11.5 L12 4 L16.5 11.5 L22 7 L21 18 Z"/><rect x="3" y="19.5" width="18" height="2.4" rx="1.2"/></svg>';
   return '<div class="paywall-overlay fade-in" data-paywall-overlay'+(lightweight ? ' data-paywall-lightweight="1"' : '')+'>' +
     '<div class="paywall-box">' +
-      '<button class="paywall-close" data-paywall-cancel aria-label="Fechar">'+icoSvg("close",16,"rgba(255,255,255,.55)")+'</button>' +
-      '<div class="paywall-spark tw" style="top:14%;left:16%;width:3px;height:3px;"></div>' +
-      '<div class="paywall-spark tw" style="top:24%;right:14%;width:2px;height:2px;animation-delay:.6s;"></div>' +
-      '<div class="paywall-spark tw" style="bottom:58%;left:28%;width:2px;height:2px;animation-delay:1.2s;"></div>' +
-      '<div class="paywall-spark tw" style="top:18%;right:30%;width:2.5px;height:2.5px;animation-delay:1.8s;"></div>' +
-      '<div class="paywall-ring"><div class="paywall-ring-inner">'+mimiPlusIcon(icon,32)+'</div></div>' +
-      '<p class="paywall-title">'+esc(d.title).replace("%%FIRE%%", '<span style="display:inline-flex;vertical-align:middle;transform:translateY(-2px);">'+fireSvg(18,null,true)+'</span>')+'</p>' +
+      '<div class="paywall-grab"></div>' +
+      '<button class="paywall-close" data-paywall-cancel aria-label="Fechar">'+icoSvg("close",16,"#f6e3a8")+'</button>' +
+      '<div class="paywall-gem">'+paywallGemSvg()+'</div>' +
+      '<div class="paywall-eyebrow"><span></span>EXCLUSIVO<span></span></div>' +
+      '<p class="paywall-title">'+titleHtml+'</p>' +
       '<p class="paywall-text">'+esc(d.text)+'</p>' +
-      '<button class="paywall-btn" data-paywall-ok>'+mimiPlusIcon("crown",22)+'<span>'+esc(d.confirmLabel||"Assinar MIMI Plus")+'</span></button>' +
+      chipsHtml +
+      '<button class="paywall-btn" data-paywall-ok>'+crown+'<span>'+esc(d.confirmLabel||"Assinar MIMI Plus")+'</span></button>' +
       '<button class="paywall-later" data-paywall-cancel>Agora não</button>' +
     '</div>' +
   '</div>';
