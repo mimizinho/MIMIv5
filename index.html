@@ -1662,6 +1662,21 @@
   .edit-cover-preview img { width:100%; height:100%; object-fit:contain;object-position:center;display:block;margin:0 auto; }
   .edit-cover-btn { position:absolute; inset:0; background:rgba(0,0,0,.25); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:13px; gap:6px; cursor:pointer; opacity:0; transition:opacity .15s; }
   .edit-cover-preview:active .edit-cover-btn { opacity:1; }
+  .ep { padding-top:6px; }
+  .ep .edit-cover-preview { height:112px; border-radius:20px; margin-bottom:0; }
+  .ep .edit-cover-btn { inset:auto; right:10px; bottom:10px; background:#fff; color:#B83E6C; border-radius:20px; padding:6px 12px; font-size:12.5px; opacity:1; }
+  .ep-id { display:flex; align-items:flex-end; gap:14px; margin:-40px 6px 14px; position:relative; z-index:2; }
+  .ep-av { position:relative; flex:none; border-radius:50%; box-shadow:0 0 0 4px var(--surface); background:var(--surface); }
+  .ep-cam { position:absolute; right:-2px; bottom:2px; width:30px; height:30px; padding:0; border-radius:50%; background:var(--accent); border:3px solid var(--surface); display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:5; }
+  .ep-nm { min-width:0; padding-bottom:6px; }
+  .ep-card { background:var(--surface); border:1px solid rgba(240,96,143,.18); border-radius:18px; padding:2px 14px; margin-bottom:12px; }
+  .ep-row { display:flex; gap:12px; align-items:center; padding:11px 0; border-bottom:1px solid rgba(240,96,143,.12); }
+  .ep-row:last-child { border-bottom:none; }
+  .ep-ic { width:34px; height:34px; border-radius:11px; display:flex; align-items:center; justify-content:center; flex:none; background:rgba(240,96,143,.14); color:var(--accent); }
+  .ep-fx { flex:1; min-width:0; position:relative; }
+  .ep-card .input { border:none!important; background:transparent!important; box-shadow:none!important; padding:0!important; min-height:0!important; height:auto!important; border-radius:0!important; width:100%; }
+  .ep .edit-field-label { font-size:11.5px; font-weight:600; margin-bottom:2px; }
+  .ep-save { width:100%; height:50px; border:none; border-radius:25px; background:var(--accent); color:#fff; font-weight:700; font-size:16px; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; margin:6px 0 20px; }
 
   /* ── search results ─────────────────────────────────────── */
   .search-results { padding:6px 0; }
@@ -4659,7 +4674,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.25.11";
+var APP_VERSION = "2026.10.26.01";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -20975,29 +20990,51 @@ function bindProfileViewersPage() {
 }
 
 // ─── EDIT PROFILE ──────────────────────────────────────────────
+// Ícones do Editar perfil (traço, estilo Tabler)
+function _epIco(n) {
+  var P = {
+    user: '<path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"/><path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"/>',
+    at: '<path d="M8 12a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/><path d="M16 12v1.5a2.5 2.5 0 0 0 5 0v-1.5a9 9 0 1 0 -5.5 8.28"/>',
+    msg: '<path d="M3 20l1.3 -3.9c-2.324 -3.437 -1.426 -7.872 2.1 -10.374c3.526 -2.501 8.59 -2.296 11.845 .48c3.255 2.777 3.695 7.266 1.029 10.501c-2.666 3.235 -7.615 4.215 -11.574 2.293l-4.7 1"/>',
+    pin: '<path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/><path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0"/>',
+    link: '<path d="M9 15l6 -6"/><path d="M11 6l.463 -.536a5 5 0 0 1 7.071 7.072l-.534 .464"/><path d="M13 18l-.397 .534a5.068 5.068 0 0 1 -7.127 0a4.972 4.972 0 0 1 0 -7.071l.524 -.463"/>',
+    cake: '<path d="M3 20h18v-8a3 3 0 0 0 -3 -3h-12a3 3 0 0 0 -3 3v8"/><path d="M3 14.803c.312 .135 .654 .204 1 .197a2.4 2.4 0 0 0 2 -1a2.4 2.4 0 0 1 2 -1a2.4 2.4 0 0 1 2 1a2.4 2.4 0 0 0 2 1a2.4 2.4 0 0 0 2 -1a2.4 2.4 0 0 1 2 -1a2.4 2.4 0 0 1 2 1a2.4 2.4 0 0 0 2 1c.35 .007 .692 -.062 1 -.197"/><path d="M12 4l1.465 1.638a2 2 0 1 1 -3.015 .099l1.55 -1.737"/>',
+    heart: '<path d="M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.572"/>',
+    right: '<path d="M9 6l6 6l-6 6"/>'
+  };
+  return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + P[n] + '</svg>';
+}
 function renderEditProfile() {
   var u = ME_obj();
+  var _un = String(u.username || "").replace(/^@/, "");
   return '<div class="edit-overlay fade-in">' +
     '<div class="edit-header">' +
       '<button class="icon-btn" data-close-edit style="color:var(--sub);">'+icoSvg("close",22)+'</button>' +
       '<span style="font-weight:800;font-size:16px;">Editar perfil</span>' +
-      '<button class="btn btn-sm btn-primary" data-save-edit>Salvar</button>' +
+      '<span style="width:22px;"></span>' +
     '</div>' +
-    '<div class="edit-body">' +
+    '<div class="edit-body ep">' +
       '<div class="edit-cover-preview"'+((u.cover && u.coverType!=="video" && ImageGateway.isFilePath(u.cover))?' data-bgpath="'+esc(u.cover)+'"':'')+' style="'+((u.cover && u.coverType!=="video" && !ImageGateway.isFilePath(u.cover))?'background-image:url('+u.cover+');background-size:cover;background-position:center;':'')+'">' +
         ((u.cover && u.coverType==="video") ? '<video src="'+optimizeCloudinaryVideoUrl(u.cover)+'" autoplay muted loop playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"></video>' : "") +
-        '<div class="edit-cover-btn" style="opacity:.85;" data-edit-cover-2>'+icoSvg("edit",16,"#fff")+' Trocar capa</div>' +
+        '<div class="edit-cover-btn" data-edit-cover-2>'+icoSvg("edit",16,"#B83E6C")+' Trocar capa</div>' +
       '</div>' +
-      '<div class="edit-avatar-wrap">' +
-        '<div style="position:relative;">'+avatarHtml(u.avatar||DEFAULT_AVATAR,84,false,false,false,null,null,getUserFrame(u)) +
-        '<button class="edit-avatar-cam" data-edit-avatar-2>'+icoSvg("edit",14,"#fff")+'</button></div>' +
+      '<div class="ep-id">' +
+        '<div class="ep-av">'+avatarHtml(u.avatar||DEFAULT_AVATAR,84,false,false,false,null,null,getUserFrame(u)) +
+        '<button class="ep-cam" data-edit-avatar-2>'+icoSvg("edit",14,"#fff")+'</button></div>' +
+        '<div class="ep-nm"><div id="ep-pn" style="font-weight:800;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(u.name)+'</div>' +
+        '<div id="ep-pu" style="font-size:13px;color:var(--sub);">@'+esc(_un)+'</div></div>' +
       '</div>' +
-      '<div class="edit-field"><label class="edit-field-label">Nome</label><input class="input" data-edit-field="name" value="'+esc(u.name)+'"></div>' +
-      '<div class="edit-field"><label class="edit-field-label">Usuário</label><input class="input" data-edit-field="username" value="'+esc(u.username)+'"></div>' +
-      '<div class="edit-field" style="position:relative;"><label class="edit-field-label">Bio</label><textarea class="input" style="min-height:70px;resize:vertical;" data-edit-field="bio">'+esc(u.bio||"")+'</textarea><div class="bio-mention-box" data-bio-mention-box></div></div>' +
-      '<div class="edit-field"><label class="edit-field-label">Localização</label><input class="input" data-edit-field="location" value="'+esc(u.location||"")+'"></div>' +
-      '<div class="edit-field"><label class="edit-field-label">Site</label><input class="input" data-edit-field="website" value="'+esc(u.website||"")+'"></div>' +
-      '<div class="edit-field"><label class="edit-field-label">Data de nascimento</label><input class="input" readonly data-field="birthdate-view" placeholder="Selecionar data" style="cursor:pointer;" value="'+esc(_bdFmt(u.birthDate||u.birthdate||""))+'"><input type="hidden" data-field="birthdate" data-edit-field="birthDate" value="'+esc(u.birthDate||u.birthdate||"")+'"></div>' +
+      '<div class="ep-card">' +
+        '<div class="ep-row"><div class="ep-ic">'+_epIco("user")+'</div><div class="ep-fx"><label class="edit-field-label">Nome</label><input class="input" data-edit-field="name" value="'+esc(u.name)+'" oninput="var e=document.getElementById(\'ep-pn\');if(e)e.textContent=this.value||\'Seu nome\'"></div></div>' +
+        '<div class="ep-row"><div class="ep-ic">'+_epIco("at")+'</div><div class="ep-fx"><label class="edit-field-label">Usuário</label><input class="input" data-edit-field="username" value="'+esc(u.username)+'" oninput="var e=document.getElementById(\'ep-pu\');if(e)e.textContent=\'@\'+this.value.replace(/^@/,\'\')"></div></div>' +
+        '<div class="ep-row" style="align-items:flex-start;"><div class="ep-ic">'+_epIco("msg")+'</div><div class="ep-fx"><label class="edit-field-label">Bio</label><textarea class="input" rows="2" style="min-height:44px;resize:none;" data-edit-field="bio">'+esc(u.bio||"")+'</textarea><div class="bio-mention-box" data-bio-mention-box></div></div></div>' +
+      '</div>' +
+      '<div class="ep-card">' +
+        '<div class="ep-row"><div class="ep-ic">'+_epIco("pin")+'</div><div class="ep-fx"><label class="edit-field-label">Localização</label><input class="input" data-edit-field="location" value="'+esc(u.location||"")+'"></div></div>' +
+        '<div class="ep-row"><div class="ep-ic">'+_epIco("link")+'</div><div class="ep-fx"><label class="edit-field-label">Site</label><input class="input" data-edit-field="website" placeholder="seusite.com" value="'+esc(u.website||"")+'"></div></div>' +
+        '<div class="ep-row"><div class="ep-ic">'+_epIco("cake")+'</div><div class="ep-fx"><label class="edit-field-label">Data de nascimento</label><input class="input" readonly data-field="birthdate-view" placeholder="Selecionar data" style="cursor:pointer;" value="'+esc(_bdFmt(u.birthDate||u.birthdate||""))+'"><input type="hidden" data-field="birthdate" data-edit-field="birthDate" value="'+esc(u.birthDate||u.birthdate||"")+'"></div><span style="color:var(--sub);display:flex;">'+_epIco("right")+'</span></div>' +
+      '</div>' +
+      '<button class="ep-save" data-save-edit>'+_epIco("heart")+' Salvar alterações</button>' +
       '<input type="file" data-edit-avatar-input accept="image/*" class="hidden">' +
       '<input type="file" data-edit-cover-input accept="image/*,video/*" class="hidden">' +
     '</div>' +
