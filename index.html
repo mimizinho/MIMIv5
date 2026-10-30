@@ -4686,7 +4686,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.30.01";
+var APP_VERSION = "2026.10.30.02";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -12738,8 +12738,8 @@ var _feedVideoRatios = {};   // postId -> proporção visível (0 a 1)
 var _feedPlayersById = {};   // postId -> instância do AdvancedVideoPlayer
 var _feedActiveVideoId = null;
 var _feedSharedObserver = null;
-var FEED_VIDEO_ENTER_RATIO = 0.65;
-var FEED_VIDEO_EXIT_RATIO  = 0.5;
+var FEED_VIDEO_ENTER_RATIO = 0.9;
+var FEED_VIDEO_EXIT_RATIO  = 0.6;
 
 function getFeedSharedObserver() {
   if (_feedSharedObserver || !('IntersectionObserver' in window)) return _feedSharedObserver;
@@ -12747,10 +12747,13 @@ function getFeedSharedObserver() {
     entries.forEach(function(entry) {
       var pid = entry.target.getAttribute('data-feed-video-postid');
       if (!pid) return;
-      _feedVideoRatios[pid] = entry.isIntersecting ? entry.intersectionRatio : 0;
+      var _r = entry.isIntersecting ? entry.intersectionRatio : 0;
+      var _bh = entry.boundingClientRect.height || 0;
+      if (_r > 0 && _bh > window.innerHeight) _r = Math.min(1, _r / (window.innerHeight / _bh));
+      _feedVideoRatios[pid] = _r;
     });
     electActiveFeedVideo();
-  }, { threshold: [0, 0.15, 0.35, 0.5, 0.65, 0.8, 1] });
+  }, { threshold: (function(){ var a = []; for (var i = 0; i <= 20; i++) a.push(i / 20); return a; })() });
   return _feedSharedObserver;
 }
 
