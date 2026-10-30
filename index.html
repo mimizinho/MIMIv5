@@ -1766,6 +1766,17 @@
 .pstack-dots{display:flex;justify-content:center;gap:5px;padding:6px 0 0}
 .pstack-dots i{width:6px;height:6px;border-radius:50%;background:var(--border);transition:.2s}
 .pstack-dots i.on{background:var(--accent);transform:scale(1.3)}
+
+.pm-line{display:inline-flex;align-items:center;gap:5px;max-width:min(100%,240px);margin-top:2px;font-size:11.5px;font-weight:800;color:var(--accent);cursor:pointer}
+.pm-txt{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pm-ico{display:inline-flex;flex-shrink:0}
+.pm-eq{display:inline-flex;align-items:flex-end;gap:2px;height:10px;flex-shrink:0}
+.pm-eq i{width:2px;height:3px;border-radius:1px;background:currentColor}
+.pm-line.playing .pm-eq i{animation:pmeq .8s ease-in-out infinite}
+.pm-line.playing .pm-eq i:nth-child(2){animation-delay:.2s}
+.pm-line.playing .pm-eq i:nth-child(3){animation-delay:.4s}
+@keyframes pmeq{0%,100%{height:3px}50%{height:10px}}
+@media (prefers-reduced-motion:reduce){.pm-line.playing .pm-eq i{animation:none;height:8px}}
 </style>
 <!-- ✅ CLOUDINARY: upload direto via API REST (não usa mais o widget nem crypto-js) -->
 <!-- Google Identity Services (login com Google) -->
@@ -4686,7 +4697,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.30.03";
+var APP_VERSION = "2026.10.30.04";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -7494,6 +7505,7 @@ var FB = {
       hashtags:  postData.hashtags && postData.hashtags.length ? postData.hashtags : extractHashtags(postData.text || ""),
       img:       postData.img   || null,
       imgs:      postData.imgs || null,
+      music:     postData.music || null,
       video:     postData.video || null,
       audio:     postData.audio || null,
       audioMeta: postData.audioMeta || null,
@@ -10816,10 +10828,10 @@ var state = {
   photoViewerUrl: null, // url da foto de perfil aberta em tela cheia
 };
 
-var compose = { imgs:[], media:null, mediaType:null, loc:null, audioMeta:null, isAd:false, adVisible:false, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false, takeover:false }, adLink:"", adCta:"saiba" };
+var compose = { imgs:[], music:null, media:null, mediaType:null, loc:null, audioMeta:null, isAd:false, adVisible:false, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false, takeover:false }, adLink:"", adCta:"saiba" };
 
 // ─── BUSCA DE MÚSICA (iTunes Search API — prévias oficiais de 30s) ─────
-var musicSearch = { open:false, query:"", results:[], loading:false, error:null, seq:0 };
+var musicSearch = { forPhoto:false, open:false, query:"", results:[], loading:false, error:null, seq:0 };
 
 function buildMusicResultsHtml() {
   if (musicSearch.loading) {
@@ -10878,6 +10890,13 @@ function bindMusicResultsHandlers(container) {
       if (!track) return;
       var player = document.getElementById("music-preview-player");
       if (player) player.pause();
+      if (musicSearch.forPhoto) {
+        compose.music = { url: track.previewUrl, title: track.trackName || "", artist: track.artistName || "", artwork: (track.artworkUrl100 || "").replace("100x100", "160x160") };
+        musicSearch.forPhoto = false; musicSearch.open = false; musicSearch.seq++;
+        showToast(toastWithIcon("Música adicionada à foto", "music", "before"), true);
+        render();
+        return;
+      }
       compose.media = track.previewUrl;
       compose.mediaType = "audio";
       compose.audioMeta = {
@@ -10953,7 +10972,7 @@ function renderMusicSearchModal() {
     '<div class="create-header">' +
       '<button class="icon-btn" data-close-music-search style="color:var(--sub);">'+icoSvg("back",22)+'</button>' +
       '<span style="font-weight:800;font-size:16px;">Escolher música</span>' +
-      '<button class="btn btn-sm" data-music-upload-instead style="font-size:12px;">Enviar arquivo</button>' +
+      (musicSearch.forPhoto ? '<span style="width:84px;"></span>' : '<button class="btn btn-sm" data-music-upload-instead style="font-size:12px;">Enviar arquivo</button>') +
     '</div>' +
     '<div class="create-body">' +
       '<input type="text" class="create-textarea" data-music-search-input placeholder="Buscar música ou artista…" value="'+esc(musicSearch.query)+'" style="min-height:auto;height:44px;">' +
@@ -10967,6 +10986,7 @@ function renderMusicSearchModal() {
 function bindMusicSearchModal() {
   var closeBtn = appEl.querySelector("[data-close-music-search]");
   if (closeBtn) closeBtn.addEventListener("click", function() {
+    musicSearch.forPhoto = false;
     musicSearch.open = false;
     musicSearch.seq++; // invalida qualquer busca pendente
     var player = document.getElementById("music-preview-player");
@@ -13622,6 +13642,7 @@ function renderPostCard(post, opts) {
           '<span class="post-sub">·</span>' +
           '<span class="post-sub">'+esc(post.time)+'</span>' +
         '</div>' +
+        (post.music && post.music.url ? renderPostMusicLine(post) : "") +
         (post.isAd ? '<div class="post-ad-label" style="display:inline-flex;align-items:center;gap:3px;margin-top:3px;padding:2px 8px;border-radius:20px;background:#e9fbf3;color:#1abc9c;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;">'+icoSvg("megaphone",11,"#1abc9c",true)+' Anúncio</div>' : "") +
       '</div>' +
       '<button class="icon-btn" data-open-sheet="'+post.id+'" style="color:var(--muted);">'+icoSvg("more",20)+'</button>' +
@@ -13811,6 +13832,7 @@ function bindFeedPage() {
 
 function bindPostCardEvents(root) {
   bindPhotoStacks(root || appEl);
+  bindPostMusic(root || appEl);
   bindAdCtaBars(root);
   root = root || appEl;
   bindTrackPlayers();
@@ -21517,12 +21539,12 @@ function bindPublishMenu() {
       var type = btn.getAttribute("data-publish-type");
       if (type === "post") {
         state.publishMenu = false;
-        compose = { imgs:[], media:null, mediaType:null, loc:null, audioMeta:null, isAd:false, adVisible:false, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false, takeover:false }, adLink:"", adCta:"saiba" };
+        compose = { imgs:[], music:null, media:null, mediaType:null, loc:null, audioMeta:null, isAd:false, adVisible:false, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false, takeover:false }, adLink:"", adCta:"saiba" };
         state.creating = true;
         render();
       } else if (type === "ad") {
         state.publishMenu = false;
-        compose = { imgs:[], media:null, mediaType:null, loc:null, audioMeta:null, isAd:true, adVisible:true, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false, takeover:false }, adLink:"", adCta:"saiba" };
+        compose = { imgs:[], music:null, media:null, mediaType:null, loc:null, audioMeta:null, isAd:true, adVisible:true, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false, takeover:false }, adLink:"", adCta:"saiba" };
         state.creating = true;
         render();
       } else if (type === "vibe") {
@@ -21877,6 +21899,64 @@ function bindAudioTrimEditor() {
 }
 
 
+
+var _pmAudio = null, _pmCurPid = null, _pmObs = null;
+function renderPostMusicLine(post) {
+  var m = post.music || {};
+  return '<div class="pm-line" data-pm="' + post.id + '" data-pm-url="' + esc(m.url || "") + '">' +
+    '<span class="pm-ico">' + icoSvg("music", 12, "currentColor") + '</span>' +
+    '<span class="pm-txt">' + esc(m.title || "") + (m.artist ? " · " + esc(m.artist) : "") + '</span>' +
+    '<span class="pm-eq"><i></i><i></i><i></i></span></div>';
+}
+function _pmPaint() {
+  document.querySelectorAll(".pm-line").forEach(function(l) {
+    l.classList.toggle("playing", !!_pmAudio && !_pmAudio.paused && l.getAttribute("data-pm") === _pmCurPid);
+  });
+}
+function _pmStop() { if (_pmAudio && !_pmAudio.paused) _pmAudio.pause(); _pmPaint(); }
+function bindPostMusic(root) {
+  if (!root || !root.querySelectorAll) return;
+  if (!_pmAudio) {
+    _pmAudio = new Audio(); _pmAudio.preload = "none";
+    _pmAudio.addEventListener("ended", _pmPaint);
+    _pmAudio.addEventListener("pause", _pmPaint);
+    _pmAudio.addEventListener("play", _pmPaint);
+    _pmAudio.addEventListener("timeupdate", function() {
+      if (_pmCurPid && !document.querySelector('[data-pm="' + _pmCurPid + '"]')) _pmStop();
+    });
+    document.addEventListener("visibilitychange", function() { if (document.hidden) _pmStop(); });
+  }
+  if (!_pmObs && "IntersectionObserver" in window) {
+    _pmObs = new IntersectionObserver(function(es) {
+      es.forEach(function(en) { if (!en.isIntersecting && en.target.getAttribute("data-pm") === _pmCurPid) _pmStop(); });
+    }, { threshold: 0 });
+  }
+  root.querySelectorAll(".pm-line:not([data-pmb])").forEach(function(line) {
+    line.setAttribute("data-pmb", "1");
+    if (_pmObs) _pmObs.observe(line);
+    line.addEventListener("click", function(e) {
+      e.stopPropagation();
+      var pid = line.getAttribute("data-pm"), url = line.getAttribute("data-pm-url");
+      if (!url) return;
+      if (_pmCurPid === pid && !_pmAudio.paused) { _pmAudio.pause(); return; }
+      if (typeof pauseAllFeedVideos === "function") { try { pauseAllFeedVideos(); } catch (err) {} }
+      if (_pmAudio.getAttribute("data-u") !== url) { _pmAudio.src = url; _pmAudio.setAttribute("data-u", url); }
+      _pmCurPid = pid;
+      _pmAudio.currentTime = 0;
+      var pr = _pmAudio.play(); if (pr && pr.catch) pr.catch(function() {});
+    });
+  });
+  _pmPaint();
+}
+function createMusicRowHtml() {
+  if (compose.isAd || compose.mediaType !== "image") return "";
+  var m = compose.music;
+  return '<div class="np-row" data-pick-music><span class="np-ico">' + icoSvg("music", 20, C.accent) + '</span><div class="grow"><div class="np-t">Música</div><div class="np-d">' +
+    (m ? esc((m.title || "") + (m.artist ? " · " + m.artist : "")) : "Adicione uma música à foto") + '</div></div>' +
+    (m ? '<button class="icon-btn" data-remove-music style="color:var(--muted);">' + icoSvg("close", 16, "var(--muted)") + '</button>' : "") +
+    '</div><div class="np-sep"></div>';
+}
+
 var _multiImgBusy = false;
 var _pstackCur = {};
 function createMultiPreviewHtml() {
@@ -22085,6 +22165,7 @@ function renderCreatePost() {
       '</div>' +
       adToggle +
       '<div class="np-card" style="padding:0;">' +
+        createMusicRowHtml() +
         (compose.isAd ? "" : '<div class="np-row" data-pick-loc><span class="np-ico">'+icoSvg("loc",20,C.accent)+'</span><div class="grow"><div class="np-t">Local</div><div class="np-d">'+(compose.loc?"Toque para trocar":"Nenhum local adicionado")+'</div></div></div><div class="np-sep"></div>') +
         '<div class="np-row" style="cursor:default;padding:0 16px;"><span class="np-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="'+C.accent+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg></span><div class="grow">'+commentsToggle+'</div></div>' +
       '</div>' +
@@ -22218,9 +22299,16 @@ function bindCreatePost() {
   });
   var addImgsBtn = appEl.querySelector("[data-add-imgs]");
   if (addImgsBtn) addImgsBtn.addEventListener("click", pickMultiPostImages);
+  var pickMusicRow = appEl.querySelector("[data-pick-music]");
+  if (pickMusicRow) pickMusicRow.addEventListener("click", function() {
+    musicSearch.open = true; musicSearch.forPhoto = true; musicSearch.query = ""; musicSearch.results = []; musicSearch.error = null;
+    render();
+  });
+  var rmMusicBtn = appEl.querySelector("[data-remove-music]");
+  if (rmMusicBtn) rmMusicBtn.addEventListener("click", function(e) { e.stopPropagation(); compose.music = null; render(); });
   var removeMediaBtn = appEl.querySelector("[data-remove-media]");
   if (removeMediaBtn) removeMediaBtn.addEventListener("click", function() {
-    compose.imgs = []; compose.media = null; compose.mediaType = null; compose.audioMeta = null; compose.videoRatio = null; render();
+    compose.music = null; compose.imgs = []; compose.media = null; compose.mediaType = null; compose.audioMeta = null; compose.videoRatio = null; render();
   });
 
   var pickLocBtn = appEl.querySelector("[data-pick-loc]");
@@ -22312,6 +22400,7 @@ function bindCreatePost() {
         hashtags: extractHashtags(text),
         img: compose.mediaType === "image" ? compose.media : null,
         imgs: (compose.mediaType === "image" && compose.imgs && compose.imgs.length > 1) ? compose.imgs.slice(0, 10) : null,
+        music: (compose.mediaType === "image" && !compose.isAd && compose.music) ? compose.music : null,
         video: compose.mediaType === "video" ? compose.media : null,
         videoRatio: compose.mediaType === "video" ? (compose.videoRatio || null) : null,
         audio: compose.mediaType === "audio" ? compose.media : null,
@@ -22351,7 +22440,7 @@ function bindCreatePost() {
         state.viewProfileId = null;
         state.profileStack.length = 0;
         state.postDetailId = null;
-        compose = { imgs:[], media:null, mediaType:null, loc:null, audioMeta:null, isAd:false, adVisible:false, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false, takeover:false }, adLink:"", adCta:"saiba" };
+        compose = { imgs:[], music:null, media:null, mediaType:null, loc:null, audioMeta:null, isAd:false, adVisible:false, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false, takeover:false }, adLink:"", adCta:"saiba" };
         state.page = "feed";
         var feedList = appEl.querySelector("[data-feed-posts]");
         if (feedList && !newPost.isAd) {
@@ -22385,7 +22474,7 @@ function bindCreatePost() {
   }
   if (closeBtn) closeBtn.addEventListener("click", function() {
     state.creating = false;
-    compose = { imgs:[], media:null, mediaType:null, loc:null, audioMeta:null, isAd:false, adVisible:false, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false, takeover:false }, adLink:"", adCta:"saiba" };
+    compose = { imgs:[], music:null, media:null, mediaType:null, loc:null, audioMeta:null, isAd:false, adVisible:false, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false, takeover:false }, adLink:"", adCta:"saiba" };
     render();
   });
 }
