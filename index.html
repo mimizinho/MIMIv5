@@ -1750,6 +1750,22 @@
   .vibe-comment-input-row { display:flex; align-items:center; gap:10px; padding:10px 16px calc(env(safe-area-inset-bottom,0px) + 12px); border-top:1px solid var(--border,#2a2030); flex-shrink:0; }
   .vibe-comment-input { flex:1; background:var(--card,#1c1522); border:1px solid var(--border,#2a2030); border-radius:20px; padding:10px 14px; color:var(--text,#fff); font-size:13.5px; }
   .vibe-comment-send { background:none; border:none; color:var(--accentL,#ffb3d1); cursor:pointer; display:flex; padding:4px; }
+
+.mp-strip{display:flex;gap:8px;overflow-x:auto;padding:8px 0;scrollbar-width:none}
+.mp-th{position:relative;flex:none;width:84px;height:104px;border-radius:14px;overflow:hidden;background:var(--bg)}
+.mp-th img{width:100%;height:100%;object-fit:cover;aspect-ratio:auto!important;display:block}
+.mp-n{position:absolute;left:6px;bottom:6px;min-width:20px;height:20px;border-radius:10px;background:rgba(217,44,128,.9);color:#fff;font-weight:800;font-size:11px;line-height:20px;text-align:center;padding:0 5px}
+.mp-x{position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
+.mp-add{flex:none;width:84px;height:104px;border-radius:14px;border:2px dashed var(--border);background:var(--bg);color:var(--accent);font-size:28px;cursor:pointer}
+.mp-count{font-size:11.5px;color:var(--muted);padding-bottom:4px}
+.pstack{margin:4px 0 8px;user-select:none;-webkit-user-select:none}
+.pstack-area{position:relative;aspect-ratio:1/1.05;margin:8px 26px 4px;touch-action:pan-y}
+.pstack-card{position:absolute;inset:0;border-radius:20px;overflow:hidden;box-shadow:0 6px 20px rgba(217,44,128,.25);border:4px solid var(--surface);background:var(--surface);transition:transform .3s,opacity .3s;will-change:transform}
+.pstack-img{width:100%;height:100%;object-fit:cover;aspect-ratio:auto!important;display:block;pointer-events:none;-webkit-user-drag:none}
+.pstack-count{text-align:center;font-size:12px;font-weight:800;color:var(--muted);padding:6px 0 0}
+.pstack-dots{display:flex;justify-content:center;gap:5px;padding:6px 0 0}
+.pstack-dots i{width:6px;height:6px;border-radius:50%;background:var(--border);transition:.2s}
+.pstack-dots i.on{background:var(--accent);transform:scale(1.3)}
 </style>
 <!-- ✅ CLOUDINARY: upload direto via API REST (não usa mais o widget nem crypto-js) -->
 <!-- Google Identity Services (login com Google) -->
@@ -4670,7 +4686,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.26.04";
+var APP_VERSION = "2026.10.30.01";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -7477,6 +7493,7 @@ var FB = {
       text:      postData.text  || "",
       hashtags:  postData.hashtags && postData.hashtags.length ? postData.hashtags : extractHashtags(postData.text || ""),
       img:       postData.img   || null,
+      imgs:      postData.imgs || null,
       video:     postData.video || null,
       audio:     postData.audio || null,
       audioMeta: postData.audioMeta || null,
@@ -10798,7 +10815,7 @@ var state = {
   photoViewerUrl: null, // url da foto de perfil aberta em tela cheia
 };
 
-var compose = { media:null, mediaType:null, loc:null, audioMeta:null, isAd:false, adVisible:false, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false, takeover:false }, adLink:"", adCta:"saiba" };
+var compose = { imgs:[], media:null, mediaType:null, loc:null, audioMeta:null, isAd:false, adVisible:false, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false, takeover:false }, adLink:"", adCta:"saiba" };
 
 // ─── BUSCA DE MÚSICA (iTunes Search API — prévias oficiais de 30s) ─────
 var musicSearch = { open:false, query:"", results:[], loading:false, error:null, seq:0 };
@@ -13575,6 +13592,7 @@ function renderPostCard(post, opts) {
   else if (post.audio) {
     mediaHtml = renderTrackPlayer(post);
   }
+  else if (post.imgs && post.imgs.length > 1) mediaHtml = renderPhotoStack(post);
   else if (post.img) mediaHtml = '<img class="post-img" '+imageTagAttrs(post.img)+' alt="" data-open-post-media="'+post.id+'">';
 
   var locHtml = post.loc ? '<div class="post-loc">'+sparkleIcon("loc",18)+' '+esc(post.loc)+'</div>' : "";
@@ -13783,6 +13801,7 @@ function bindFeedPage() {
 }
 
 function bindPostCardEvents(root) {
+  bindPhotoStacks(root || appEl);
   bindAdCtaBars(root);
   root = root || appEl;
   bindTrackPlayers();
@@ -21489,12 +21508,12 @@ function bindPublishMenu() {
       var type = btn.getAttribute("data-publish-type");
       if (type === "post") {
         state.publishMenu = false;
-        compose = { media:null, mediaType:null, loc:null, audioMeta:null, isAd:false, adVisible:false, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false, takeover:false }, adLink:"", adCta:"saiba" };
+        compose = { imgs:[], media:null, mediaType:null, loc:null, audioMeta:null, isAd:false, adVisible:false, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false, takeover:false }, adLink:"", adCta:"saiba" };
         state.creating = true;
         render();
       } else if (type === "ad") {
         state.publishMenu = false;
-        compose = { media:null, mediaType:null, loc:null, audioMeta:null, isAd:true, adVisible:true, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false, takeover:false }, adLink:"", adCta:"saiba" };
+        compose = { imgs:[], media:null, mediaType:null, loc:null, audioMeta:null, isAd:true, adVisible:true, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false, takeover:false }, adLink:"", adCta:"saiba" };
         state.creating = true;
         render();
       } else if (type === "vibe") {
@@ -21848,6 +21867,110 @@ function bindAudioTrimEditor() {
   });
 }
 
+
+var _multiImgBusy = false;
+var _pstackCur = {};
+function createMultiPreviewHtml() {
+  var h = '<div class="mp-strip">';
+  compose.imgs.forEach(function(p, i) {
+    var at = ImageGateway.isFilePath(p) ? 'data-imgpath="' + esc(p) + '" src=""' : 'src="' + p + '"';
+    h += '<div class="mp-th"><img ' + at + ' alt=""><span class="mp-n">' + (i + 1) + '</span><button class="mp-x" data-remove-img="' + i + '">' + icoSvg("close", 12, "#fff") + '</button></div>';
+  });
+  if (compose.imgs.length < 10) h += '<button class="mp-add" data-add-imgs>+</button>';
+  return h + '</div><div class="mp-count">' + compose.imgs.length + '/10 fotos · a 1ª é a capa</div>';
+}
+function pickMultiPostImages() {
+  if (_multiImgBusy) return;
+  var base = (compose.mediaType === "image" && compose.imgs && compose.imgs.length) ? compose.imgs.slice()
+    : (compose.mediaType === "image" && compose.media ? [compose.media] : []);
+  var restam = 10 - base.length;
+  if (restam <= 0) { showToast("Máximo de 10 fotos por publicação."); return; }
+  var inp = document.createElement("input");
+  inp.type = "file"; inp.multiple = true;
+  inp.accept = "image/jpeg,image/png,image/gif,image/webp";
+  inp.onchange = function(e) {
+    var files = Array.prototype.slice.call(e.target.files || []);
+    if (!files.length) return;
+    if (files.length > restam) { showToast("Máximo de 10 fotos. Usei só as " + restam + " primeiras."); files = files.slice(0, restam); }
+    _multiImgBusy = true;
+    showToast("Enviando " + files.length + (files.length === 1 ? " foto…" : " fotos…"));
+    var paths = [];
+    function fim() {
+      if (paths.length) {
+        compose.imgs = base.concat(paths);
+        compose.media = compose.imgs[0];
+        compose.mediaType = "image";
+        render();
+      }
+      _multiImgBusy = false;
+    }
+    files.reduce(function(chain, f) {
+      return chain.then(function() {
+        return ImageGateway.upload(f, "post", { fileName: f.name }).then(function(p) { paths.push(p); });
+      });
+    }, Promise.resolve()).then(function() {
+      showToast(toastWithIcon(paths.length + (paths.length === 1 ? " foto selecionada" : " fotos selecionadas"), "photo", "before"), true);
+      fim();
+    }).catch(function(err) {
+      showToast("Erro ao enviar as fotos: " + (err && err.message ? err.message : "tente novamente."));
+      fim();
+    });
+  };
+  inp.click();
+}
+function renderPhotoStack(post) {
+  var l = post.imgs.slice(0, 10);
+  var h = '<div class="pstack" data-pstack="' + post.id + '"><div class="pstack-area">';
+  l.forEach(function(p) { h += '<div class="pstack-card"><img class="pstack-img" ' + imageTagAttrs(p) + ' alt=""></div>'; });
+  h += '</div><div class="pstack-count">1 de ' + l.length + '</div><div class="pstack-dots">';
+  l.forEach(function() { h += '<i></i>'; });
+  return h + '</div></div>';
+}
+function bindPhotoStacks(root) {
+  if (!root || !root.querySelectorAll) return;
+  root.querySelectorAll(".pstack:not([data-bound])").forEach(function(box) {
+    box.setAttribute("data-bound", "1");
+    var pid = box.getAttribute("data-pstack");
+    var area = box.querySelector(".pstack-area");
+    var cards = box.querySelectorAll(".pstack-card");
+    var dots = box.querySelectorAll(".pstack-dots i");
+    var cnt = box.querySelector(".pstack-count");
+    var n = cards.length, cur = Math.min(_pstackCur[pid] || 0, n - 1), x0 = null, drag = null;
+    function lay(first) {
+      for (var i = 0; i < n; i++) {
+        var d = i - cur, c = cards[i];
+        c.style.transition = first ? "none" : "";
+        if (d < 0) { c.style.transform = "translateX(-130%) rotate(-10deg)"; c.style.opacity = 0; c.style.zIndex = i; }
+        else { c.style.transform = "translate(" + (d * 10) + "px," + (d * 9) + "px) scale(" + (1 - d * 0.05) + ")"; c.style.opacity = d > 3 ? 0 : 1; c.style.zIndex = 100 - i; }
+      }
+      cnt.textContent = (cur + 1) + " de " + n;
+      for (var k = 0; k < dots.length; k++) dots[k].classList.toggle("on", k === cur);
+      _pstackCur[pid] = cur;
+    }
+    function fim(e, cancel) {
+      if (x0 === null) return;
+      var dx = e.clientX - x0; x0 = null;
+      if (cancel) { lay(); return; }
+      if (Math.abs(dx) < 8) { lay(); if (state.postDetailId !== pid) openPostDetail(pid); return; }
+      if (dx < -60 && cur < n - 1) cur++; else if (dx > 60 && cur > 0) cur--;
+      lay();
+    }
+    area.addEventListener("touchstart", function(e) { e.stopPropagation(); }, { passive: true });
+    area.addEventListener("pointerdown", function(e) {
+      x0 = e.clientX; drag = cards[cur]; drag.style.transition = "none";
+      try { area.setPointerCapture(e.pointerId); } catch (err) {}
+    });
+    area.addEventListener("pointermove", function(e) {
+      if (x0 === null) return;
+      var dx = e.clientX - x0;
+      drag.style.transform = "translateX(" + dx + "px) rotate(" + (dx / 20) + "deg)";
+    });
+    area.addEventListener("pointerup", function(e) { fim(e, false); });
+    area.addEventListener("pointercancel", function(e) { fim(e, true); });
+    lay(true);
+  });
+}
+
 function renderCreatePost() {
   var mediaPreview = "";
   if (compose.media) {
@@ -21875,6 +21998,7 @@ function renderCreatePost() {
         '<button class="create-remove-media" data-remove-media>'+icoSvg("close",16,"#fff")+'</button></div>';
     }
   }
+  if (compose.mediaType === "image" && compose.imgs && compose.imgs.length > 1) mediaPreview = createMultiPreviewHtml();
   var locPreview = compose.loc
     ? '<div class="create-loc-chip">'+icoSvg("loc",14,C.accent)+' '+esc(compose.loc)+'<button class="create-loc-remove" data-remove-loc>'+icoSvg("close",13,C.accent)+'</button></div>'
     : "";
@@ -22006,7 +22130,7 @@ function bindCreatePost() {
       } else if (kind === "video") {
         cloudinaryWidget.uploadVideo();
       } else if (kind === "image") {
-        cloudinaryWidget.uploadImage();
+        if (compose.isAd) cloudinaryWidget.uploadImage(); else pickMultiPostImages();
       }
     });
   });
@@ -22074,9 +22198,20 @@ function bindCreatePost() {
       }
     });
   }
+  appEl.querySelectorAll("[data-remove-img]").forEach(function(b) {
+    b.addEventListener("click", function(e) {
+      e.stopPropagation();
+      compose.imgs.splice(+b.getAttribute("data-remove-img"), 1);
+      compose.media = compose.imgs[0] || null;
+      if (!compose.imgs.length) compose.mediaType = null;
+      render();
+    });
+  });
+  var addImgsBtn = appEl.querySelector("[data-add-imgs]");
+  if (addImgsBtn) addImgsBtn.addEventListener("click", pickMultiPostImages);
   var removeMediaBtn = appEl.querySelector("[data-remove-media]");
   if (removeMediaBtn) removeMediaBtn.addEventListener("click", function() {
-    compose.media = null; compose.mediaType = null; compose.audioMeta = null; compose.videoRatio = null; render();
+    compose.imgs = []; compose.media = null; compose.mediaType = null; compose.audioMeta = null; compose.videoRatio = null; render();
   });
 
   var pickLocBtn = appEl.querySelector("[data-pick-loc]");
@@ -22167,6 +22302,7 @@ function bindCreatePost() {
         id:"p_"+uid(), authorId:ME_ID, text:text,
         hashtags: extractHashtags(text),
         img: compose.mediaType === "image" ? compose.media : null,
+        imgs: (compose.mediaType === "image" && compose.imgs && compose.imgs.length > 1) ? compose.imgs.slice(0, 10) : null,
         video: compose.mediaType === "video" ? compose.media : null,
         videoRatio: compose.mediaType === "video" ? (compose.videoRatio || null) : null,
         audio: compose.mediaType === "audio" ? compose.media : null,
@@ -22206,7 +22342,7 @@ function bindCreatePost() {
         state.viewProfileId = null;
         state.profileStack.length = 0;
         state.postDetailId = null;
-        compose = { media:null, mediaType:null, loc:null, audioMeta:null, isAd:false, adVisible:false, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false, takeover:false }, adLink:"", adCta:"saiba" };
+        compose = { imgs:[], media:null, mediaType:null, loc:null, audioMeta:null, isAd:false, adVisible:false, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false, takeover:false }, adLink:"", adCta:"saiba" };
         state.page = "feed";
         var feedList = appEl.querySelector("[data-feed-posts]");
         if (feedList && !newPost.isAd) {
@@ -22240,7 +22376,7 @@ function bindCreatePost() {
   }
   if (closeBtn) closeBtn.addEventListener("click", function() {
     state.creating = false;
-    compose = { media:null, mediaType:null, loc:null, audioMeta:null, isAd:false, adVisible:false, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false, takeover:false }, adLink:"", adCta:"saiba" };
+    compose = { imgs:[], media:null, mediaType:null, loc:null, audioMeta:null, isAd:false, adVisible:false, commentsEnabled:true, adPlaces:{ feed:true, profile:true, search:true, banner:false, stories:false, vibes:false, takeover:false }, adLink:"", adCta:"saiba" };
     render();
   });
 }
