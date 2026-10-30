@@ -4686,7 +4686,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.30.02";
+var APP_VERSION = "2026.10.30.03";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -10258,6 +10258,7 @@ var _pollInterval = null;
 var _lastMsgCount = 0;
 var _editingBioField = false;  // FIX: Flag para evitar render enquanto edita bio
 var _editingPostField = false; // FIX: Flag para evitar render enquanto digita publicação
+var _editingAuthField = false; // FIX: não renderizar enquanto digita no login (senão o teclado fecha)
 var _cachedAudioStream = null;  // FIX: Cache stream de áudio para não pedir permissão repetida
 var _audioPermissionGranted = false;  // FIX: Flag para rastrear se permissão foi concedida
     _cachedAudioStream = null;
@@ -11315,6 +11316,11 @@ function _renderImpl() {
   // FIX: Não renderizar enquanto usuário está digitando publicação (isso mantém o foco no input)
   if (_editingPostField) {
     console.log("⏭️ Render skipped (post field being edited)");
+    return;
+  }
+  // FIX: tela de login: não reconstruir enquanto um campo (email/senha/nome) está em foco.
+  // Só vale se o foco realmente está num campo do login (evita travar caso o blur não dispare).
+  if (_editingAuthField && !state.user && document.activeElement && document.activeElement.hasAttribute && document.activeElement.hasAttribute("data-field")) {
     return;
   }
   if (!state.user) {
@@ -23555,10 +23561,11 @@ function bindAuthPage() {
   })();
 
   appEl.querySelectorAll("[data-mode]").forEach(function(btn) {
-    btn.addEventListener("click", function() { authMode = btn.getAttribute("data-mode"); render(); });
+    btn.addEventListener("click", function() { _editingAuthField = false; authMode = btn.getAttribute("data-mode"); render(); });
   });
   var socialToggle = appEl.querySelector("[data-social-toggle]");
   if (socialToggle) socialToggle.addEventListener("click", function() {
+    _editingAuthField = false;
     authSocialOpen = !authSocialOpen;
     render();
   });
@@ -23590,8 +23597,13 @@ function bindAuthPage() {
   }
 
   mimiBindRegPhoto();
+  appEl.querySelectorAll('input[data-field="email"], input[data-field="pw"], input[data-field="name"]').forEach(function(el) {
+    el.addEventListener("focus", function() { _editingAuthField = true; });
+    el.addEventListener("blur", function() { _editingAuthField = false; });
+  });
   var submitBtn = appEl.querySelector("[data-submit-auth]");
   if (submitBtn) submitBtn.addEventListener("click", function() {
+    _editingAuthField = false;
     var emailEl = appEl.querySelector('[data-field="email"]');
     var pwEl = appEl.querySelector('[data-field="pw"]');
     var nameEl = appEl.querySelector('[data-field="name"]');
