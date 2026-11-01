@@ -4700,7 +4700,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.11.01.04";
+var APP_VERSION = "2026.11.01.05";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -23579,6 +23579,7 @@ function onAuthSuccess(u) {
   CONVOS.length = 0;
   NOTIFS.length = 0;
   state.user = u;
+  state.page = "feed"; state.viewProfileId = null; state.creating = false; state.publishMenu = false;
   try { localStorage.setItem("mimi_session", JSON.stringify({ idToken: _idToken, uid: u.uid, refreshToken: _refreshToken })); } catch(e){}
   cacheUserSnapshot(u);
   // Mostra os posts da última visita na hora, sem esperar a rede — evita
