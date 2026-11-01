@@ -4697,7 +4697,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.30.05";
+var APP_VERSION = "2026.10.30.06";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -24976,6 +24976,13 @@ document.addEventListener("error", function(e) {
   if (t.tagName === "SOURCE") t.src = orig; else v.src = orig;
   try { v.load(); } catch (err) {}
 }, true);
+// Vibes: vídeo de anúncio aparece inteiro (contain); só vídeo bem vertical enche a tela (cover).
+var _mimiAdVibeFit = true;
+document.addEventListener("loadedmetadata", function(e) {
+  var v = e.target;
+  if (!v || v.tagName !== "VIDEO" || !v.closest || !v.closest(".vibe-slide-ad")) return;
+  if (v.videoWidth && v.videoHeight) v.style.objectFit = (v.videoWidth / v.videoHeight < 0.75) ? "cover" : "contain";
+}, true);
 var cloudinaryWidget = {
   // ══ ALTERAÇÃO 25/10/2026 — 2a CONTA CLOUDINARY SÓ PARA VÍDEO NOVO ══
   // Motivo: cota (25 créditos) da conta antiga quase estourada.
@@ -25622,7 +25629,7 @@ var VibesModule = {
   // Anúncio renderizado como um slide de Vibe (sem fogo e sem download).
   renderAdSlide: function(ad) {
     var au = USERS[ad.authorId] || { name:"MIMI", avatar:DEFAULT_AVATAR };
-    var videoStyle = 'position:absolute;inset:0;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:cover;background:#0b0710;display:block;';
+    var videoStyle = 'position:absolute;inset:0;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;background:#0b0710;display:block;';
     // FIX: imagens de anúncio (formato Feed, quadrado/paisagem) estavam sendo
     // esticadas com object-fit:cover dentro do slide vertical de tela cheia
     // das Vibes, cortando e "zoomando" a arte de forma desproporcional.
