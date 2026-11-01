@@ -2008,7 +2008,7 @@
 }
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Manrope:wght@500;700;800&display=swap">
-</head>
+<style id="mimi-video-preto">video{background:#000}</style></head>
 <body>
 <div id="app"></div>
 
@@ -4697,7 +4697,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.30.06";
+var APP_VERSION = "2026.11.01.01";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -27539,5 +27539,5 @@ setTimeout(function () { BirthdayNotifier.init(); }, 2000);
 })();
 </script>
 <!-- MIMI-CAPA-FIM -->
-</body>
+<script id="mimi-video-preto-js">(function(){var P="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";function fix(v){if(v.tagName==="VIDEO"&&!v.getAttribute("poster"))v.setAttribute("poster",P);}function scan(n){if(n.nodeType!==1)return;fix(n);if(n.querySelectorAll)n.querySelectorAll("video").forEach(fix);}scan(document.documentElement);new MutationObserver(function(m){m.forEach(function(r){r.addedNodes.forEach(scan);});}).observe(document.documentElement,{childList:true,subtree:true});})();</script></body>
 </html>
