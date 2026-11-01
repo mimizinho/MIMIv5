@@ -4697,7 +4697,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.10.30.04";
+var APP_VERSION = "2026.10.30.05";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -24956,6 +24956,26 @@ window.addEventListener("online", function() {
 });
 
 // ─── CLOUDINARY FUNCTIONS ─────────────────────────────────
+// Vídeo novo: entrega leve (720p, qualidade automática) mantendo o original no Cloudinary.
+var MIMI_VIDEO_TRANSFORM = "q_auto,c_limit,w_720";
+function _mimiVideoDeliveryUrl(url) {
+  try {
+    if (!url || url.indexOf("/video/upload/") === -1 || url.indexOf("/video/upload/" + MIMI_VIDEO_TRANSFORM + "/") !== -1) return url;
+    return url.replace("/video/upload/", "/video/upload/" + MIMI_VIDEO_TRANSFORM + "/");
+  } catch (e) { return url; }
+}
+// Se a versão leve ainda não estiver pronta (ou falhar), cai para o original.
+document.addEventListener("error", function(e) {
+  var t = e.target, v = (t && t.tagName === "SOURCE") ? t.parentNode : t;
+  if (!v || v.tagName !== "VIDEO" || v._mimiVideoFb) return;
+  var s = ((t.tagName === "SOURCE") ? t.src : (v.currentSrc || v.src)) || "";
+  var key = "/video/upload/" + MIMI_VIDEO_TRANSFORM + "/";
+  if (s.indexOf(key) === -1) return;
+  v._mimiVideoFb = true;
+  var orig = s.replace(key, "/video/upload/");
+  if (t.tagName === "SOURCE") t.src = orig; else v.src = orig;
+  try { v.load(); } catch (err) {}
+}, true);
 var cloudinaryWidget = {
   // ══ ALTERAÇÃO 25/10/2026 — 2a CONTA CLOUDINARY SÓ PARA VÍDEO NOVO ══
   // Motivo: cota (25 créditos) da conta antiga quase estourada.
@@ -25237,7 +25257,7 @@ var cloudinaryWidget = {
           if (data.secure_url) {
             console.log("✅ URL obtida:", data.secure_url);
             if (typeof callback === "function") {
-              callback(data.secure_url);
+              callback(mediaType === "video" ? _mimiVideoDeliveryUrl(data.secure_url) : data.secure_url);
             }
             var messages = {
               audio: toastWithIcon("Áudio enviado!", "music"),
