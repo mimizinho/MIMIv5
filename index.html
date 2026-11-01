@@ -4700,7 +4700,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.11.01.03";
+var APP_VERSION = "2026.11.01.04";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -7128,6 +7128,7 @@ var FB = {
       if (window.MIMIApp && typeof window.MIMIApp.openGoogleLogin !== "undefined") {
         window.mimiGoogleToken = function(accessToken) {
           window.mimiGoogleToken = null;
+          var _wp = String(accessToken || "").split("~"); accessToken = _wp[0]; var _wantedUn = _wp[1] || "";
           fetch(FIRE_AUTH + ":signInWithIdp?key=" + CFG.apiKey, {
             method: "POST",
             headers: idpHeaders(),
@@ -7143,7 +7144,7 @@ var FB = {
             _idToken = d.idToken;
             _fbUid   = d.localId;
             _refreshToken = d.refreshToken || null;
-            FB._loadOrCreateUser(d.localId, d.email, d.displayName || (d.email ? d.email.split("@")[0] : "Usuário"))
+            FB._loadOrCreateUser(d.localId, d.email, d.displayName || (d.email ? d.email.split("@")[0] : "Usuário"), undefined, undefined, _wantedUn)
               .then(resolve)
               .catch(reject);
           })
@@ -7393,13 +7394,38 @@ var FB = {
   },
 
   // carrega perfil do Firestore ou cria um novo
-  _loadOrCreateUser: function(uid, email, name, birthdate, avatar) {
+    _pickUsername: function(name, wanted) {
+    var API = "https://kwomwgmkzgmoakqwjzqj.supabase.co/functions/v1/check-username?u=";
+    function clean(t) { return String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 15); }
+    function rnd(n) { var r = ""; for (var i = 0; i < n; i++) r += Math.floor(Math.random() * 10); return r; }
+    function livre(u) {
+      return fetch(API + u).then(function(r) { return r.json(); }).then(function(d) {
+        if (d && d.ok === true) return true;
+        if (d && (d.reason === "em_uso" || d.reason === "reservado")) return false;
+        return null;
+      }).catch(function() { return null; });
+    }
+    var base = clean(wanted) || clean(name);
+    if (base.length < 3) base = (base + "mimi").slice(0, 15);
+    var tries = [base, base.slice(0, 12) + rnd(3), base.slice(0, 11) + rnd(4)];
+    function next(i) {
+      if (i >= tries.length) return Promise.resolve("@" + base.slice(0, 10) + rnd(5));
+      return livre(tries[i]).then(function(ok) {
+        if (ok === true) return "@" + tries[i];
+        if (ok === null) return "@" + (i === 0 ? base.slice(0, 11) + rnd(4) : tries[i]);
+        return next(i + 1);
+      });
+    }
+    return next(0);
+  },
+  _loadOrCreateUser: function(uid, email, name, birthdate, avatar, wantedUn) {
+    var _pickedUn = null;
     // Antes de ler, tenta reenviar pro Firebase qualquer alteração do
     // PRÓPRIO perfil que ficou pendente (ex.: troca de foto/capa que só
     // chegou a salvar no Supabase) — evita que a leitura a seguir traga
     // uma versão antiga e "apague" a mudança recente.
     return flushPendingWritesFor("users/"+uid).then(function(){
-      return fsGet("users/"+uid);
+      return fsGet("users/"+uid).then(function(u0){ if (u0) return u0; return FB._pickUsername(name, wantedUn).then(function(un){ _pickedUn = un; return null; }); });
     }).then(function(u) {
       if (u) {
         // sincroniza no USERS local (sem o _id interno)
@@ -7426,7 +7452,7 @@ var FB = {
       }
       // novo usuário — cria perfil padrão
       var newUser = {
-        uid:uid, name:name, username:"@"+name.toLowerCase().replace(/\s+/g,""),
+        uid:uid, name:name, username:_pickedUn || ("@"+name.toLowerCase().replace(/\s+/g,"")),
         email: email,
         birthdate: birthdate || null,
         avatar:(avatar||DEFAULT_AVATAR),

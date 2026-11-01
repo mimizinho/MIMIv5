@@ -3,42 +3,125 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Entrar no MIMI</title>
 <style>
-body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#fff5f8;color:#4a3b45;font-family:sans-serif;text-align:center;padding:24px}
-button,a.btn{background:#ff6fa5;color:#fff;border:0;border-radius:24px;padding:14px 28px;font-size:16px;text-decoration:none;display:inline-block}
-#voltar{display:none}
-#msg{font-size:14px;max-width:320px}
-</style></head>
-<body>
-<h3>Entrar no MIMI com Google</h3>
-<button id="entrar">Entrar com Google</button>
-<a id="voltar" class="btn" href="#">Voltar ao app</a>
-<p id="msg"></p>
+:root{--bg:#fff5f8;--cd:#ffffffcc;--tx:#4a3a47;--mu:#9a8794;--pk:#ff6fa3;--p2:#ffa3c4;--ok:#22a06b;--er:#e5484d;--bd:#f3d9e3}
+@media (prefers-color-scheme:dark){:root{--bg:#1d1519;--cd:#2a1f25cc;--tx:#f5e9ee;--mu:#b39aa6;--bd:#43303a}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--tx);font-family:Roboto,system-ui,sans-serif;display:flex;justify-content:center;overflow-x:hidden}
+.bg{position:fixed;inset:0;z-index:-1;overflow:hidden}
+.bg i{position:absolute;border-radius:50%;filter:blur(50px);opacity:.5;animation:dr 12s ease-in-out infinite alternate}
+.bg i:nth-child(1){width:260px;height:260px;background:#ff9ec0;left:-60px;top:8%}
+.bg i:nth-child(2){width:220px;height:220px;background:#ffd1e0;right:-50px;top:45%;animation-delay:-4s}
+.bg i:nth-child(3){width:240px;height:240px;background:#d8b4ff;left:25%;bottom:-70px;animation-delay:-8s;opacity:.3}
+@keyframes dr{to{transform:translate(40px,-50px) scale(1.2)}}
+.w{width:100%;max-width:420px;min-height:100vh;padding:26px 22px;display:flex;flex-direction:column;justify-content:center;text-align:center}
+.w>*{animation:in .55s cubic-bezier(.2,.9,.3,1.2) backwards}
+.w>*:nth-child(2){animation-delay:.08s}.w>*:nth-child(3){animation-delay:.16s}.w>*:nth-child(4){animation-delay:.24s}.w>*:nth-child(5){animation-delay:.32s}.w>*:nth-child(6){animation-delay:.4s}
+@keyframes in{from{opacity:0;transform:translateY(24px) scale(.96)}}
+.logo{width:80px;height:80px;margin:0 auto 14px;border-radius:26px;background:linear-gradient(135deg,var(--pk),var(--p2));color:#fff;font-size:40px;font-weight:800;display:grid;place-items:center;animation:fl 3s ease-in-out infinite!important;box-shadow:0 12px 28px #ff6fa366}
+@keyframes fl{50%{transform:translateY(-8px) rotate(-3deg)}}
+h1{font-size:24px;margin:0 0 6px}.s{margin:0 0 22px;color:var(--mu);font-size:15px}
+.btn{position:relative;overflow:hidden;width:100%;border:0;border-radius:30px;padding:16px;font-size:17px;font-weight:600;background:linear-gradient(90deg,var(--pk),#ff8fb8);color:#fff;display:flex;align-items:center;justify-content:center;gap:10px;transition:.25s;box-shadow:0 8px 20px #ff6fa355;text-decoration:none}
+.btn::after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(90deg,transparent,#ffffff77,transparent);transform:skewX(-20deg);animation:sh2 3s infinite}
+@keyframes sh2{to{left:140%}}
+.btn:active{transform:scale(.96)}
+.btn[disabled]{background:var(--bd);color:var(--mu);box-shadow:none}.btn[disabled]::after,.btn.alt::after{display:none}
+.btn.alt{background:var(--cd);color:var(--pk);border:2px solid var(--pk);box-shadow:none}
+.g{width:24px;height:24px;border-radius:50%;background:#fff;color:#ea4335;font-weight:800;display:grid;place-items:center;font-size:15px}
+.lnk{background:none;border:0;color:var(--pk);font-size:15px;margin-top:16px;font-weight:600}
+.card{background:var(--cd);backdrop-filter:blur(10px);border-radius:22px;padding:18px;border:1px solid var(--bd);text-align:left;margin-bottom:18px;box-shadow:0 8px 24px #ff6fa318}
+.chip{display:flex;align-items:center;gap:12px}.chip b{display:block}.chip small{color:var(--mu)}.chev{color:var(--pk);font-size:24px}
+.av{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#ffb3cf,var(--pk));color:#fff;display:grid;place-items:center;font-weight:700;font-size:20px;flex:none}
+.av.g2{background:#fff;color:#ea4335;border:1px solid var(--bd)}
+.uf{display:flex;align-items:center;background:var(--bg);border:2px solid var(--bd);border-radius:16px;padding:0 12px;transition:.25s}
+.uf .at{color:var(--mu);font-size:19px;font-weight:600}
+.uf input{flex:1;min-width:0;border:0;background:none;outline:0;font-size:19px;padding:15px 6px;color:var(--tx)}
+.ub[data-s=checking] .uf{border-color:var(--p2)}.ub[data-s=ok] .uf{border-color:var(--ok);box-shadow:0 0 0 5px #22a06b22}.ub[data-s=taken] .uf,.ub[data-s=bad] .uf{border-color:var(--er)}
+.ub.shake .uf{animation:shk .35s}
+@keyframes shk{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.st{width:26px;height:26px;position:relative}
+.ub[data-s=checking] .st::after{content:"";position:absolute;inset:3px;border:3px solid var(--bd);border-top-color:var(--pk);border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.ub[data-s=ok] .st::after,.ub[data-s=taken] .st::after{position:absolute;inset:0;border-radius:50%;color:#fff;display:grid;place-items:center;font-size:15px;font-weight:800;animation:pop .4s cubic-bezier(.3,1.8,.5,1)}
+.ub[data-s=ok] .st::after{content:"✓";background:var(--ok)}.ub[data-s=taken] .st::after{content:"✕";background:var(--er)}
+@keyframes pop{from{transform:scale(0)}}
+.cnt{display:flex;justify-content:space-between;font-size:14px;margin:8px 4px 0;min-height:20px;text-align:left}
+.ub[data-s=ok] .msg{color:var(--ok)}.ub[data-s=taken] .msg,.ub[data-s=bad] .msg{color:var(--er)}.msg,.n{color:var(--mu)}
+.rules{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 20px}
+.rules span{font-size:13px;padding:5px 10px;border-radius:14px;background:var(--bg);color:var(--mu);border:1px solid var(--bd);transition:.3s}
+.rules span.y{background:#22a06b22;color:var(--ok);border-color:var(--ok);transform:scale(1.06)}
+.sug{display:flex;gap:8px;flex-wrap:wrap;margin-top:-10px;margin-bottom:14px}
+.sug button{border:1px solid var(--pk);background:none;color:var(--pk);border-radius:16px;padding:6px 12px;font-size:14px;animation:pop .3s backwards}
+.tm{position:fixed;left:50%;bottom:24px;transform:translate(-50%,120px);background:var(--tx);color:var(--bg);padding:12px 18px;border-radius:24px;font-size:14px;transition:.4s;z-index:30;max-width:90%}
+.tm.on{transform:translate(-50%,0)}
+</style></head><body>
+<div class="bg"><i></i><i></i><i></i></div>
+<div class="w" id="w"></div>
+<div class="tm" id="tm"></div>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<script>
+<script id="app">
 var CLIENT_ID="658875273173-dbpr9983gtjat00mnnmj13k36fq1194e.apps.googleusercontent.com";
-var msg=document.getElementById("msg");
-document.getElementById("entrar").onclick=function(){
-  if(typeof google==="undefined"||!google.accounts||!google.accounts.oauth2){
-    msg.textContent="O script do Google não carregou. Verifique a conexão e tente de novo.";
-    return;
-  }
-  var tc=google.accounts.oauth2.initTokenClient({
-    client_id:CLIENT_ID,
-    scope:"openid email profile",
-    callback:function(r){
-      if(!r||r.error||!r.access_token){msg.textContent="Login cancelado ou falhou.";return;}
-      var url="mimi://login?token="+encodeURIComponent(r.access_token);
-      var a=document.getElementById("voltar");
-      a.href=url;a.style.display="inline-block";
-      msg.textContent="Pronto! Se o app não abrir sozinho, toque em Voltar ao app.";
-      location.href=url;
-    },
-    error_callback:function(){
-      msg.textContent="Login bloqueado ou cancelado. Verifique o bloqueador de pop-up.";
-    }
+var API="https://kwomwgmkzgmoakqwjzqj.supabase.co/functions/v1/check-username?u=";
+var $=function(s){return document.querySelector(s)};
+var nm="";
+function tm(t){var e=$("#tm");e.textContent=t;e.classList.add("on");clearTimeout(tm.t);tm.t=setTimeout(function(){e.classList.remove("on")},3500)}
+function last(){try{return JSON.parse(localStorage.getItem("mimi_last"))}catch(e){return null}}
+function esc(s){return String(s||"").replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+var mode=last()?"login":"cad";
+function userBox(el,cb){
+  el.dataset.s="idle";
+  el.innerHTML='<div class="uf"><span class="at">@</span><input maxlength="15" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="seunome"><span class="st"></span></div><div class="cnt"><span class="msg">Escolha um @ único</span><span class="n">0/15</span></div><div class="rules"><span class="rl">3 a 15 caracteres</span><span class="rc">a-z e 0-9</span></div><div class="sug"></div>';
+  var inp=el.querySelector("input"),msg=el.querySelector(".msg"),n=el.querySelector(".n"),sug=el.querySelector(".sug"),rl=el.querySelector(".rl"),rc=el.querySelector(".rc"),t,seq=0;
+  function set(s,m){el.dataset.s=s;msg.textContent=m}
+  inp.addEventListener("input",function(){
+    var raw=inp.value.toLowerCase(),c=raw.replace(/[^a-z0-9]/g,""),bad=c!==raw;
+    if(bad){el.classList.remove("shake");void el.offsetWidth;el.classList.add("shake");set("bad","Só letras minúsculas e números")}
+    inp.value=c;n.textContent=c.length+"/15";sug.innerHTML="";clearTimeout(t);seq++;cb(false,c);
+    rl.classList.toggle("y",c.length>=3);rc.classList.toggle("y",c.length>0);
+    if(c.length<3){if(!bad)set("idle",c?"Mínimo de 3 caracteres":"Escolha um @ único");return}
+    set("checking","Verificando…");
+    var my=seq;
+    t=setTimeout(function(){
+      fetch(API+c).then(function(r){return r.json()}).then(function(d){
+        if(my!==seq)return;
+        if(d.ok){set("ok","@"+c+" está disponível!");cb(true,c)}
+        else if(d.reason==="limite"){set("idle","Muitas tentativas. Aguarde um minuto.")}
+        else if(d.reason==="erro"){set("idle","Não foi possível verificar. Tente de novo.")}
+        else{set("taken","@"+c+" não está disponível");[c.slice(0,14)+"7",c.slice(0,13)+"21",c.slice(0,11)+"mimi"].forEach(function(x,i){var b=document.createElement("button");b.textContent=x;b.style.animationDelay=i*80+"ms";b.onclick=function(){inp.value=x;inp.dispatchEvent(new Event("input"))};sug.appendChild(b)})}
+      }).catch(function(){if(my===seq)set("idle","Sem conexão para verificar.")});
+    },700);
   });
-  tc.requestAccessToken();
-};
+}
+function render(){
+  var L=last(),w=$("#w");
+  if(mode==="cad"){
+    w.innerHTML='<div class="logo">M</div><h1>Crie sua conta</h1><p class="s">Escolha seu @ e entre com o Google</p><div class="card"><div class="chip"><div class="av g2">G</div><div><b>Sua conta Google</b><small>Você escolhe no próximo passo</small></div></div></div><div class="ub" id="ub"></div><button class="btn" id="go" disabled><span class="g">G</span>Criar conta com Google</button><button class="lnk" id="sw">Já tenho conta</button>';
+    nm="";
+    userBox($("#ub"),function(ok,c){nm=ok?c:"";$("#go").disabled=!ok});
+    $("#go").onclick=function(){if(nm)entrar("",nm)};
+  }else{
+    w.innerHTML='<h1>Bem-vinda(o) de volta</h1><p class="s">'+(L?"Toque na sua conta":"Entre com o Google")+'</p>'+(L?'<div class="card" id="acc" style="cursor:pointer"><div class="chip"><div class="av">'+esc((L.name||"M").charAt(0).toUpperCase())+'</div><div style="flex:1"><b>'+esc(L.name)+'</b><small>'+esc(L.email)+'</small></div><span class="chev">›</span></div></div>':"")+'<button class="btn'+(L?" alt":"")+'" id="oth"><span class="g">G</span>'+(L?"Usar outra conta":"Entrar com Google")+'</button><button class="lnk" id="sw">Novo por aqui? Criar conta</button>';
+    if(L)$("#acc").onclick=function(){entrar(L.email,"")};
+    $("#oth").onclick=function(){entrar("","")};
+  }
+  $("#sw").onclick=function(){mode=mode==="cad"?"login":"cad";render()};
+}
+function entrar(hint,user){
+  if(typeof google==="undefined"||!google.accounts||!google.accounts.oauth2){tm("O script do Google não carregou. Verifique a conexão e tente de novo.");return}
+  var cfg={client_id:CLIENT_ID,scope:"openid email profile",
+    callback:function(r){
+      if(!r||r.error||!r.access_token){tm("Login cancelado ou falhou.");return}
+      fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+r.access_token}}).then(function(x){return x.json()}).then(function(p){try{localStorage.setItem("mimi_last",JSON.stringify({name:p.name||p.email,email:p.email}))}catch(e){}}).catch(function(){}).then(function(){volta(r.access_token,user)});
+    },
+    error_callback:function(){tm("Login bloqueado ou cancelado. Verifique o bloqueador de pop-up.")}};
+  if(hint)cfg.hint=hint;
+  google.accounts.oauth2.initTokenClient(cfg).requestAccessToken();
+}
+function volta(tk,user){
+  var url="mimi://login?token="+encodeURIComponent(tk+(user?"~"+user:""));
+  $("#w").innerHTML='<div class="logo">M</div><h1>Pronto! 💗</h1><p class="s">Se o app não abrir sozinho, toque abaixo.</p><a class="btn" href="'+url+'">Voltar ao app</a>';
+  location.href=url;
+}
+render();
 </script>
 </body>
 </html>
