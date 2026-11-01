@@ -3363,6 +3363,7 @@ function saveEditedMessage(messageId, newText) {
   if (newText === (msg.text || "")) { closeEditMessageModal(); return; }
 
   var prevText = msg.text, prevEdited = msg.edited;
+  msg._edLocalAt = Date.now();
   msg.text = newText;
   msg.edited = true;
   closeEditMessageModal();
@@ -3480,6 +3481,7 @@ function reactToMessage(messageId, type) {
   var prevReaction = msg.reaction || null;
   var isRemoving = msg.reaction && msg.reaction.type === type;
   msg.reaction = isRemoving ? null : { type: type };
+  msg._rxLocalAt = Date.now();
   
   // Preservar a posição da mensagem específica que foi reagida
   _messageIdToPreserve = messageId;
@@ -3489,6 +3491,7 @@ function reactToMessage(messageId, type) {
   fsSet("convos/"+convoId+"/messages/"+messageId, { reaction: msg.reaction }, true).catch(function(err) {
     console.error("Erro ao reagir à mensagem:", err);
     msg.reaction = prevReaction;
+    msg._rxLocalAt = 0;
     _messageIdToPreserve = messageId;
     render();
     showToast("Não foi possível reagir. Tenta de novo.");
@@ -4697,7 +4700,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.11.01.01";
+var APP_VERSION = "2026.11.01.02";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -10369,7 +10372,7 @@ function _mergeIncomingMessages(convoId, msgs) {
         // Edição de texto (dentro da janela de 15 min) feita pelo remetente.
         if (m.edited && !existing.deleted && (!existing.type || existing.type === "text")) {
           var _editedTxt = m.content || m.text || "";
-          if (_editedTxt && (existing.text !== _editedTxt || !existing.edited)) {
+          if (_editedTxt && (existing.text !== _editedTxt || !existing.edited) && !(existing._edLocalAt && Date.now() - existing._edLocalAt < 12000)) {
             existing.text = _editedTxt;
             existing.edited = true;
             changed = true;
@@ -10379,7 +10382,8 @@ function _mergeIncomingMessages(convoId, msgs) {
         // já conhecida — sincroniza pra refletir reações em tempo real.
         var _incomingReaction = m.reaction ? m.reaction.type : null;
         var _existingReaction = existing.reaction ? existing.reaction.type : null;
-        if (_incomingReaction !== _existingReaction) {
+        if (_incomingReaction === _existingReaction) { existing._rxLocalAt = 0; }
+        if (_incomingReaction !== _existingReaction && !(existing._rxLocalAt && Date.now() - existing._rxLocalAt < 12000)) {
           existing.reaction = m.reaction || null;
           changed = true;
         }
