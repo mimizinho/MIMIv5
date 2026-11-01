@@ -4718,7 +4718,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.01.11";
+var APP_VERSION = "2026.11.01.12";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -9612,19 +9612,21 @@ function refreshConvoList() {
 }
 
 var _presenceInterval = null;
+var _deletingAccount = false;
 
 function startPresence() {
-  if (!_idToken || !_fbUid) return;
+  if (!_idToken || !_fbUid || _deletingAccount) return;
   // Marca online agora
   fsSet("users/"+_fbUid, { online: true, lastSeen: new Date().toISOString() }).catch(function(){});
   // Atualiza a cada 30s
   clearInterval(_presenceInterval);
   _presenceInterval = setInterval(pollGuard(function() {
-    if (!_idToken || !_fbUid) { clearInterval(_presenceInterval); return; }
+    if (!_idToken || !_fbUid || _deletingAccount) { clearInterval(_presenceInterval); return; }
     fsSet("users/"+_fbUid, { online: true, lastSeen: new Date().toISOString() }).catch(function(){});
   }), jitterMs(30000));
   // Ao fechar/sair marca offline
   window.addEventListener("beforeunload", function() {
+    if (!_fbUid || _deletingAccount) return;
     fsSet("users/"+_fbUid, { online: false, lastSeen: new Date().toISOString() }).catch(function(){});
   });
 }
@@ -19656,7 +19658,7 @@ function renderProfilePage(userId) {
   // aqui (ver userVibes/profileTabItems).
   if (state.user && !VibesModule._userLoaded) VibesModule.loadUserVibes();
   var u = USERS[userId];
-  if (!u) return '<div class="search-empty">Perfil não encontrado.</div>';
+  if (!u || (!u.name && userId !== ME_ID)) return '<div class="search-empty">Perfil não encontrado.</div>';
   var isMe = userId === ME_ID;
   // FIX (bloqueio incompleto): bloquear alguém só escondia os comentários
   // dela — o perfil, os posts e as Vibes continuavam totalmente visíveis
@@ -24859,6 +24861,8 @@ function openReauthFlow(onSuccess) {
 // conta de e-mail/senha continuava existindo no Firebase, então dava pra
 // entrar de novo com a mesma senha. Isso corrige isso.
 function performAccountDeletion() {
+  _deletingAccount = true;
+  clearInterval(_presenceInterval);
   var uid = _fbUid;
   var myPosts = posts.filter(function(p){ return p.authorId === ME_ID; });
 
@@ -24880,7 +24884,7 @@ function performAccountDeletion() {
     console.error("Erro ao excluir conta:", err);
   }).then(function() {
     try { localStorage.removeItem("mimi_session"); localStorage.removeItem("mimi_theme"); } catch(e){}
-    _idToken = null; _fbUid = null; _refreshToken = null;
+    _idToken = null; _fbUid = null; _refreshToken = null; _deletingAccount = false;
     _teardownRealtimeSession();
     state.user = null;
     render();
