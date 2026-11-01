@@ -4700,7 +4700,7 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.11.01.02";
+var APP_VERSION = "2026.11.01.03";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -9640,7 +9640,7 @@ function patchReadReceiptsInPlace(convoId) {
     var status = msgStatusFor(m, conv);
     var timeEl = card.querySelector(".msg-time");
     if (!timeEl) return;
-    var newHtml = esc(m.time) + (status ? renderMsgStatusIcon(status) : "");
+    var newHtml = ((m.edited && !m.deleted) ? '<span class="msg-edited-tag">editada</span> · ' : "") + esc(m.time) + (status ? renderMsgStatusIcon(status) : "");
     if (timeEl.innerHTML !== newHtml) timeEl.innerHTML = newHtml;
   });
   return true;
