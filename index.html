@@ -4704,10 +4704,11 @@ var CFG = {
 document.addEventListener("loadedmetadata", function(e) {
   var v = e.target;
   if (!v || !v.matches || !v.matches(".vibe-slide video")) return;
-  if (v.videoWidth && v.videoHeight / v.videoWidth >= 1.5) v.style.objectFit = "cover";
+  if (v.videoWidth && v.videoHeight / v.videoWidth >= 1.5) { v.style.objectFit = "cover"; }
+  else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.01.06";
+var APP_VERSION = "2026.11.01.07";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
