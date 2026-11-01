@@ -4718,7 +4718,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.01.09";
+var APP_VERSION = "2026.11.01.10";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -22485,6 +22485,7 @@ function bindCreatePost() {
       // tocado, então nada recarrega.
       var overlayEl = appEl.querySelector(".create-overlay");
       function finishPublish() {
+        _editingPostField = false;
         state.creating = false;
         state.viewProfileId = null;
         state.profileStack.length = 0;
