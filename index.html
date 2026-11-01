@@ -4725,7 +4725,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.01.13";
+var APP_VERSION = "2026.11.01.14";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -11706,7 +11706,7 @@ function renderBottomNav(unreadNotifs, unreadMsgs) {
 })();
 
 (function(){
-  var OPEN={"Privacidade":1};
+  var OPEN={};
   var P={
     wr:'<path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>',
     palette:'<circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 011.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>',
@@ -11749,7 +11749,7 @@ function renderBottomNav(unreadNotifs, unreadMsgs) {
     OPEN[box.getAttribute("data-k")]=box.classList.contains("open")?1:0;
   });
   new MutationObserver(function(){
-    [].forEach.call(document.querySelectorAll(".cfg-body"),build);
+    var _cb=document.querySelectorAll(".cfg-body"); if(!_cb.length){OPEN={};} else [].forEach.call(_cb,build);
   }).observe(document.documentElement,{childList:true,subtree:true});
 })();
 
