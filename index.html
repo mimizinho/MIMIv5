@@ -4708,7 +4708,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.01.07";
+var APP_VERSION = "2026.11.01.08";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -25733,8 +25733,8 @@ var VibesModule = {
       var _adCursor = 0;
       this.vibes.forEach(function(vibe, idx) {
         // um anúncio a cada 3 vibes
-        if (idx > 0 && idx % 3 === 0 && adSlides.length) {
-          html += self.renderAdSlide(adSlides[_adCursor % adSlides.length]);
+        if (idx > 0 && idx % 3 === 0 && _adCursor < adSlides.length) {
+          html += self.renderAdSlide(adSlides[_adCursor]);
           _adCursor++;
         }
         var vUser = USERS[vibe.userId];
