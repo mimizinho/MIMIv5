@@ -4718,7 +4718,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.01.10";
+var APP_VERSION = "2026.11.01.11";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -23104,7 +23104,7 @@ function bindSettingsPage() {
         // Excluir a conta é uma ação sensível — o Firebase exige um login
         // "recente" para permitir (senão recusa com CREDENTIAL_TOO_OLD_LOGIN_AGAIN).
         // Por isso pedimos a senha de novo aqui, mesmo a pessoa já estando logada.
-        openReauthFlow(function() { performAccountDeletion(); });
+        openExitSurvey(function() { openReauthFlow(function() { performAccountDeletion(); }); });
       }
     };
     render();
@@ -23132,6 +23132,160 @@ function bindSettingsPage() {
   });
 }
 
+// ─── PESQUISA DE SAÍDA: motivo ao excluir a conta ───
+function openExitSurvey(onContinue) {
+  var R = [
+    { id:"time", label:"Passo tempo demais nas redes", d:"M12 7v5l3 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
+    { id:"bug", label:"Tive problemas no app", d:"M12 9v4m0 4h.01M10.3 4l-8 14a2 2 0 001.7 3h16a2 2 0 001.7-3l-8-14a2 2 0 00-3.4 0z" },
+    { id:"safe", label:"Não me sinto seguro(a)", d:"M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6l8-3z" },
+    { id:"feed", label:"Não gostei do que vejo", d:"M4 5h16v14H4zM4 15l4-4 4 4 3-3 5 5" },
+    { id:"new", label:"Vou usar outra conta", d:"M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM19 8v6M22 11h-6" },
+    { id:"other", label:"Outro motivo", d:"M5 12h.01M12 12h.01M19 12h.01" }
+  ];
+  var Q = {
+    time: ["O que mais prende você?",
+      ["Feed que não acaba", "Notificações demais", "Mensagens e conversas", "Vídeos curtos e Vibes"]],
+    bug: ["Onde o problema aconteceu?",
+      ["Ao publicar foto ou vídeo", "Nas mensagens", "Nas ligações de voz", "No login ou na conta"]],
+    safe: ["O que aconteceu?",
+      ["Recebi mensagens ofensivas", "Alguém me incomoda no app", "Tenho medo de golpes", "Me preocupo com meus dados"]],
+    feed: ["O que faltou para você?",
+      ["Poucas pessoas para seguir", "Feed repetitivo", "Pouca variedade de conteúdo", "Não acho o que gosto"]],
+    new: ["Por que uma conta nova?",
+      ["Quero outro nome de usuário", "Quero começar do zero", "Perdi o acesso ao e-mail", "Quero separar meus perfis"]],
+    other: ["Quer nos dar uma pista?",
+      ["Prefiro não dizer", "Estou saindo das redes", "Mudei de interesse", "É algo pessoal"]]
+  };
+  var T = {
+    time: ["Dar um tempo também vale", "Você pode só sair da conta e voltar quando quiser."],
+    bug: ["Sentimos muito por isso", "Conte o que houve e nossa equipe tenta resolver antes de você ir."],
+    safe: ["Sua segurança vem primeiro", "Se alguém te incomodou, a gente ajuda a bloquear e denunciar."],
+    feed: ["Vamos melhorar seu feed", "Sua resposta mostra o que precisa mudar."],
+    new: ["Tudo bem, acontece", "Só uma frase já nos ajuda a entender o motivo."],
+    other: ["Obrigado por ser sincero(a)", "Cada resposta ajuda a deixar o MIMI melhor."]
+  };
+  var st = { step: 1, reason: null, picks: [], note: "" };
+// estilo (injetado uma vez)
+function exitSurveyCss() {
+  if (document.getElementById("ex-css")) return;
+  var css = [
+".ex-ov{position:fixed;inset:0;z-index:400;max-width:480px;margin:0 auto;background:var(--bg);color:var(--text);display:flex;flex-direction:column;gap:14px;padding:16px 20px calc(22px + env(safe-area-inset-bottom));overflow-y:auto;font-family:inherit}",
+".ex-top{display:flex;align-items:center;gap:12px}",
+".ex-back{width:44px;height:44px;border-radius:50%;border:none;background:var(--surface);color:var(--sub);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(255,77,141,.18)}",
+".ex-ttl{flex:1;text-align:center;font-weight:800;font-size:16px}",
+".ex-lbl{width:44px;text-align:right;font-size:12px;font-weight:800;color:var(--sub)}",
+".ex-track{height:8px;border-radius:4px;background:var(--border);overflow:hidden}",
+".ex-fill{height:8px;border-radius:4px;background:linear-gradient(90deg,var(--accent),var(--pink));transition:width .45s ease}",
+".ex-stp{flex:1;display:flex;flex-direction:column;gap:14px;animation:exIn .38s ease both}",
+".ex-h{margin:0;font-size:24px;font-weight:800;line-height:1.2}",
+".ex-p{margin:6px 0 0;font-size:15px;color:var(--sub)}",
+".ex-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}",
+".ex-card{position:relative;min-height:124px;padding:14px;border-radius:22px;border:2px solid var(--border);background:var(--surface);color:var(--text);display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;text-align:left;font:inherit;font-size:15px;font-weight:800;line-height:1.25;animation:exIn .4s ease both}",
+".ex-card.on{background:var(--border);border-color:var(--pink);animation:exPop .32s ease}",
+".ex-ico{width:44px;height:44px;border-radius:14px;background:var(--border);display:flex;align-items:center;justify-content:center}",
+".ex-ck{position:absolute;top:10px;right:10px;width:24px;height:24px;border-radius:50%;background:var(--pink);display:flex;align-items:center;justify-content:center;animation:exPop .3s ease}",
+".ex-chip{min-height:56px;padding:0 16px;border-radius:18px;border:2px solid var(--border);background:var(--surface);color:var(--text);display:flex;align-items:center;gap:12px;text-align:left;font:inherit;font-size:15px;font-weight:700;transition:background .2s,border-color .2s}",
+".ex-chip.on{background:var(--border);border-color:var(--pink)}",
+".ex-dot{width:24px;height:24px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--surface)}",
+".ex-chip.on .ex-dot{background:var(--pink);border-color:var(--pink)}",
+".ex-btn{height:54px;border:none;border-radius:27px;background:linear-gradient(135deg,#d92c80,#9a4de3);color:#fff;font:inherit;font-size:16px;font-weight:800;box-shadow:0 6px 16px rgba(217,44,128,.33);transition:opacity .25s}",
+".ex-btn:disabled{opacity:.45}",
+".ex-btn2{height:52px;border:2px solid var(--pink);border-radius:26px;background:transparent;color:var(--pink);font:inherit;font-size:15px;font-weight:800}",
+"body:not(.theme-dark):not(.theme-purple) .ex-btn2{color:#b01e66;border-color:#b01e66}",
+".ex-ta{width:100%;box-sizing:border-box;min-height:130px;resize:none;border:2px solid var(--border);border-radius:18px;padding:12px 14px;font:inherit;font-size:15px;color:var(--text);background:var(--surface)}",
+".ex-ta:focus{outline:none;border-color:var(--pink)}",
+".ex-tip{background:var(--surface);border:2px solid var(--border);border-radius:22px;padding:16px;display:flex;gap:12px;align-items:flex-start}",
+".ex-heart{width:40px;height:40px;border-radius:14px;background:var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;animation:exBeat 1.3s ease-in-out infinite}",
+".ex-done{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;animation:exIn .38s ease both}",
+".ex-bigheart{width:96px;height:96px;border-radius:50%;background:var(--surface);box-shadow:0 8px 24px rgba(255,77,141,.25);display:flex;align-items:center;justify-content:center;animation:exBeat 1.3s ease-in-out infinite}",
+".ex-col{display:flex;flex-direction:column;gap:10px}",
+".ex-cnt{align-self:flex-end;font-size:12px;font-weight:700;color:var(--sub)}",
+".ex-ov button:active{transform:scale(.96)}",
+"@keyframes exIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}} @keyframes exPop{0%{transform:scale(.92)}55%{transform:scale(1.06)}100%{transform:scale(1)}} @keyframes exBeat{0%,100%{transform:scale(1)}50%{transform:scale(1.14)}}"
+  ].join("");
+  var s = document.createElement("style"); s.id = "ex-css"; s.textContent = css; document.head.appendChild(s);
+}
+  exitSurveyCss();
+  var old = document.getElementById("ex-ov"); if (old) old.remove();
+  var ov = document.createElement("div"); ov.id = "ex-ov"; ov.className = "ex-ov"; document.body.appendChild(ov);
+  function ck(o) { return '<svg style="opacity:' + o + '" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>'; }
+  var bars = { 1:"34%", 2:"67%", 3:"100%", 4:"100%" }, prevBar = "0%";
+  function head() {
+    return '<div class="ex-top"><button type="button" class="ex-back" data-ex-back aria-label="Voltar"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><span class="ex-ttl">Excluir conta</span><span class="ex-lbl">' + (st.step < 4 ? st.step + "/3" : "") + '</span></div><div class="ex-track"><div class="ex-fill" style="width:' + prevBar + '"></div></div>';
+  }
+  function s1() {
+    var h = '<div class="ex-stp"><div><h1 class="ex-h">O que fez você querer sair?</h1><p class="ex-p">Escolha o motivo principal. Leva 20 segundos.</p></div><div class="ex-grid">';
+    R.forEach(function(r, i) {
+      var on = st.reason === r.id;
+      h += '<button type="button" class="ex-card' + (on ? " on" : "") + '" data-ex-r="' + r.id + '" style="animation-delay:' + (i * 55) + 'ms"><span class="ex-ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e0247a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="' + r.d + '"/></svg></span>' + r.label + (on ? '<span class="ex-ck">' + ck(1) + '</span>' : '') + '</button>';
+    });
+    return h + '</div><button type="button" class="ex-btn" data-ex-next style="margin-top:auto"' + (st.reason ? "" : " disabled") + '>Continuar</button></div>';
+  }
+  function s2() {
+    var q = Q[st.reason];
+    var h = '<div class="ex-stp"><div><h1 class="ex-h">' + q[0] + '</h1><p class="ex-p">Pode marcar mais de uma.</p></div><div class="ex-col">';
+    q[1].forEach(function(l, i) {
+      var on = st.picks.indexOf(l) >= 0;
+      h += '<button type="button" class="ex-chip' + (on ? " on" : "") + '" data-ex-c="' + i + '"><span class="ex-dot">' + ck(on ? 1 : 0) + '</span><span style="flex:1">' + l + '</span></button>';
+    });
+    return h + '</div><button type="button" class="ex-btn" data-ex-next style="margin-top:auto">Continuar</button></div>';
+  }
+  function esc(t) { return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  function heart(n) { return '<svg width="' + n + '" height="' + n + '" viewBox="0 0 24 24" fill="#ff4d8d"><path d="M12 21s-7.5-4.6-9.5-9.3C1.2 8.4 3.2 5 6.6 5c2 0 3.7 1.1 5.4 3 1.7-1.9 3.4-3 5.4-3 3.4 0 5.4 3.4 4.1 6.7C19.5 16.4 12 21 12 21z"/></svg>'; }
+  function s3() {
+    var t = T[st.reason];
+    var h = '<div class="ex-stp"><div class="ex-tip"><span class="ex-heart">' + heart(22) + '</span><div>';
+    h += '<div style="font-size:15px;font-weight:800">' + t[0] + '</div>';
+    h += '<div style="font-size:14px;line-height:1.45;color:var(--sub);margin-top:2px">' + t[1] + '</div></div></div>';
+    h += '<div class="ex-col" style="gap:8px"><label for="ex-note" style="font-size:16px;font-weight:800">Quer contar mais? <span style="font-weight:600;color:var(--sub)">(opcional)</span></label>';
+    h += '<textarea id="ex-note" class="ex-ta" rows="5" maxlength="300" placeholder="Escreva do seu jeito, em uma frase já ajuda.">' + esc(st.note) + '</textarea>';
+    h += '<span class="ex-cnt" data-ex-cnt>' + st.note.length + '/300</span></div>';
+    h += '<div class="ex-col" style="margin-top:auto"><button type="button" class="ex-btn" data-ex-stay>Ficar no MIMI</button><button type="button" class="ex-btn2" data-ex-send>Enviar e continuar</button></div></div>';
+    return h;
+  }
+  function s4() {
+    var h = '<div class="ex-done"><span class="ex-bigheart">' + heart(48) + '</span>';
+    h += '<h1 class="ex-h" style="font-size:26px">Obrigado por contar</h1>';
+    h += '<p class="ex-p" style="margin:0;line-height:1.5">Sua resposta foi enviada. Se mudar de ideia, ainda dá tempo de ficar.</p>';
+    h += '<div class="ex-col" style="width:100%;margin-top:18px"><button type="button" class="ex-btn" data-ex-stay>Ficar no MIMI</button><button type="button" class="ex-btn2" data-ex-go>Continuar para excluir</button></div></div>';
+    return h;
+  }
+  function close() { ov.remove(); }
+  function send() {
+    var d = { reason: st.reason, picks: st.picks.slice(), note: st.note.trim(), appVersion: (typeof APP_VERSION !== "undefined" ? APP_VERSION : null), createdAt: new Date().toISOString() };
+    try { var p = fsAdd("exit_feedback", d); if (p && p.catch) p.catch(function(e) { console.error("exit_feedback:", e); }); } catch(e) { console.error("exit_feedback:", e); }
+  }
+  function bind() {
+    var $ = function(s) { return ov.querySelector(s); };
+    $("[data-ex-back]").onclick = function() { if (st.step === 1) close(); else if (st.step < 4) { st.step--; draw(); } };
+    ov.querySelectorAll("[data-ex-r]").forEach(function(b) { b.onclick = function() {
+      st.reason = b.getAttribute("data-ex-r"); st.picks = [];
+      ov.querySelectorAll("[data-ex-r]").forEach(function(x) {
+        var on = x === b, c = x.querySelector(".ex-ck");
+        x.classList.toggle("on", on); if (c) c.remove();
+        if (on) { var sp = document.createElement("span"); sp.className = "ex-ck"; sp.innerHTML = ck(1); x.appendChild(sp); }
+      });
+      var nb = $("[data-ex-next]"); if (nb) nb.disabled = false;
+    }; });
+    ov.querySelectorAll("[data-ex-c]").forEach(function(b) { b.onclick = function() {
+      var l = Q[st.reason][1][+b.getAttribute("data-ex-c")], i = st.picks.indexOf(l);
+      if (i >= 0) st.picks.splice(i, 1); else st.picks.push(l);
+      b.classList.toggle("on", i < 0); b.querySelector("svg").style.opacity = i < 0 ? 1 : 0;
+    }; });
+    var nx = $("[data-ex-next]"); if (nx) nx.onclick = function() { if (st.reason) { st.step++; draw(); } };
+    var nt = $("#ex-note"); if (nt) nt.oninput = function() { st.note = nt.value; $("[data-ex-cnt]").textContent = nt.value.length + "/300"; };
+    ov.querySelectorAll("[data-ex-stay]").forEach(function(b) { b.onclick = close; });
+    var sd = $("[data-ex-send]"); if (sd) sd.onclick = function() { send(); st.step = 4; draw(); };
+    var go = $("[data-ex-go]"); if (go) go.onclick = function() { close(); if (onContinue) onContinue(); };
+  }
+  function draw() {
+    ov.innerHTML = head() + (st.step === 1 ? s1() : st.step === 2 ? s2() : st.step === 3 ? s3() : s4());
+    var fill = ov.querySelector(".ex-fill"), target = bars[st.step];
+    requestAnimationFrame(function() { requestAnimationFrame(function() { if (fill) fill.style.width = target; }); });
+    prevBar = target; bind();
+  }
+  draw();
+}
 // ─── ASSINATURA MIMI+ ────────────────────────────────────────
 // ─── MIMI Plus: tela de assinatura nova (biblioteca mimi-plus embutida no fim do arquivo) ───
 function usarTelaPlusNova() {
