@@ -1473,7 +1473,7 @@ body.theme-dark .np .np-d,body.theme-purple .np .np-d,body.theme-dark .np [data-
   /* ── Tela de Configurações ─────────────────────────────────── */
   .cfg-overlay { position:fixed; inset:0; background:var(--bg); z-index:250; display:flex; flex-direction:column; max-width:480px; margin:0 auto; overflow:auto; }
   .cfg-header { padding:16px 16px 12px; display:flex; align-items:center; gap:12px; border-bottom:1px solid var(--border); background:var(--bg); position:sticky; top:0; z-index:5; }
-  .cfg-body { padding:16px; display:flex; flex-direction:column; gap:8px; padding-bottom:40px; }
+  .cfg-body { padding:16px; display:flex; flex-direction:column; gap:8px; padding-bottom:16px; }
   .cfg-section-title { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; margin:16px 0 6px 4px; }
   .cfg-item { display:flex; align-items:center; gap:14px; padding:14px 16px; background:var(--surface); border:1px solid var(--border); border-radius:16px; cursor:pointer; }
   .cfg-item-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
@@ -4725,7 +4725,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.01.15";
+var APP_VERSION = "2026.11.01.16";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -22827,7 +22827,7 @@ function renderSettingsPage() {
     { key:"purple",  colors:["#170f22","#a374ff"], label:"Lilás" },
   ];
 
-  var html = '<div style="padding-bottom:80px;">' +
+  var html = '<div style="padding-bottom:0;">' +
     '<div class="page-header" style="display:flex;align-items:center;gap:10px;">' +
       '<button class="icon-btn" data-close-settings style="background:var(--bg);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+icoSvg("back",18,"var(--text)")+'</button>' +
       '<span class="display" style="font-size:18px;">Configurações</span>' +
