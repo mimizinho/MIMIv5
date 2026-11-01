@@ -2312,6 +2312,13 @@ function sparkleIcon(name, size, color, active) {
 }
 
 // ✅ NOVO: Ícones kawaii personalizados para menu de conversas
+// Coração das Vibes (estilo Instagram): contorno branco quando não curtido, preenchido rosa quando curtido. Sem brilhos.
+function vibeHeartIcon(size, liked, color) {
+  size = size || 34;
+  var c = liked ? (color || "#ff3b6b") : "#fff";
+  return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" style="overflow:visible;flex-shrink:0;"><path d="M12 7.1C11.2 5.6 9.7 3.9 7.4 3.9C4.6 3.9 2.4 6.1 2.4 9.1C2.4 12.2 4.3 14.1 6.2 15.8L12 20.6L17.8 15.8C19.7 14.1 21.6 12.2 21.6 9.1C21.6 6.1 19.4 3.9 16.6 3.9C14.3 3.9 12.8 5.6 12 7.1Z" fill="'+(liked?c:"none")+'" stroke="'+c+'" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/></svg>';
+}
+
 function konvoMenuIcon(type) {
   switch(type) {
     case "pin": // Alfinete (fixar conversa)
@@ -4718,7 +4725,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.01.12";
+var APP_VERSION = "2026.11.01.13";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -25864,7 +25871,7 @@ var VibesModule = {
       '</div>' +
       '<div class="vibe-side">' +
         '<button class="vibe-like-btn" data-ad-vibe-like="'+ad.id+'">' +
-          '<span class="heart-icon">'+sparkleIcon("like",34,"#fff")+'</span>' +
+          '<span class="heart-icon">'+vibeHeartIcon(34, false)+'</span>' +
         '</button>' +
         '<button class="vibe-comment-btn" data-ad-vibe-open="'+ad.id+'">' +
           sparkleIcon("comment",34,"#fff") +
@@ -25924,9 +25931,9 @@ var VibesModule = {
         html += '<div class="vibe-slide" data-vibe-idx="'+idx+'">' +
           '<video class="vibe-video" id="vibeVideo-'+idx+'"'+vibeVideoSrcAttr+' playsinline webkit-playsinline loop preload="'+vibeVideoPreload+'"></video>' +
           '<div class="vibe-mute-layer"></div>' +
-          '<div class="vibe-doubletap-heart" id="vibeDTHeart-'+idx+'">'+sparkleIcon("like",90,"#fff")+'</div>' +
+          '<div class="vibe-doubletap-heart" id="vibeDTHeart-'+idx+'">'+vibeHeartIcon(90, true, "#fff")+'</div>' +
           '<button class="mute-btn" style="bottom:auto;top:calc(env(safe-area-inset-top,0px) + 14px);" data-vibe-mute-idx="'+idx+'" title="Som">' +
-            '<span id="vibeMuteIcon-'+idx+'">'+sparkleIcon("volumeOn",20)+'</span>' +
+            '<span id="vibeMuteIcon-'+idx+'">'+sparkleIcon("soundOn",20)+'</span>' +
           '</button>' +
           '<div class="vibe-info">' +
             '<div class="who" data-open-author="'+(vibe.userId||"")+'" style="cursor:pointer;">' +
@@ -25937,7 +25944,7 @@ var VibesModule = {
           '</div>' +
           '<div class="vibe-side">' +
             '<button class="vibe-like-btn" data-vibe-idx="'+idx+'">' +
-              '<span class="heart-icon">'+sparkleIcon("like",34, vibe.liked?"#ff4d6d":"#fff")+'</span>' +
+              '<span class="heart-icon">'+vibeHeartIcon(34, vibe.liked)+'</span>' +
               '<span class="like-count">'+vibe.likes+'</span>' +
             '</button>' +
             '<button class="vibe-fire-btn '+(vibeMyFireCount(vibe)>0?"fired":"")+'" data-vibe-idx="'+idx+'">' +
@@ -26166,7 +26173,7 @@ var VibesModule = {
           setTimeout(function() { btn.classList.remove("heart-pulse"); }, 350);
           // Update icon color + count
           var heartEl = btn.querySelector(".heart-icon");
-          if (heartEl) heartEl.innerHTML = sparkleIcon("like", 34, vibe.liked ? "#ff4d6d" : "#fff");
+          if (heartEl) heartEl.innerHTML = vibeHeartIcon(34, vibe.liked);
           btn.querySelector(".like-count").textContent = vibe.likes;
           FB.likeVibe(vibe.id, vibe.liked);
         }
@@ -26279,7 +26286,7 @@ var VibesModule = {
         e.stopPropagation();
         var on = btn.classList.toggle("ad-liked");
         var heartEl = btn.querySelector(".heart-icon");
-        if (heartEl) heartEl.innerHTML = sparkleIcon("like", 34, on ? "#ff4d6d" : "#fff");
+        if (heartEl) heartEl.innerHTML = vibeHeartIcon(34, on);
       });
     });
     appEl.querySelectorAll("[data-ad-vibe-open]").forEach(function(btn) {
@@ -26410,7 +26417,7 @@ var VibesModule = {
                   video.muted = true;
                   video.play().catch(function() {});
                   var iconEl = document.getElementById("vibeMuteIcon-"+idx);
-                  if (iconEl) iconEl.innerHTML = sparkleIcon("volumeOff", 20);
+                  if (iconEl) iconEl.innerHTML = sparkleIcon("soundOff", 20);
                 });
               }
               if (vibe && vibe.id) {
@@ -26483,7 +26490,7 @@ var VibesModule = {
         if (!video) return;
         video.muted = !video.muted;
         var iconEl = document.getElementById("vibeMuteIcon-"+idx);
-        if (iconEl) iconEl.innerHTML = sparkleIcon(video.muted ? "volumeOff" : "volumeOn", 20);
+        if (iconEl) iconEl.innerHTML = sparkleIcon(video.muted ? "soundOff" : "soundOn", 20);
       });
     });
     // Botão "⋯" — abre o menu de sinais negativos (2.3) da vibe. Usa
@@ -26544,7 +26551,7 @@ var VibesModule = {
       var btn = document.querySelector('.vibe-like-btn[data-vibe-idx="'+idx+'"]');
       if (btn) {
         var heartEl = btn.querySelector(".heart-icon");
-        if (heartEl) heartEl.innerHTML = sparkleIcon("like", 34, "#ff4d6d");
+        if (heartEl) heartEl.innerHTML = vibeHeartIcon(34, true);
         var countEl = btn.querySelector(".like-count");
         if (countEl) countEl.textContent = vibe.likes;
         btn.classList.add("heart-pulse");
