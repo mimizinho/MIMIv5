@@ -4700,7 +4700,14 @@ var CFG = {
 // Lê /config/app no Firestore (leitura pública) logo no boot. Se
 // maintenanceMode=true OU a versão deste arquivo < minVersion, bloqueia
 // a tela — sem depender de re-upload no GitHub Pages.
-var APP_VERSION = "2026.11.01.05";
+// Descobrir: vídeo em pé (9:16) ocupa a tela toda; vídeo deitado continua inteiro
+document.addEventListener("loadedmetadata", function(e) {
+  var v = e.target;
+  if (!v || !v.matches || !v.matches(".vibe-slide video")) return;
+  if (v.videoWidth && v.videoHeight / v.videoWidth >= 1.5) v.style.objectFit = "cover";
+}, true);
+
+var APP_VERSION = "2026.11.01.06";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
