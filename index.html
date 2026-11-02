@@ -4933,7 +4933,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.02.05";
+var APP_VERSION = "2026.11.02.06";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -23522,7 +23522,7 @@ function exitSurveyCss() {
 // ─── MIMI Plus: tela de assinatura nova (biblioteca mimi-plus embutida no fim do arquivo) ───
 function usarTelaPlusNova() {
   if (!window.MimiPlus) return false; // biblioteca não carregou: usa a tela antiga
-  if (ME_ID === MIMI_OFFICIAL_UID) return true;
+  if (ME_ID === MIMI_OFFICIAL_UID) return false; // conta oficial usa a tela antiga (brilho e molduras)
   return !isSubscriptionActive(ME_obj()); // assinante ativo continua na tela antiga (brilho, molduras, cancelar)
 }
 function abrirTelaPlusNova() {
