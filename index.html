@@ -1662,6 +1662,17 @@ body.theme-dark .np .np-d,body.theme-purple .np .np-d,body.theme-dark .np [data-
   .edit-avatar-wrap { display:flex; justify-content:center; margin-bottom:22px; position:relative; }
   .edit-avatar-cam { position:absolute; bottom:0; right:calc(50% - 50px); z-index:5; background:var(--accent); border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border:2px solid var(--surface); cursor:pointer; }
   .edit-field-label { font-size:12.5px; font-weight:700; color:var(--sub); margin-bottom:6px; display:block; }
+  .bio-fire { background-size:200% 100%; background-clip:text; -webkit-background-clip:text; -webkit-text-fill-color:transparent; color:transparent; animation:bioFireRun 3s linear infinite; }
+  .bio-fire .bio-mention { -webkit-text-fill-color:currentColor; }
+  @keyframes bioFireRun { 0%{background-position:0 0} 100%{background-position:200% 0} }
+  .bc-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px 4px; margin-top:6px; }
+  .bc-it { display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; }
+  .bc-rg { width:56px; height:56px; border-radius:50%; border:3px solid transparent; display:flex; align-items:center; justify-content:center; box-sizing:border-box; }
+  .bc-rg.on { border-color:var(--accent); }
+  .bc-dt { width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+  .bc-nm { font-size:12px; font-weight:600; color:var(--sub); text-align:center; }
+  .bc-lock .bc-rg { opacity:.5; }
+  .bc-plus { display:inline-block; margin-left:6px; padding:1px 8px; border-radius:999px; background:linear-gradient(90deg,#d6338a,#9b4de0); color:#fff; font-size:10.5px; font-weight:700; vertical-align:1px; }
   .edit-field { margin-bottom:16px; }
   .edit-cover-preview { height:110px; border-radius:14px; position:relative; overflow:hidden; margin-bottom:16px; background:linear-gradient(135deg,#ffd6e8,var(--accent),var(--accentL)); }
   .edit-cover-preview img { width:100%; height:100%; object-fit:contain;object-position:center;display:block;margin:0 auto; }
@@ -2587,6 +2598,39 @@ function renderTextWithMentions(text) {
   return out;
 }
 function renderBioWithMentions(text) { return renderTextWithMentions(text); }
+
+// Cor da biografia (MIMI Plus): fogo animado, 12 paletas à escolha do assinante.
+var BIO_COLORS = [
+  {k:"fogo",n:"Fogo",c:["#ffd000","#ff7a00","#ff2d1a"]},
+  {k:"rosa",n:"Rosa",c:["#ff2f7e","#ff8a5c","#ffd27a"]},
+  {k:"roxo",n:"Roxo",c:["#5b21b6","#c026d3","#f5a3ff"]},
+  {k:"azul",n:"Azul",c:["#1d4ed8","#38bdf8","#dff3ff"]},
+  {k:"verde",n:"Verde",c:["#0f9d58","#7be04a","#eaffb0"]},
+  {k:"turquesa",n:"Turquesa",c:["#0d9488","#2dd4bf","#d5fff5"]},
+  {k:"vermelho",n:"Vermelho",c:["#7a0d0d","#e0300f","#ff7a5a"]},
+  {k:"dourado",n:"Dourado",c:["#b45309","#f5b800","#fff1a8"]},
+  {k:"magenta",n:"Magenta",c:["#a21caf","#f0479a","#ffc2e0"]},
+  {k:"lilas",n:"Lilás",c:["#7c5cff","#c4a2ff","#f1e6ff"]},
+  {k:"prata",n:"Prata",c:["#52606f","#a8b5c4","#e9eef3"]},
+  {k:"porDoSol",n:"Pôr do sol",c:["#e11d48","#fb923c","#fde047"]}
+];
+function bioColorGradient(u) {
+  if (!u || !u.bioColor || !isSubscriptionActive(u)) return "";
+  var f = null;
+  for (var i = 0; i < BIO_COLORS.length; i++) { if (BIO_COLORS[i].k === u.bioColor) { f = BIO_COLORS[i]; break; } }
+  if (!f) return "";
+  var c = f.c;
+  return "linear-gradient(90deg," + c[0] + "," + c[1] + "," + c[2] + "," + c[1] + "," + c[0] + ")";
+}
+function bioColorEditorHtml(u) {
+  var sub = isSubscriptionActive(u);
+  var cur = sub ? (u.bioColor || "") : "";
+  var lock = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>';
+  var items = BIO_COLORS.map(function(b) {
+    return '<div class="bc-it" data-bc="'+b.k+'"><div class="bc-rg'+(cur===b.k?' on':'')+'"><div class="bc-dt" style="background:linear-gradient(145deg,'+b.c[0]+','+b.c[1]+','+b.c[2]+')">'+(sub?'':lock)+'</div></div><div class="bc-nm">'+b.n+'</div></div>';
+  }).join("");
+  return '<div class="ep-row" style="align-items:flex-start;"><div class="ep-ic">'+mimiPlusIcon("crown",18)+'</div><div class="ep-fx"><label class="edit-field-label">Cor da biografia <span class="bc-plus">Plus</span></label><div class="bc-grid'+(sub?'':' bc-lock')+'" data-bc-grid>'+items+'</div><input type="hidden" data-edit-field="bioColor" value="'+esc(cur)+'"></div></div>';
+}
 
 // Destaque no feed: publicações de assinantes MIMI Plus recebem prioridade,
 // aparecendo mais acima. Antes era só "adianta N posições" na ordem
@@ -4725,7 +4769,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.01.16";
+var APP_VERSION = "2026.11.01.17";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -19732,7 +19776,7 @@ function renderProfilePage(userId) {
       '<div style="margin-top:'+(getUserFrame(u)?26:10)+'px;">' +
         '<div class="profile-name-row"><span class="display'+(showGlow?" profile-name-glow":"")+'" style="font-size:18px;">'+esc(u.name)+'</span> '+userVerifiedBadge(u,23)+(isBirthdayToday(u.birthDate)?profileBirthdayBadge():"")+'</div>' +
         '<div class="profile-username" data-copy-username="'+esc(u.username)+'" style="cursor:pointer;" title="Toque para copiar">'+esc(u.username)+'</div>' +
-        '<p class="profile-bio">'+renderBioWithMentions(u.bio||"")+'</p>' +
+        '<p class="profile-bio'+(bioColorGradient(u)?' bio-fire':'')+'"'+(bioColorGradient(u)?' style="background-image:'+bioColorGradient(u)+';"':'')+'>'+renderBioWithMentions(u.bio||"")+'</p>' +
         '<div class="profile-meta-row">' +
           (u.location ? '<div class="profile-meta-item">'+icoSvg("loc",13,C.accent)+'<span>'+esc(u.location)+'</span></div>' : "") +
           (u.website ? '<div class="profile-meta-item">'+icoSvg("globe",13,C.accent)+'<span>'+esc(u.website)+'</span></div>' : "") +
@@ -21170,6 +21214,7 @@ function renderEditProfile() {
         '<div class="ep-row"><div class="ep-ic">'+_epIco("user")+'</div><div class="ep-fx"><label class="edit-field-label">Nome</label><input class="input" data-edit-field="name" value="'+esc(u.name)+'" oninput="var e=document.getElementById(\'ep-pn\');if(e)e.textContent=this.value||\'Seu nome\'"></div></div>' +
         '<div class="ep-row"><div class="ep-ic">'+_epIco("at")+'</div><div class="ep-fx"><label class="edit-field-label">Usuário</label><input class="input" data-edit-field="username" value="'+esc(u.username)+'" oninput="var e=document.getElementById(\'ep-pu\');if(e)e.textContent=\'@\'+this.value.replace(/^@/,\'\')"></div></div>' +
         '<div class="ep-row" style="align-items:flex-start;"><div class="ep-ic">'+_epIco("msg")+'</div><div class="ep-fx"><label class="edit-field-label">Bio</label><textarea class="input" rows="2" style="min-height:44px;resize:none;" data-edit-field="bio">'+esc(u.bio||"")+'</textarea><div class="bio-mention-box" data-bio-mention-box></div></div></div>' +
+        bioColorEditorHtml(u) +
       '</div>' +
       '<div class="ep-card">' +
         '<div class="ep-row"><div class="ep-ic">'+_epIco("pin")+'</div><div class="ep-fx"><label class="edit-field-label">Localização</label><input class="input" data-edit-field="location" value="'+esc(u.location||"")+'"></div></div>' +
@@ -21335,6 +21380,17 @@ function bindEditProfile() {
     setTimeout(closeBioMentionBox, 150); // delay pra deixar o mousedown do clique disparar
   });
 
+  var bcGrid = appEl.querySelector("[data-bc-grid]");
+  if (bcGrid) bcGrid.addEventListener("click", function(e) {
+    var it = e.target.closest && e.target.closest("[data-bc]"); if (!it) return;
+    if (!isSubscriptionActive(ME_obj())) { showToast("A cor da biografia é exclusiva do MIMI Plus."); return; }
+    var hid = appEl.querySelector('[data-edit-field="bioColor"]'); if (!hid) return;
+    var k = it.getAttribute("data-bc");
+    var nv = (hid.value === k) ? "" : k;
+    hid.value = nv;
+    [].forEach.call(bcGrid.querySelectorAll("[data-bc]"), function(x) { x.firstChild.classList.toggle("on", x.getAttribute("data-bc") === nv); });
+  });
+
   var saveBtn = appEl.querySelector("[data-save-edit]");
   if (saveBtn) saveBtn.addEventListener("click", function() {
    try {
@@ -21348,6 +21404,8 @@ function bindEditProfile() {
     if (nameEl && nameEl.value.trim()) u.name     = nameEl.value.trim();
     if (userEl && userEl.value.trim()) u.username = userEl.value.trim().replace(/^@?/, "@");
     if (bioEl) u.bio      = bioEl.value.trim();
+    var bcEl = appEl.querySelector('[data-edit-field="bioColor"]');
+    if (bcEl && isSubscriptionActive(u)) u.bioColor = bcEl.value || "";
     if (locEl) u.location = locEl.value.trim();
     if (webEl) u.website  = webEl.value.trim();
     // FIX: o cadastro salva a data em "birthdate" (minúsculo) e essa tela
