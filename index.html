@@ -4933,7 +4933,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.02.04";
+var APP_VERSION = "2026.11.02.05";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -23603,6 +23603,8 @@ function renderSubsPage() {
     '</div><span class="subs-active-dots"></span></div>';
     html += '<button class="subs-btn subs-btn-cancel" data-cancel-subs>Cancelar assinatura</button>';
 
+  }
+  if (isOfficial || hasActive) {
     var activeTheme = getRingThemeKey(me);
     html += '<div class="subs-theme-section">' +
       '<div class="subs-theme-title">Personalize seu brilho</div>' +
