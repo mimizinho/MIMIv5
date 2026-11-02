@@ -4883,7 +4883,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.02.01";
+var APP_VERSION = "2026.11.02.02";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -14303,8 +14303,8 @@ window.abrirCompartilhar = function(url, texto, done) {
     var b = document.createElement("div");
     b.title = x.nome;
     b.setAttribute("aria-label", x.nome);
-    b.style.cssText = "flex:0 0 auto;width:48px;height:48px;border-radius:50%;overflow:hidden;background:#fff;box-shadow:0 0 0 2px rgba(255,156,194,.35)";
-    b.innerHTML = '<img src="' + x.a.icon + '" style="width:100%;height:100%;object-fit:cover;display:block">';
+    b.style.cssText = "flex:0 0 auto;width:48px;height:48px;border-radius:50%;overflow:hidden;background:" + (x.nome === "Gmail" ? "#fff" : "transparent") + ";box-shadow:0 0 0 2px rgba(255,156,194,.35)";
+    b.innerHTML = '<img src="' + x.a.icon + '" style="width:100%;height:100%;object-fit:cover;display:block' + (x.nome === "Gmail" ? "" : ";transform:scale(1.1)") + '">';
     b.onclick = function() { MIMIApp.shareTo(x.a.pkg, x.a.cls, msg); fechar(); if (done) done(); };
     dock.appendChild(b);
   });
