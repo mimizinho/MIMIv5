@@ -4883,7 +4883,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.01.20";
+var APP_VERSION = "2026.11.02.01";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -14260,7 +14260,7 @@ function bindPostCardEvents(root) {
       }
     });
   });
-// Folha de compartilhar (só no APK): WhatsApp, Telegram, Instagram, SMS e Gmail (só os instalados)
+// Folha de compartilhar (só no APK): estilo Dock (WhatsApp, Telegram, Instagram, SMS e Gmail, só os instalados) + Copiar link
 window.abrirCompartilhar = function(url, texto, done) {
   if (document.getElementById("shareSheet")) return;
   var todos = window._shareTodos;
@@ -14282,33 +14282,38 @@ window.abrirCompartilhar = function(url, texto, done) {
   });
   var ov = document.createElement("div");
   ov.id = "shareSheet";
-  ov.style.cssText = "position:fixed;inset:0;background:rgba(74,59,69,.45);z-index:99999;display:flex;align-items:flex-end";
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(30,18,36,.55);z-index:99999;display:flex;align-items:flex-end";
   var sh = document.createElement("div");
-  sh.style.cssText = "width:100%;box-sizing:border-box;background:linear-gradient(180deg,#fff5f8,#fff);border-radius:28px 28px 0 0;box-shadow:0 -8px 24px rgba(255,111,165,.25);padding:10px 0 24px;transform:translateY(100%);transition:transform .18s ease";
-  sh.innerHTML = '<div style="width:44px;height:5px;border-radius:5px;background:#ffc2d9;margin:0 auto 12px"></div>'
-    + '<div style="text-align:center;font-weight:800;font-size:16px;color:#ff6fa5;padding-bottom:14px">Compartilhar 💗</div>'
-    + '<div id="shareRow" style="display:flex;gap:18px;overflow-x:auto;padding:4px 20px 6px;-webkit-overflow-scrolling:touch"></div>';
+  sh.style.cssText = "width:100%;box-sizing:border-box;padding:0 14px calc(18px + env(safe-area-inset-bottom,0px));transform:translateY(40px);opacity:0;transition:transform .2s ease,opacity .2s ease";
+  var vidro = "background:rgba(56,43,64,.92);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border:1px solid rgba(255,156,194,.4);";
+  sh.innerHTML = '<div style="text-align:center;font-weight:800;font-size:14px;color:#ffd6e6;margin-bottom:10px">Compartilhar</div>'
+    + '<div id="shareDock" style="' + vidro + 'display:flex;justify-content:space-around;align-items:center;gap:8px;border-radius:99px;padding:8px 10px;margin-bottom:10px"></div>'
+    + '<div style="' + vidro + 'display:flex;align-items:center;gap:8px;border-radius:99px;padding:6px 6px 6px 16px">'
+    + '<span id="shareUrl" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:#b49bb9"></span>'
+    + '<button id="shareCopy" style="border:0;border-radius:99px;background:linear-gradient(135deg,#f06fa0,#ff9cc2);color:#3a1226;font-weight:800;font-size:13px;padding:11px 18px;font-family:inherit;display:flex;align-items:center;gap:6px">'
+    + '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Copiar link</button></div>';
   ov.appendChild(sh);
   document.body.appendChild(ov);
-  requestAnimationFrame(function() { sh.style.transform = "translateY(0)"; });
-  var row = sh.querySelector("#shareRow");
+  requestAnimationFrame(function() { sh.style.transform = "translateY(0)"; sh.style.opacity = "1"; });
+  var dock = sh.querySelector("#shareDock");
+  sh.querySelector("#shareUrl").textContent = String(url).replace(/^https?:\/\//, "");
   function fechar() { ov.remove(); }
-  function item(conteudo, nome, fn) {
-    var b = document.createElement("div");
-    b.style.cssText = "flex:0 0 auto;width:68px;text-align:center";
-    b.innerHTML = '<div style="width:60px;height:60px;margin:0 auto 7px;border-radius:20px;background:#fff;border:2px solid #ffd3e4;box-shadow:0 4px 10px rgba(255,111,165,.25);box-sizing:border-box;padding:8px;display:flex;align-items:center;justify-content:center;font-size:26px">' + conteudo + '</div>'
-      + '<div style="font-size:12px;font-weight:600;color:#4a3b45">' + nome + '</div>';
-    b.onclick = function() { fn(); fechar(); if (done) done(); };
-    row.appendChild(b);
-  }
+  if (!lista.length) dock.style.display = "none";
   lista.forEach(function(x) {
-    item('<img src="' + x.a.icon + '" style="width:100%;height:100%;border-radius:10px">', x.nome, function() { MIMIApp.shareTo(x.a.pkg, x.a.cls, msg); });
+    var b = document.createElement("div");
+    b.title = x.nome;
+    b.setAttribute("aria-label", x.nome);
+    b.style.cssText = "flex:0 0 auto;width:48px;height:48px;border-radius:50%;overflow:hidden;background:#fff;box-shadow:0 0 0 2px rgba(255,156,194,.35)";
+    b.innerHTML = '<img src="' + x.a.icon + '" style="width:100%;height:100%;object-fit:cover;display:block">';
+    b.onclick = function() { MIMIApp.shareTo(x.a.pkg, x.a.cls, msg); fechar(); if (done) done(); };
+    dock.appendChild(b);
   });
-  item("🔗", "Copiar link", function() {
+  sh.querySelector("#shareCopy").onclick = function() {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(url).then(function() { showToast(toastWithIcon("Link copiado!", "link"), true); }).catch(function() { fallbackCopyToClipboard(url); });
     } else { fallbackCopyToClipboard(url); }
-  });
+    fechar(); if (done) done();
+  };
   ov.onclick = function(e) { if (e.target === ov) fechar(); };
 };
 setTimeout(function() { if (!window._shareTodos && window.MIMIApp && MIMIApp.getShareApps) { try { window._shareTodos = JSON.parse(MIMIApp.getShareApps()); } catch (e) {} } }, 3000);
