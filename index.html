@@ -2640,14 +2640,16 @@ function bioColorGradientKey(k) {
   return "linear-gradient(90deg," + c[0] + "," + c[1] + "," + c[2] + "," + c[1] + "," + c[0] + ")";
 }
 var BIO_FONTS = [
-  {k:"berylium",n:"Berylium",f:"fonts/berylium.woff"},
-  {k:"brightsunlist",n:"Bright Sunlist",f:"fonts/brightsunlist.woff"},
-  {k:"karina",n:"Karina",f:"fonts/karina.woff"},
-  {k:"madecanvas",n:"MADE Canvas",f:"fonts/madecanvas.woff"},
-  {k:"sagita",n:"Sagita",f:"fonts/sagita.woff"},
-  {k:"soligant",n:"Soligant",f:"fonts/soligant.woff"},
-  {k:"vitoria",n:"Vitoria",f:"fonts/vitoria.woff"},
-  {k:"zagora",n:"Zagora",f:"fonts/zagora.woff"}
+  {k:"bebaskai",n:"Bebas Kai",f:"fonts/bebaskai.woff2"},
+  {k:"euphorigenic",n:"Euphorigenic",f:"fonts/euphorigenic.woff2"},
+  {k:"ferrorosso",n:"Ferro Rosso",f:"fonts/ferrorosso.woff2"},
+  {k:"flenja",n:"Flenja",f:"fonts/flenja.woff2"},
+  {k:"gulagdecay",n:"Gulag Decay",f:"fonts/gulagdecay.woff2"},
+  {k:"impossible",n:"Impossible",f:"fonts/impossible.woff2"},
+  {k:"komikazba",n:"Komikazba",f:"fonts/komikazba.woff2"},
+  {k:"neothic",n:"Neothic",f:"fonts/neothic.woff2"},
+  {k:"spinwerad",n:"Spinwerad",f:"fonts/spinwerad.woff2"},
+  {k:"ztotez",n:"ZT Otez",f:"fonts/ztotez.woff2"}
 ];
 var _bfLoaded = {};
 function bioFontFind(k) {
@@ -2660,7 +2662,7 @@ function bioFontEnsure(k) {
   var f = bioFontFind(k); if (!f || _bfLoaded[k]) return;
   _bfLoaded[k] = 1;
   var el = document.createElement("style");
-  el.textContent = "@font-face{font-family:'bf-" + k + "';src:url('" + f.f + "') format('woff');font-display:swap;}";
+  el.textContent = "@font-face{font-family:'bf-" + k + "';src:url('" + f.f + "') format('woff2');font-display:swap;}";
   document.head.appendChild(el);
 }
 function bioColorName(k) {
@@ -4881,7 +4883,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.01.19";
+var APP_VERSION = "2026.11.01.20";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
