@@ -2622,14 +2622,46 @@ function bioColorGradient(u) {
   var c = f.c;
   return "linear-gradient(90deg," + c[0] + "," + c[1] + "," + c[2] + "," + c[1] + "," + c[0] + ")";
 }
+function bioColorGradientKey(k) {
+  var f = null;
+  for (var i = 0; i < BIO_COLORS.length; i++) { if (BIO_COLORS[i].k === k) { f = BIO_COLORS[i]; break; } }
+  if (!f) return "";
+  var c = f.c;
+  return "linear-gradient(90deg," + c[0] + "," + c[1] + "," + c[2] + "," + c[1] + "," + c[0] + ")";
+}
+function bioColorValueHtml(k) {
+  var g = bioColorGradientKey(k);
+  if (!g) return '<span style="color:var(--sub);font-size:15px;">Padrão</span>';
+  var name = "";
+  for (var i = 0; i < BIO_COLORS.length; i++) { if (BIO_COLORS[i].k === k) { name = BIO_COLORS[i].n; break; } }
+  return '<span class="bio-fire" style="background-image:' + g + ';font-weight:700;font-size:15px;">' + name + '</span>';
+}
+function openBioColorSheet() {
+  var hid = document.querySelector('[data-edit-field="bioColor"]'); if (!hid) return;
+  var old = document.getElementById("bcSheet"); if (old) old.remove();
+  var cur = hid.value || "";
+  var ov = document.createElement("div");
+  ov.id = "bcSheet"; ov.className = "sheet-overlay"; ov.style.zIndex = "9999";
+  var items = BIO_COLORS.map(function(b) {
+    return '<div class="bc-it" data-bc="'+b.k+'"><div class="bc-rg'+(cur===b.k?' on':'')+'"><div class="bc-dt" style="background:linear-gradient(145deg,'+b.c[0]+','+b.c[1]+','+b.c[2]+')"></div></div><div class="bc-nm">'+b.n+'</div></div>';
+  }).join("");
+  ov.innerHTML = '<div class="sheet-panel" style="padding:14px 16px calc(16px + env(safe-area-inset-bottom));"><div style="width:36px;height:4px;border-radius:2px;background:rgba(240,96,143,.3);margin:0 auto 12px;"></div><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><span style="font-weight:800;font-size:16px;">Cor da biografia</span><span class="bc-plus" style="margin:0;">Plus</span></div><div class="bc-grid">'+items+'</div></div>';
+  ov.addEventListener("click", function(e) {
+    if (e.target === ov) { ov.remove(); return; }
+    var it = e.target.closest && e.target.closest("[data-bc]"); if (!it) return;
+    var k = it.getAttribute("data-bc");
+    var nv = (hid.value === k) ? "" : k;
+    hid.value = nv;
+    var val = document.getElementById("bc-val"); if (val) val.innerHTML = bioColorValueHtml(nv);
+    ov.remove();
+  });
+  document.body.appendChild(ov);
+}
 function bioColorEditorHtml(u) {
   var sub = isSubscriptionActive(u);
   var cur = sub ? (u.bioColor || "") : "";
-  var lock = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>';
-  var items = BIO_COLORS.map(function(b) {
-    return '<div class="bc-it" data-bc="'+b.k+'"><div class="bc-rg'+(cur===b.k?' on':'')+'"><div class="bc-dt" style="background:linear-gradient(145deg,'+b.c[0]+','+b.c[1]+','+b.c[2]+')">'+(sub?'':lock)+'</div></div><div class="bc-nm">'+b.n+'</div></div>';
-  }).join("");
-  return '<div class="ep-row" style="align-items:flex-start;"><div class="ep-ic">'+mimiPlusIcon("crown",18)+'</div><div class="ep-fx"><label class="edit-field-label">Cor da biografia <span class="bc-plus">Plus</span></label><div class="bc-grid'+(sub?'':' bc-lock')+'" data-bc-grid>'+items+'</div><input type="hidden" data-edit-field="bioColor" value="'+esc(cur)+'"></div></div>';
+  var chev = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e3b8cc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9 6l6 6-6 6"/></svg>';
+  return '<div class="ep-row" data-bc-open style="cursor:pointer;"><div class="ep-ic">'+mimiPlusIcon("crown",18)+'</div><div class="ep-fx"><label class="edit-field-label" style="margin-bottom:2px;">Cor da biografia</label><div id="bc-val">'+bioColorValueHtml(cur)+'</div><input type="hidden" data-edit-field="bioColor" value="'+esc(cur)+'"></div><span class="bc-plus" style="margin:0;">Plus</span>'+chev+'</div>';
 }
 
 // Destaque no feed: publicações de assinantes MIMI Plus recebem prioridade,
@@ -4769,7 +4801,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.01.17";
+var APP_VERSION = "2026.11.01.18";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -21380,15 +21412,10 @@ function bindEditProfile() {
     setTimeout(closeBioMentionBox, 150); // delay pra deixar o mousedown do clique disparar
   });
 
-  var bcGrid = appEl.querySelector("[data-bc-grid]");
-  if (bcGrid) bcGrid.addEventListener("click", function(e) {
-    var it = e.target.closest && e.target.closest("[data-bc]"); if (!it) return;
+  var bcOpen = appEl.querySelector("[data-bc-open]");
+  if (bcOpen) bcOpen.addEventListener("click", function() {
     if (!isSubscriptionActive(ME_obj())) { showToast("A cor da biografia é exclusiva do MIMI Plus."); return; }
-    var hid = appEl.querySelector('[data-edit-field="bioColor"]'); if (!hid) return;
-    var k = it.getAttribute("data-bc");
-    var nv = (hid.value === k) ? "" : k;
-    hid.value = nv;
-    [].forEach.call(bcGrid.querySelectorAll("[data-bc]"), function(x) { x.firstChild.classList.toggle("on", x.getAttribute("data-bc") === nv); });
+    openBioColorSheet();
   });
 
   var saveBtn = appEl.querySelector("[data-save-edit]");
