@@ -3074,27 +3074,27 @@ var PROFILE_FRAMES = {
   chibi_hinata: { label:"Hinata Chibi", src:"data:image/png;base64,"+FRAME_CHIBI_HINATA_B64, scale:1.53 },
   chibi_naruto: { label:"Naruto Chibi", src:"data:image/png;base64,"+FRAME_CHIBI_NARUTO_B64, scale:1.79 },
   chibi_itachi: { label:"Itachi Chibi", src:"data:image/png;base64,"+FRAME_CHIBI_ITACHI_B64, scale:1.75 },
-  hw_bruxinha: { label:"Bruxinha", src:"data:image/png;base64,"+FRAME_HW_BRUXINHA_B64, scale:1.66 },
-  hw_fantasminhas: { label:"Fantasminhas", src:"data:image/png;base64,"+FRAME_HW_FANTASMINHAS_B64, scale:1.35 },
-  hw_gatinho: { label:"Gatinho Gótico", src:"data:image/png;base64,"+FRAME_HW_GATINHO_B64, scale:1.35 },
-  hw_lanterna: { label:"Lanterna Doce", src:"data:image/png;base64,"+FRAME_HW_LANTERNA_B64, scale:1.35 },
-  hw_bruxa_sombria: { label:"Bruxa Sombria", src:"data:image/png;base64,"+FRAME_HW_BRUXA_SOMBRIA_B64, scale:1.49 },
-  hw_castelo: { label:"Castelo Assombrado", src:"data:image/png;base64,"+FRAME_HW_CASTELO_B64, scale:1.51 },
-  hw_caveira: { label:"Caveira Flamejante", src:"data:image/png;base64,"+FRAME_HW_CAVEIRA_B64, scale:1.35 },
+  hw_bruxinha: { label:"Bruxinha", src:"data:image/png;base64,"+FRAME_HW_BRUXINHA_B64, scale:1.9 },
+  hw_fantasminhas: { label:"Fantasminhas", src:"data:image/png;base64,"+FRAME_HW_FANTASMINHAS_B64, scale:1.71 },
+  hw_gatinho: { label:"Gatinho Gótico", src:"data:image/png;base64,"+FRAME_HW_GATINHO_B64, scale:1.67 },
+  hw_lanterna: { label:"Lanterna Doce", src:"data:image/png;base64,"+FRAME_HW_LANTERNA_B64, scale:1.64 },
+  hw_bruxa_sombria: { label:"Bruxa Sombria", src:"data:image/png;base64,"+FRAME_HW_BRUXA_SOMBRIA_B64, scale:1.77 },
+  hw_castelo: { label:"Castelo Assombrado", src:"data:image/png;base64,"+FRAME_HW_CASTELO_B64, scale:1.79 },
+  hw_caveira: { label:"Caveira Flamejante", src:"data:image/png;base64,"+FRAME_HW_CAVEIRA_B64, scale:1.63 },
   hw_caldeirao: { label:"Caldeirão Lunar", src:"data:image/png;base64,"+FRAME_HW_CALDEIRAO_B64, scale:1.51 },
   nr_sakura: { label:"Sakura Carmesim", src:"data:image/png;base64,"+FRAME_NR_SAKURA_B64, scale:1.49 },
   nr_lua: { label:"Lua Vermelha", src:"data:image/png;base64,"+FRAME_NR_LUA_B64, scale:1.57 },
-  nr_kunai: { label:"Kunai Sombrio", src:"data:image/png;base64,"+FRAME_NR_KUNAI_B64, scale:1.35 },
+  nr_kunai: { label:"Kunai Sombrio", src:"data:image/png;base64,"+FRAME_NR_KUNAI_B64, scale:1.68 },
   nr_kurama: { label:"Kurama em Fogo", src:"data:image/png;base64,"+FRAME_NR_KURAMA_B64, scale:1.6 },
-  nr_bandana: { label:"Bandana Ninja", src:"data:image/png;base64,"+FRAME_NR_BANDANA_B64, scale:1.63 },
+  nr_bandana: { label:"Bandana Ninja", src:"data:image/png;base64,"+FRAME_NR_BANDANA_B64, scale:1.9 },
   nr_akatsuki: { label:"Manto Akatsuki", src:"data:image/png;base64,"+FRAME_NR_AKATSUKI_B64, scale:1.58 },
-  nr_leque: { label:"Leque Uchiha", src:"data:image/png;base64,"+FRAME_NR_LEQUE_B64, scale:1.44 },
-  nr_raposa: { label:"Raposa de Fogo", src:"data:image/png;base64,"+FRAME_NR_RAPOSA_B64, scale:1.48 },
-  nr_sharingan: { label:"Sharingan Duplo", src:"data:image/png;base64,"+FRAME_NR_SHARINGAN_B64, scale:1.32 },
+  nr_leque: { label:"Leque Uchiha", src:"data:image/png;base64,"+FRAME_NR_LEQUE_B64, scale:1.71 },
+  nr_raposa: { label:"Raposa de Fogo", src:"data:image/png;base64,"+FRAME_NR_RAPOSA_B64, scale:1.75 },
+  nr_sharingan: { label:"Sharingan Duplo", src:"data:image/png;base64,"+FRAME_NR_SHARINGAN_B64, scale:1.56 },
   rl_sakura: { label:"Sakura Real", src:"data:image/png;base64,"+FRAME_RL_SAKURA_B64, scale:1.59 },
-  rl_hinata: { label:"Hinata Real", src:"data:image/png;base64,"+FRAME_RL_HINATA_B64, scale:1.51 },
+  rl_hinata: { label:"Hinata Real", src:"data:image/png;base64,"+FRAME_RL_HINATA_B64, scale:1.8 },
   rl_tsunade: { label:"Tsunade Real", src:"data:image/png;base64,"+FRAME_RL_TSUNADE_B64, scale:1.76 },
-  rl_temari: { label:"Temari Real", src:"data:image/png;base64,"+FRAME_RL_TEMARI_B64, scale:1.64 }
+  rl_temari: { label:"Temari Real", src:"data:image/png;base64,"+FRAME_RL_TEMARI_B64, scale:1.9 }
 };
 function getUserFrame(u) {
   if (!isSubscriptionActive(u)) return null; // moldura é recurso MIMI Plus: some se a assinatura não estiver ativa
@@ -4933,7 +4933,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.02.03";
+var APP_VERSION = "2026.11.02.04";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
