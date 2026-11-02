@@ -1672,6 +1672,16 @@ body.theme-dark .np .np-d,body.theme-purple .np .np-d,body.theme-dark .np [data-
   .bc-dt { width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
   .bc-nm { font-size:12px; font-weight:600; color:var(--sub); text-align:center; }
   .bc-lock .bc-rg { opacity:.5; }
+  .bs-prev { background:rgba(240,96,143,.07); border:1px solid rgba(240,96,143,.2); border-radius:14px; padding:12px 14px; margin-bottom:12px; }
+  .bs-pt { margin:0; font-size:16px; line-height:1.4; color:var(--text); word-break:break-word; }
+  .bs-lb { font-size:11.5px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--sub); margin:12px 2px 8px; }
+  .bs-colors { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:6px 0; justify-items:center; }
+  .bs-c { width:44px; height:44px; border-radius:50%; border:3px solid transparent; display:flex; align-items:center; justify-content:center; box-sizing:border-box; cursor:pointer; }
+  .bs-c span { width:32px; height:32px; border-radius:50%; display:block; }
+  .bs-c.on { border-color:var(--accent); }
+  .bs-fonts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+  .bs-f { border:2px solid rgba(240,96,143,.22); border-radius:14px; padding:12px 4px; text-align:center; font-size:15px; cursor:pointer; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; color:var(--text); min-width:0; }
+  .bs-f.on { border-color:var(--accent); background:rgba(240,96,143,.08); color:var(--accent); }
   .bc-plus { display:inline-block; margin-left:6px; padding:1px 8px; border-radius:999px; background:linear-gradient(90deg,#d6338a,#9b4de0); color:#fff; font-size:10.5px; font-weight:700; vertical-align:1px; }
   .edit-field { margin-bottom:16px; }
   .edit-cover-preview { height:110px; border-radius:14px; position:relative; overflow:hidden; margin-bottom:16px; background:linear-gradient(135deg,#ffd6e8,var(--accent),var(--accentL)); }
@@ -2629,39 +2639,109 @@ function bioColorGradientKey(k) {
   var c = f.c;
   return "linear-gradient(90deg," + c[0] + "," + c[1] + "," + c[2] + "," + c[1] + "," + c[0] + ")";
 }
-function bioColorValueHtml(k) {
-  var g = bioColorGradientKey(k);
-  if (!g) return '<span style="color:var(--sub);font-size:15px;">Padrão</span>';
-  var name = "";
-  for (var i = 0; i < BIO_COLORS.length; i++) { if (BIO_COLORS[i].k === k) { name = BIO_COLORS[i].n; break; } }
-  return '<span class="bio-fire" style="background-image:' + g + ';font-weight:700;font-size:15px;">' + name + '</span>';
+var BIO_FONTS = [
+  {k:"berylium",n:"Berylium",f:"fonts/berylium.woff"},
+  {k:"brightsunlist",n:"Bright Sunlist",f:"fonts/brightsunlist.woff"},
+  {k:"karina",n:"Karina",f:"fonts/karina.woff"},
+  {k:"madecanvas",n:"MADE Canvas",f:"fonts/madecanvas.woff"},
+  {k:"sagita",n:"Sagita",f:"fonts/sagita.woff"},
+  {k:"soligant",n:"Soligant",f:"fonts/soligant.woff"},
+  {k:"vitoria",n:"Vitoria",f:"fonts/vitoria.woff"},
+  {k:"zagora",n:"Zagora",f:"fonts/zagora.woff"}
+];
+var _bfLoaded = {};
+function bioFontFind(k) {
+  if (!k) return null;
+  for (var i = 0; i < BIO_FONTS.length; i++) { if (BIO_FONTS[i].k === k) return BIO_FONTS[i]; }
+  return null;
+}
+function bioFontFamily(k) { return "'bf-" + k + "',sans-serif"; }
+function bioFontEnsure(k) {
+  var f = bioFontFind(k); if (!f || _bfLoaded[k]) return;
+  _bfLoaded[k] = 1;
+  var el = document.createElement("style");
+  el.textContent = "@font-face{font-family:'bf-" + k + "';src:url('" + f.f + "') format('woff');font-display:swap;}";
+  document.head.appendChild(el);
+}
+function bioColorName(k) {
+  for (var i = 0; i < BIO_COLORS.length; i++) { if (BIO_COLORS[i].k === k) return BIO_COLORS[i].n; }
+  return "";
+}
+function bioStyleValueHtml(ck, fk) {
+  var g = bioColorGradientKey(ck), f = bioFontFind(fk);
+  if (!g && !f) return '<span style="color:var(--sub);font-size:15px;">Padrão</span>';
+  var name = f ? f.n : bioColorName(ck);
+  var st = "font-size:17px;font-weight:" + (f ? "400" : "700") + ";";
+  if (g) st += "background-image:" + g + ";"; else st += "color:var(--text);";
+  if (f) { bioFontEnsure(fk); st += "font-family:" + bioFontFamily(fk) + ";"; }
+  return '<span class="' + (g ? 'bio-fire' : '') + '" style="' + st + '">' + esc(name) + '</span>';
+}
+function bioProfileBioHtml(u) {
+  var sub = isSubscriptionActive(u);
+  var g = sub ? bioColorGradientKey(u.bioColor) : "";
+  var fk = (sub && bioFontFind(u.bioFont)) ? u.bioFont : "";
+  var st = "";
+  if (g) st += "background-image:" + g + ";";
+  if (fk) { bioFontEnsure(fk); st += "font-family:" + bioFontFamily(fk) + ";"; }
+  return '<p class="profile-bio' + (g ? ' bio-fire' : '') + '"' + (st ? ' style="' + st + '"' : '') + '>' + renderBioWithMentions(u.bio || "") + '</p>';
 }
 function openBioColorSheet() {
-  var hid = document.querySelector('[data-edit-field="bioColor"]'); if (!hid) return;
+  var hc = document.querySelector('[data-edit-field="bioColor"]');
+  var hf = document.querySelector('[data-edit-field="bioFont"]');
+  if (!hc || !hf) return;
   var old = document.getElementById("bcSheet"); if (old) old.remove();
-  var cur = hid.value || "";
+  var selC = hc.value || "", selF = hf.value || "";
+  var bioEl = document.querySelector('[data-edit-field="bio"]');
+  var sample = (bioEl && bioEl.value.trim()) ? bioEl.value.trim().slice(0, 90) : "Life is too long to be destroyed by anything.";
+  BIO_FONTS.forEach(function(f) { bioFontEnsure(f.k); });
   var ov = document.createElement("div");
   ov.id = "bcSheet"; ov.className = "sheet-overlay"; ov.style.zIndex = "9999";
-  var items = BIO_COLORS.map(function(b) {
-    return '<div class="bc-it" data-bc="'+b.k+'"><div class="bc-rg'+(cur===b.k?' on':'')+'"><div class="bc-dt" style="background:linear-gradient(145deg,'+b.c[0]+','+b.c[1]+','+b.c[2]+')"></div></div><div class="bc-nm">'+b.n+'</div></div>';
+  var dots = BIO_COLORS.map(function(b) {
+    return '<div class="bs-c" data-c="'+b.k+'" aria-label="'+b.n+'"><span style="background:linear-gradient(145deg,'+b.c[0]+','+b.c[1]+','+b.c[2]+')"></span></div>';
   }).join("");
-  ov.innerHTML = '<div class="sheet-panel" style="padding:14px 16px calc(16px + env(safe-area-inset-bottom));"><div style="width:36px;height:4px;border-radius:2px;background:rgba(240,96,143,.3);margin:0 auto 12px;"></div><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><span style="font-weight:800;font-size:16px;">Cor da biografia</span><span class="bc-plus" style="margin:0;">Plus</span></div><div class="bc-grid">'+items+'</div></div>';
+  var chips = '<div class="bs-f" data-f="">Padrão</div>' + BIO_FONTS.map(function(f) {
+    return '<div class="bs-f" data-f="'+f.k+'" style="font-family:'+bioFontFamily(f.k)+';">'+f.n+'</div>';
+  }).join("");
+  ov.innerHTML = '<div class="sheet-panel" style="padding:14px 16px calc(16px + env(safe-area-inset-bottom));max-height:90vh;overflow-y:auto;">' +
+    '<div style="width:36px;height:4px;border-radius:2px;background:rgba(240,96,143,.3);margin:0 auto 12px;"></div>' +
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;"><span style="font-weight:800;font-size:16px;">Estilo da biografia</span><span class="bc-plus" style="margin:0;">Plus</span></div>' +
+    '<div class="bs-prev"><p class="bs-pt" id="bsPrev"></p></div>' +
+    '<div class="bs-lb">Cor</div><div class="bs-colors">' + dots + '</div>' +
+    '<div class="bs-lb">Fonte</div><div class="bs-fonts">' + chips + '</div>' +
+    '<button class="ep-save" data-bs-apply style="margin-top:16px;">Aplicar</button></div>';
+  function paint() {
+    var pv = ov.querySelector("#bsPrev");
+    pv.textContent = sample;
+    var g = bioColorGradientKey(selC), fo = bioFontFind(selF);
+    pv.className = "bs-pt" + (g ? " bio-fire" : "");
+    var st = "";
+    if (g) st += "background-image:" + g + ";";
+    if (fo) st += "font-family:" + bioFontFamily(selF) + ";";
+    pv.setAttribute("style", st);
+    [].forEach.call(ov.querySelectorAll("[data-c]"), function(x) { x.classList.toggle("on", x.getAttribute("data-c") === selC); });
+    [].forEach.call(ov.querySelectorAll("[data-f]"), function(x) { x.classList.toggle("on", x.getAttribute("data-f") === selF); });
+  }
   ov.addEventListener("click", function(e) {
     if (e.target === ov) { ov.remove(); return; }
-    var it = e.target.closest && e.target.closest("[data-bc]"); if (!it) return;
-    var k = it.getAttribute("data-bc");
-    var nv = (hid.value === k) ? "" : k;
-    hid.value = nv;
-    var val = document.getElementById("bc-val"); if (val) val.innerHTML = bioColorValueHtml(nv);
-    ov.remove();
+    var c = e.target.closest && e.target.closest("[data-c]");
+    if (c) { var k = c.getAttribute("data-c"); selC = (selC === k) ? "" : k; paint(); return; }
+    var f = e.target.closest && e.target.closest("[data-f]");
+    if (f) { selF = f.getAttribute("data-f"); paint(); return; }
+    if (e.target.closest && e.target.closest("[data-bs-apply]")) {
+      hc.value = selC; hf.value = selF;
+      var val = document.getElementById("bc-val"); if (val) val.innerHTML = bioStyleValueHtml(selC, selF);
+      ov.remove();
+    }
   });
   document.body.appendChild(ov);
+  paint();
 }
 function bioColorEditorHtml(u) {
   var sub = isSubscriptionActive(u);
-  var cur = sub ? (u.bioColor || "") : "";
+  var ck = sub ? (u.bioColor || "") : "";
+  var fk = sub ? (u.bioFont || "") : "";
   var chev = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e3b8cc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9 6l6 6-6 6"/></svg>';
-  return '<div class="ep-row" data-bc-open style="cursor:pointer;"><div class="ep-ic">'+mimiPlusIcon("crown",18)+'</div><div class="ep-fx"><label class="edit-field-label" style="margin-bottom:2px;">Cor da biografia</label><div id="bc-val">'+bioColorValueHtml(cur)+'</div><input type="hidden" data-edit-field="bioColor" value="'+esc(cur)+'"></div><span class="bc-plus" style="margin:0;">Plus</span>'+chev+'</div>';
+  return '<div class="ep-row" data-bc-open style="cursor:pointer;"><div class="ep-ic">'+mimiPlusIcon("crown",18)+'</div><div class="ep-fx"><label class="edit-field-label" style="margin-bottom:2px;">Estilo da biografia</label><div id="bc-val">'+bioStyleValueHtml(ck,fk)+'</div><input type="hidden" data-edit-field="bioColor" value="'+esc(ck)+'"><input type="hidden" data-edit-field="bioFont" value="'+esc(fk)+'"></div><span class="bc-plus" style="margin:0;">Plus</span>'+chev+'</div>';
 }
 
 // Destaque no feed: publicações de assinantes MIMI Plus recebem prioridade,
@@ -4801,7 +4881,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.01.18";
+var APP_VERSION = "2026.11.01.19";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -19808,7 +19888,7 @@ function renderProfilePage(userId) {
       '<div style="margin-top:'+(getUserFrame(u)?26:10)+'px;">' +
         '<div class="profile-name-row"><span class="display'+(showGlow?" profile-name-glow":"")+'" style="font-size:18px;">'+esc(u.name)+'</span> '+userVerifiedBadge(u,23)+(isBirthdayToday(u.birthDate)?profileBirthdayBadge():"")+'</div>' +
         '<div class="profile-username" data-copy-username="'+esc(u.username)+'" style="cursor:pointer;" title="Toque para copiar">'+esc(u.username)+'</div>' +
-        '<p class="profile-bio'+(bioColorGradient(u)?' bio-fire':'')+'"'+(bioColorGradient(u)?' style="background-image:'+bioColorGradient(u)+';"':'')+'>'+renderBioWithMentions(u.bio||"")+'</p>' +
+        bioProfileBioHtml(u) +
         '<div class="profile-meta-row">' +
           (u.location ? '<div class="profile-meta-item">'+icoSvg("loc",13,C.accent)+'<span>'+esc(u.location)+'</span></div>' : "") +
           (u.website ? '<div class="profile-meta-item">'+icoSvg("globe",13,C.accent)+'<span>'+esc(u.website)+'</span></div>' : "") +
@@ -21433,6 +21513,8 @@ function bindEditProfile() {
     if (bioEl) u.bio      = bioEl.value.trim();
     var bcEl = appEl.querySelector('[data-edit-field="bioColor"]');
     if (bcEl && isSubscriptionActive(u)) u.bioColor = bcEl.value || "";
+    var bfEl = appEl.querySelector('[data-edit-field="bioFont"]');
+    if (bfEl && isSubscriptionActive(u)) u.bioFont = bfEl.value || "";
     if (locEl) u.location = locEl.value.trim();
     if (webEl) u.website  = webEl.value.trim();
     // FIX: o cadastro salva a data em "birthdate" (minúsculo) e essa tela
