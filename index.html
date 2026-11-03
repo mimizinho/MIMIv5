@@ -4933,7 +4933,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.03.01";
+var APP_VERSION = "2026.11.03.02";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -27366,7 +27366,7 @@ setTimeout(function () { BirthdayNotifier.init(); }, 2000);
     '.pp-gt{font-size:12px;color:var(--mu)}',
     '.pp-bar{position:fixed;left:0;right:0;bottom:0;padding:12px 18px max(12px,env(safe-area-inset-bottom));background:linear-gradient(transparent,#0b0709 35%);z-index:2}',
     '.pp-btn{display:flex;width:100%;max-width:404px;margin:0 auto;border-radius:99px;padding:15px;font-size:15px;font-weight:700;background:var(--met)!important;color:#2a1015!important;justify-content:center;align-items:center;gap:8px;box-shadow:0 8px 30px rgba(217,143,157,.3)}',
-    '.pp-btn:disabled{opacity:.7}',
+    '.pp .pp-btn{padding:16px 22px;min-height:54px;line-height:1.2}','.pp-btn:disabled{opacity:.7}',
     '.pp-legal{font-size:11px;line-height:1.5;color:var(--mu);margin:16px 0 0;text-align:center}',
     '.pp-ok{position:fixed;inset:0;z-index:5;background:#0b0709;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:30px;text-align:center}',
     '.pp-ok .pp-btn{margin-top:14px}',
@@ -27408,17 +27408,17 @@ setTimeout(function () { BirthdayNotifier.init(); }, 2000);
   }
 
   var PERKS = [
-    ['shield', 'Selo verificado'], ['frame', 'Moldura e brilho no perfil'], ['trend', 'Destaque no feed'],
-    ['eyeOff', 'Zero anúncios'], ['check', 'Baixe fotos e vídeos'], ['sparkle', 'Figurinhas exclusivas']
+    ['shield', 'Selo verificado'], ['sparkle', 'Moldura e brilho no perfil'], ['trend', 'Destaque no feed'],
+    ['eyeOff', 'Zero anúncios'], ['check', 'Baixe fotos e vídeos'], ['star', 'Figurinhas exclusivas']
   ];
 
   function pillars() {
     function d(icon, title, items, open) {
       return '<details' + (open ? ' open' : '') + '><summary><span class="pp-ic">' + ic(icon, 20) + '</span>' + title + '<span class="pp-chv">' + ic('chevronRight', 18) + '</span></summary><div class="pp-li">' + rows(items) + '</div></details>';
     }
-    return d('shield', 'Perfil', [['shield', 'Selo de verificado ao lado do nome'], ['frame', 'Molduras para a foto de perfil'], ['sparkle', 'Brilho: anel do perfil e linha sob a capa'], ['check', 'Biografia com cor'], ['check', 'Veja quem visitou seu perfil']], true) +
+    return d('shield', 'Perfil', [['shield', 'Selo de verificado ao lado do nome'], ['sparkle', 'Molduras para a foto de perfil'], ['sparkle', 'Brilho: anel do perfil e linha sob a capa'], ['check', 'Biografia com cor'], ['check', 'Veja quem visitou seu perfil']], true) +
       d('trend', 'Feed', [['trend', 'Seus posts em destaque'], ['eyeOff', 'Nenhum anúncio'], ['check', 'Baixe fotos e vídeos']]) +
-      d('star', 'Conversas', [['sparkle', 'Figurinhas exclusivas'], ['star', 'Comentários em destaque'], ['check', 'Menções com cor']]);
+      d('star', 'Conversas', [['star', 'Figurinhas exclusivas'], ['star', 'Comentários em destaque'], ['check', 'Menções com cor']]);
   }
 
   function buildFree(o) {
@@ -27443,7 +27443,7 @@ setTimeout(function () { BirthdayNotifier.init(); }, 2000);
       rows([['check', 'Assinatura ativa'], ['shield', 'Selo verificado'], ['eyeOff', 'Zero anúncios']]));
     h += '<h2 class="pp-h2">Seu perfil</h2><details class="pp-mn" id="pp-mn"><summary class="pp-sm"><div class="pp-pv"><div class="pp-ring"><div class="pp-av"></div></div><div class="pp-fr"></div></div><div class="pp-mt"><b>' + esc(me.name || 'Meu perfil') + '</b><small></small></div><span class="pp-ed">Editar</span><span class="pp-chv" style="margin-left:6px">' + ic('chevronRight', 18) + '</span></summary><div class="pp-mb" id="pp-mb"></div></details>';
     h += '<h2 class="pp-h2">Seus benefícios</h2><div class="pp-gr2">' +
-      [['shield', 'Selo verificado'], ['eyeOff', 'Sem anúncios'], ['trend', 'Destaque no feed'], ['check', 'Downloads'], ['sparkle', 'Figurinhas'], ['star', 'Comentários em destaque']]
+      [['shield', 'Selo verificado'], ['eyeOff', 'Sem anúncios'], ['trend', 'Destaque no feed'], ['check', 'Downloads'], ['star', 'Figurinhas'], ['star', 'Comentários em destaque']]
         .map(function (r) { return '<div class="pp-tile">' + ic(r[0], 20) + r[1] + '<em>Ativo</em></div>'; }).join('') + '</div>';
     h += '<h2 class="pp-h2">Assinatura</h2><div class="pp-mg"><span>Válida até ' + esc(ate) + '</span></div><div class="pp-mg"><span>Plano MIMI Plus</span><button class="pp-cn" data-pp-cancel>Cancelar</button></div>';
     return h;
