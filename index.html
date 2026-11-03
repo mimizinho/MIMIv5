@@ -4933,7 +4933,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.02.06";
+var APP_VERSION = "2026.11.03.01";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -23523,7 +23523,63 @@ function exitSurveyCss() {
 function usarTelaPlusNova() {
   if (!window.MimiPlus) return false; // biblioteca não carregou: usa a tela antiga
   if (ME_ID === MIMI_OFFICIAL_UID) return false; // conta oficial usa a tela antiga (brilho e molduras)
-  return !isSubscriptionActive(ME_obj()); // assinante ativo continua na tela antiga (brilho, molduras, cancelar)
+  return true; /* Plus Pro: cobre assinante e não assinante */ // assinante ativo continua na tela antiga (brilho, molduras, cancelar)
+}
+function mimiPlusHooks() {
+  return {
+    me: ME_obj,
+    ringThemes: PLUS_RING_THEMES,
+    frames: PROFILE_FRAMES,
+    ringKey: function() { return getRingThemeKey(ME_obj()); },
+    frameKey: function() { return getUserFrame(ME_obj()) || "none"; },
+    setRing: function(theme) {
+      var me = ME_obj(); me.ringTheme = theme; USERS[ME_ID] = me;
+      if (_idToken) { fsSet("users/"+ME_ID, { ringTheme: theme }).catch(function(){}); }
+      render();
+    },
+    setFrame: function(key) {
+      var me = ME_obj(); me.frame = (key === "none") ? null : key; USERS[ME_ID] = me;
+      if (_idToken) { fsSet("users/"+ME_ID, { frame: me.frame }).catch(function(){}); }
+      render();
+    },
+    cancel: mimiPlusCancelar
+  };
+}
+function mimiPlusCancelar() {
+  MimiPlus.close();
+  state.subsOpen = false;
+  state.confirmDialog = {
+    title: "Cancelar assinatura?",
+    text: "Seu badge de verificação será removido ao final do período pago.",
+    confirmLabel: "Cancelar assinatura",
+    danger: true,
+    onConfirm: function() {
+      var me = ME_obj();
+      var prevVerified = me.verified, prevVerifiedType = me.verifiedType, prevSubscribedUntil = me.subscribedUntil, prevFrame = me.frame, prevRingTheme = me.ringTheme;
+      me.verified = false; me.verifiedType = null; me.subscribedUntil = null; me.frame = null; me.ringTheme = null;
+      USERS[ME_ID] = me;
+      cacheUserSnapshot(me);
+      state.subsOpen = false;
+      render();
+      if (_idToken) {
+        retryPromise(function(){
+          return fsSet("users/"+ME_ID, { verified:false, verifiedType:null, subscribedUntil:null, frame:null, ringTheme:null });
+        }, 2, 1000).then(function(){
+          showToast("Assinatura cancelada.");
+        }).catch(function(err){
+          console.error("Erro ao cancelar assinatura no servidor:", err);
+          me.verified = prevVerified; me.verifiedType = prevVerifiedType; me.subscribedUntil = prevSubscribedUntil; me.frame = prevFrame; me.ringTheme = prevRingTheme;
+          USERS[ME_ID] = me;
+          cacheUserSnapshot(me);
+          render();
+          showToast(toastWithIcon("Não foi possível cancelar agora. Tente novamente.", "error"), true);
+        });
+      } else {
+        showToast("Assinatura cancelada.");
+      }
+    }
+  };
+  render();
 }
 function abrirTelaPlusNova() {
   var oficial = (ME_ID === MIMI_OFFICIAL_UID);
@@ -23553,7 +23609,7 @@ function abrirTelaPlusNova() {
       showToast(toastWithIcon("MIMI Plus ativado! Seu badge já está visível.", "star", "before"), true);
     }
   };
-  MimiPlus.open({ oficial: oficial, semBotao: oficial });
+  MimiPlus.open({ oficial: oficial, semBotao: oficial, ativo: isSubscriptionActive(ME_obj()), hooks: mimiPlusHooks() });
 }
 function renderSubsPage() {
   var me = ME_obj();
@@ -27257,6 +27313,252 @@ setTimeout(function () { BirthdayNotifier.init(); }, 2000);
 </script>
 <!-- MIMI-PLUS:INICIO -->
 <script>
+/* MIMI Plus Pro — biblioteca (tela de assinatura: não assinante e assinante)
+ * Mesma API da tela anterior: open({oficial, semBotao, ativo, hooks}), close, isOpen, onSubscribe, onClose */
+(function () {
+  'use strict';
+  if (window.MimiPlus) return;
+  var root = null, H = null;
+  var CSS = [
+    '.pp{position:fixed;inset:0;z-index:99990;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;background:#0b0709;color:#f7eef0;font-family:inherit;opacity:0;transform:translateY(40px);transition:opacity .35s,transform .45s cubic-bezier(.2,.9,.3,1);--ro:#e8b4bc;--mu:#a8939a;--ln:#2a1d22;--cd:#150e11;--met:linear-gradient(135deg,#f9dde1,#d98f9d 45%,#f4c9cf 62%,#b86f7e)}',
+    '.pp.in{opacity:1;transform:none}',
+    '.pp *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}',
+    '.pp button{font-family:inherit;border:0;background:none;color:inherit;cursor:pointer;padding:0}',
+    '.pp svg{display:block}',
+    '.pp-m{position:relative;max-width:440px;margin:0 auto;padding:max(14px,env(safe-area-inset-top)) 18px 130px}',
+    '.pp-bk{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.08);display:grid;place-items:center;color:#fff}',
+    '.pp-st span{position:absolute;width:3px;height:3px;border-radius:50%;background:var(--ro);animation:pp-tw 3s infinite;pointer-events:none}',
+    '@keyframes pp-tw{0%,100%{opacity:.1;transform:scale(.6)}50%{opacity:.9;transform:scale(1.3)}}',
+    '@keyframes pp-sh{60%,100%{transform:translateX(100%)}}',
+    '.pp-eb{letter-spacing:.28em;font-size:11px;color:var(--ro);text-transform:uppercase;margin:18px 0 8px}',
+    '.pp-h1{font-family:Georgia,serif;font-weight:400;font-size:31px;line-height:1.15;margin:0 0 8px}',
+    '.pp-h1 b,.pp-gr{background:var(--met);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:400}',
+    '.pp-h2{font-family:Georgia,serif;font-weight:400;font-size:21px;margin:30px 0 10px}',
+    '.pp-s{color:var(--mu);font-size:14px;line-height:1.5;margin:0 0 14px}',
+    '.pp-cw{perspective:900px;margin:18px 0}',
+    '.pp-card{height:190px;position:relative;transform-style:preserve-3d;transition:transform .25s ease-out;cursor:pointer}',
+    '.pp-card.fl{transform:rotateY(180deg)!important}',
+    '.pp-f{position:absolute;inset:0;border-radius:20px;padding:20px;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:1px solid #5a3a42;background:linear-gradient(135deg,#2a1a1f,#0f080a 55%,#2a1a1f);overflow:hidden}',
+    '.pp-f:before{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 35%,rgba(248,200,208,.22) 50%,transparent 65%);transform:translateX(-100%);animation:pp-sh 4s infinite}',
+    '.pp-b{transform:rotateY(180deg);display:flex;flex-direction:column;justify-content:center;gap:10px;font-size:13px;color:var(--mu)}',
+    '.pp-b div{display:flex;gap:10px;align-items:center}.pp-b svg{color:var(--ro);flex:none}',
+    '.pp-lg{font-family:Georgia,serif;font-size:26px;letter-spacing:.04em;display:flex;align-items:center;gap:8px}',
+    '.pp-cf{position:absolute;left:20px;right:20px;bottom:18px;display:flex;justify-content:space-between;align-items:flex-end;font-size:12px;color:var(--mu)}',
+    '.pp-cf b{display:block;color:#f7eef0;font-size:15px;letter-spacing:.06em}',
+    '.pp-hint{text-align:center;font-size:11px;color:var(--mu);margin-top:-6px}',
+    '.pp details{background:var(--cd);border:1px solid var(--ln);border-radius:18px;margin:10px 0;overflow:hidden}',
+    '.pp summary{list-style:none;display:flex;align-items:center;gap:12px;padding:16px;font-weight:600;cursor:pointer}',
+    '.pp summary::-webkit-details-marker{display:none}',
+    '.pp-ic{width:38px;height:38px;border-radius:12px;background:#2a1a1f;display:grid;place-items:center;color:var(--ro);flex:none}',
+    '.pp-chv{margin-left:auto;color:var(--mu);transition:.2s}.pp details[open] .pp-chv{transform:rotate(180deg)}',
+    '.pp-li{padding:0 16px 14px;display:grid;gap:11px}',
+    '.pp-li div{display:flex;gap:10px;font-size:14px;color:var(--mu);align-items:center}.pp-li svg{color:var(--ro);flex:none}',
+    '.pp-offer{position:relative;margin:20px 0 10px;padding:26px 22px 20px;border-radius:26px;border:1.5px solid transparent;background:linear-gradient(160deg,#241519,#0d0709 70%) padding-box,var(--met) border-box;box-shadow:0 0 50px rgba(217,143,157,.18);overflow:hidden;text-align:center}',
+    '.pp-offer:before{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 35%,rgba(248,200,208,.16) 50%,transparent 65%);transform:translateX(-100%);animation:pp-sh 4.5s infinite;pointer-events:none}',
+    '.pp-ol{font-family:Georgia,serif;font-size:22px;letter-spacing:.06em}',
+    '.pp-pr{display:flex;justify-content:center;align-items:flex-start;gap:4px;margin-top:6px}',
+    '.pp-pr small{font-size:20px;margin-top:14px;color:var(--ro)}',
+    '.pp-pr b{font-family:Georgia,serif;font-size:76px;font-weight:400;line-height:1}',
+    '.pp-pr span{align-self:flex-end;margin-bottom:10px;color:var(--mu);font-size:15px}',
+    '.pp-pd{display:inline-block;margin:8px 0 18px;padding:5px 14px;border:1px solid #5a3a42;border-radius:99px;font-size:12px;color:var(--ro);letter-spacing:.06em}',
+    '.pp-offer ul{list-style:none;margin:0 0 18px;padding:16px 0 0;border-top:1px solid var(--ln);display:grid;gap:12px;text-align:left}',
+    '.pp-offer li{display:flex;gap:12px;align-items:center;font-size:14px}.pp-offer li svg{color:var(--ro);flex:none}',
+    '.pp-gt{font-size:12px;color:var(--mu)}',
+    '.pp-bar{position:fixed;left:0;right:0;bottom:0;padding:12px 18px max(12px,env(safe-area-inset-bottom));background:linear-gradient(transparent,#0b0709 35%);z-index:2}',
+    '.pp-btn{display:flex;width:100%;max-width:404px;margin:0 auto;border-radius:99px;padding:15px;font-size:15px;font-weight:700;background:var(--met)!important;color:#2a1015!important;justify-content:center;align-items:center;gap:8px;box-shadow:0 8px 30px rgba(217,143,157,.3)}',
+    '.pp-btn:disabled{opacity:.7}',
+    '.pp-legal{font-size:11px;line-height:1.5;color:var(--mu);margin:16px 0 0;text-align:center}',
+    '.pp-ok{position:fixed;inset:0;z-index:5;background:#0b0709;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:30px;text-align:center}',
+    '.pp-ok .pp-btn{margin-top:14px}',
+    '.pp-mn .pp-sm{display:flex;align-items:center;gap:14px;padding:12px 14px;cursor:pointer}',
+    '.pp-pv{position:relative;width:60px;height:60px;display:grid;place-items:center;flex:none}',
+    '.pp-ring{padding:3px;border-radius:50%;background:var(--cg);box-shadow:0 0 14px var(--s)}',
+    '.pp-av{width:46px;height:46px;border-radius:50%;border:2px solid #fff;background:radial-gradient(circle at 35% 30%,#ff9fb6,#7b2a4a 70%) center/cover;display:grid;place-items:center;font-family:Georgia,serif;font-size:20px}',
+    '.pp-fr{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none}',
+    '.pp-mt b{display:block;font-size:15px}.pp-mt small{color:var(--mu);font-size:12px;font-weight:400}',
+    '.pp-ed{margin-left:auto;font-size:12px;color:var(--ro)}',
+    '.pp-mb{padding:0 14px 14px}',
+    '.pp-mln{height:3px;border-radius:3px;background:var(--lg);box-shadow:0 4px 14px var(--s);margin-bottom:6px}',
+    '.pp-lb{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ro);margin:14px 2px 6px}',
+    '.pp-op{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 6px;-webkit-overflow-scrolling:touch}',
+    '.pp-o{flex:none;text-align:center;font-size:11px;color:var(--mu);width:72px}',
+    '.pp-o.on{color:#f7eef0}',
+    '.pp-th{position:relative;width:72px;height:72px;display:grid;place-items:center}',
+    '.pp-thc{width:36px;height:36px;border-radius:50%;background:#3a2a30;display:grid;place-items:center;color:var(--mu)}',
+    '.pp-o.on .pp-thc{outline:2px solid var(--ro);outline-offset:3px}',
+    '.pp-gr2{display:grid;grid-template-columns:1fr 1fr;gap:10px}',
+    '.pp-tile{background:var(--cd);border:1px solid var(--ln);border-radius:16px;padding:14px;font-size:13px;display:grid;gap:8px}',
+    '.pp-tile svg{color:var(--ro)}.pp-tile em{font-style:normal;color:var(--mu);font-size:11px}',
+    '.pp-mg{display:flex;justify-content:space-between;align-items:center;padding:14px 4px;border-top:1px solid var(--ln);font-size:14px;color:var(--mu)}',
+    '.pp-cn{color:#d98f9d;font-weight:600;font-size:14px}',
+    '.pp-tt{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);background:var(--met);color:#2a1015;padding:10px 18px;border-radius:99px;font-weight:700;font-size:13px;opacity:0;transition:.3s;z-index:6;pointer-events:none}',
+    '.pp-tt.on{opacity:1;transform:translateX(-50%)}'
+  ].join('');
+
+  function ic(n, s) { return typeof icoSvg === 'function' ? icoSvg(n, s || 18, 'currentColor') : ''; }
+  function logo(s) { return typeof mimiPlusIcon === 'function' ? mimiPlusIcon('logo', s || 24) : ''; }
+  function esc(x) { return String(x == null ? '' : x).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function rows(a) { return a.map(function (r) { return '<div>' + ic(r[0], 18) + '<span>' + r[1] + '</span></div>'; }).join(''); }
+  function card(front, back) {
+    return '<div class="pp-cw"><div class="pp-card"><div class="pp-f">' + front + '</div><div class="pp-f pp-b">' + back + '</div></div></div><div class="pp-hint">Toque no cartão para virar</div>';
+  }
+  function toast(t) {
+    var x = root && root.querySelector('.pp-tt'); if (!x) return;
+    x.textContent = t; x.classList.add('on'); setTimeout(function () { x.classList.remove('on'); }, 1600);
+  }
+
+  var PERKS = [
+    ['shield', 'Selo verificado'], ['frame', 'Moldura e brilho no perfil'], ['trend', 'Destaque no feed'],
+    ['eyeOff', 'Zero anúncios'], ['check', 'Baixe fotos e vídeos'], ['sparkle', 'Figurinhas exclusivas']
+  ];
+
+  function pillars() {
+    function d(icon, title, items, open) {
+      return '<details' + (open ? ' open' : '') + '><summary><span class="pp-ic">' + ic(icon, 20) + '</span>' + title + '<span class="pp-chv">' + ic('chevronRight', 18) + '</span></summary><div class="pp-li">' + rows(items) + '</div></details>';
+    }
+    return d('shield', 'Perfil', [['shield', 'Selo de verificado ao lado do nome'], ['frame', 'Molduras para a foto de perfil'], ['sparkle', 'Brilho: anel do perfil e linha sob a capa'], ['check', 'Biografia com cor'], ['check', 'Veja quem visitou seu perfil']], true) +
+      d('trend', 'Feed', [['trend', 'Seus posts em destaque'], ['eyeOff', 'Nenhum anúncio'], ['check', 'Baixe fotos e vídeos']]) +
+      d('star', 'Conversas', [['sparkle', 'Figurinhas exclusivas'], ['star', 'Comentários em destaque'], ['check', 'Menções com cor']]);
+  }
+
+  function buildFree(o) {
+    var me = (H && H.me && H.me()) || {};
+    var nm = String(me.name || me.displayName || 'Seu nome').toUpperCase();
+    var h = '<div class="pp-eb">MIMI Plus</div><h1 class="pp-h1">Seu perfil, <b>em outro nível.</b></h1><p class="pp-s">Moldura, brilho, selo e muito mais. Sem anúncios, com destaque no feed.</p>';
+    h += card('<div class="pp-lg">' + logo(26) + '<span class="pp-gr">MIMI Plus</span></div><div class="pp-cf"><div>Membro<b>' + esc(nm) + '</b></div><div>R$ 15/mês</div></div>',
+      rows(PERKS.slice(0, 4)));
+    h += '<h2 class="pp-h2">O que você ganha</h2>' + pillars();
+    h += '<div class="pp-eb" style="text-align:center;margin-top:34px">Seu lugar no topo</div><h1 class="pp-h1" style="text-align:center">Seja visto. <b>Seja lembrado.</b></h1><p class="pp-s" style="text-align:center">Um perfil que ninguém passa direto, por menos de R$ 0,50 ao dia.</p>';
+    h += '<div class="pp-offer"><div class="pp-ol pp-gr">MIMI Plus</div><div class="pp-pr"><small>R$</small><b class="pp-gr">15</b><span>/mês</span></div><div class="pp-pd">Cerca de R$ 0,50 por dia</div><ul>' +
+      PERKS.map(function (r) { return '<li>' + ic(r[0], 18) + '<span>' + r[1] + '</span></li>'; }).join('') + '</ul><div class="pp-gt">Sem fidelidade. Cancele quando quiser.</div></div>';
+    return h;
+  }
+
+  function buildActive(o) {
+    var me = H.me();
+    var ate = me.subscribedUntil ? new Date(me.subscribedUntil).toLocaleDateString('pt-BR') : '';
+    var nm = String(me.name || me.displayName || '').toUpperCase();
+    var h = '<div class="pp-eb">Membro ativo</div><h1 class="pp-h1">Você é <b>Plus.</b></h1>';
+    h += card('<div class="pp-lg">' + logo(26) + '<span class="pp-gr">MIMI Plus</span></div><div class="pp-cf"><div>Membro<b>' + esc(nm) + '</b></div><div>Válida até<br>' + esc(ate) + '</div></div>',
+      rows([['check', 'Assinatura ativa'], ['shield', 'Selo verificado'], ['eyeOff', 'Zero anúncios']]));
+    h += '<h2 class="pp-h2">Seu perfil</h2><details class="pp-mn" id="pp-mn"><summary class="pp-sm"><div class="pp-pv"><div class="pp-ring"><div class="pp-av"></div></div><div class="pp-fr"></div></div><div class="pp-mt"><b>' + esc(me.name || 'Meu perfil') + '</b><small></small></div><span class="pp-ed">Editar</span><span class="pp-chv" style="margin-left:6px">' + ic('chevronRight', 18) + '</span></summary><div class="pp-mb" id="pp-mb"></div></details>';
+    h += '<h2 class="pp-h2">Seus benefícios</h2><div class="pp-gr2">' +
+      [['shield', 'Selo verificado'], ['eyeOff', 'Sem anúncios'], ['trend', 'Destaque no feed'], ['check', 'Downloads'], ['sparkle', 'Figurinhas'], ['star', 'Comentários em destaque']]
+        .map(function (r) { return '<div class="pp-tile">' + ic(r[0], 20) + r[1] + '<em>Ativo</em></div>'; }).join('') + '</div>';
+    h += '<h2 class="pp-h2">Assinatura</h2><div class="pp-mg"><span>Válida até ' + esc(ate) + '</span></div><div class="pp-mg"><span>Plano MIMI Plus</span><button class="pp-cn" data-pp-cancel>Cancelar</button></div>';
+    return h;
+  }
+
+  function bindActive() {
+    var mn = root.querySelector('#pp-mn'), mb = root.querySelector('#pp-mb'), built = false;
+    function frameBox(key, base) {
+      var f = H.frames[key]; if (!f) return '';
+      var sz = Math.round(base * (f.scale || 1.3));
+      return '<div class="mimi-frame-bg-' + key + '" style="position:absolute;left:50%;top:50%;width:' + sz + 'px;height:' + sz + 'px;transform:translate(-50%,-50%);pointer-events:none"></div>';
+    }
+    function paint() {
+      var rk = H.ringKey(), fk = H.frameKey(), th = H.ringThemes[rk] || H.ringThemes.none, cols = th.colors;
+      var glow = cols ? cols.split(',')[2].trim() : 'transparent';
+      mn.style.setProperty('--cg', cols ? 'conic-gradient(' + cols + ')' : '#f4dfe3');
+      mn.style.setProperty('--lg', cols ? 'linear-gradient(90deg,' + cols + ')' : 'transparent');
+      mn.style.setProperty('--s', glow);
+      var fr = mn.querySelector('.pp-fr'), f = H.frames[fk];
+      fr.className = 'pp-fr' + (f ? ' mimi-frame-bg-' + fk : '');
+      var sz = f ? Math.round(52 * (f.scale || 1.3)) : 0;
+      fr.style.width = fr.style.height = sz + 'px';
+      mn.querySelector('small').textContent = 'Moldura ' + (f ? f.label : 'Nenhuma') + ' · Brilho ' + th.label;
+      var me = H.me(), av = mn.querySelector('.pp-av');
+      if (me.avatar && /^(https?:|data:)/.test(me.avatar)) { av.style.backgroundImage = 'url("' + me.avatar + '")'; av.textContent = ''; }
+      else av.textContent = String(me.name || 'M').charAt(0).toUpperCase();
+      mb.querySelectorAll('[data-pp-fr]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-pp-fr') === fk); });
+      mb.querySelectorAll('[data-pp-rg]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-pp-rg') === rk); });
+    }
+    function build() {
+      var h = '<div class="pp-mln"></div><div class="pp-lb">Moldura da foto</div><div class="pp-op"><button class="pp-o" data-pp-fr="none"><div class="pp-th"><div class="pp-thc">' + ic('close', 14) + '</div></div>Nenhuma</button>';
+      Object.keys(H.frames).forEach(function (k) {
+        h += '<button class="pp-o" data-pp-fr="' + k + '"><div class="pp-th"><div class="pp-thc" style="background:#7b2a4a"></div>' + frameBox(k, 36) + '</div>' + esc(H.frames[k].label) + '</button>';
+      });
+      h += '</div><div class="pp-lb">Brilho</div><div class="pp-op">';
+      Object.keys(H.ringThemes).forEach(function (k) {
+        var t = H.ringThemes[k];
+        h += '<button class="pp-o" data-pp-rg="' + k + '"><div class="pp-th"><div class="pp-thc" style="' + (t.colors ? 'background:conic-gradient(' + t.colors + ')' : '') + '">' + (t.colors ? '' : ic('close', 14)) + '</div></div>' + esc(t.label) + '</button>';
+      });
+      mb.innerHTML = h + '</div>';
+      built = true; paint();
+    }
+    mn.addEventListener('toggle', function () { if (mn.open && !built) build(); });
+    mb.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-pp-fr],[data-pp-rg]'); if (!b) return;
+      if (b.hasAttribute('data-pp-fr')) { H.setFrame(b.getAttribute('data-pp-fr')); toast('Moldura atualizada'); }
+      else { H.setRing(b.getAttribute('data-pp-rg')); toast('Brilho atualizado'); }
+      paint();
+    });
+    var cn = root.querySelector('[data-pp-cancel]');
+    if (cn) cn.onclick = function () { if (H.cancel) H.cancel(); };
+    // prévia fechada: moldura e brilho atuais
+    var tmp = true; built = false; mb.innerHTML = '<div class="pp-mln"></div>'; paint(); tmp = false;
+  }
+
+  function success() {
+    root.insertAdjacentHTML('beforeend', '<div class="pp-ok"><div style="color:#e8b4bc">' + logo(44) + '</div><h1 class="pp-h1">Bem-vindo ao <b>Plus.</b></h1><p class="pp-s">Seu selo já está ativo. Agora personalize seu perfil.</p><button class="pp-btn" data-pp-done>Ver meu perfil</button></div>');
+    root.querySelector('[data-pp-done]').onclick = function () { MimiPlus.close(); };
+  }
+  function subscribe(btn) {
+    if (btn.disabled) return;
+    var t = btn.innerHTML; btn.disabled = true; btn.textContent = 'Processando…';
+    function reset() { btn.disabled = false; btn.innerHTML = t; }
+    var p;
+    try { p = MimiPlus.onSubscribe ? MimiPlus.onSubscribe('mensal') : new Promise(function (r) { setTimeout(function () { r(true); }, 1600); }); }
+    catch (e) { p = Promise.resolve(false); }
+    Promise.resolve(p).then(function (ok) { if (ok === false) reset(); else success(); }, reset);
+  }
+
+  var MimiPlus = {
+    onSubscribe: null,
+    onClose: null,
+    isOpen: function () { return !!root; },
+    open: function (o) {
+      if (root) return;
+      o = o || {}; H = o.hooks || null;
+      if (!document.getElementById('pp-css')) { var st = document.createElement('style'); st.id = 'pp-css'; st.textContent = CSS; document.head.appendChild(st); }
+      var ativo = !!(o.ativo && H);
+      root = document.createElement('div'); root.className = 'pp';
+      root.setAttribute('role', 'dialog'); root.setAttribute('aria-label', 'MIMI Plus');
+      var stars = '<div class="pp-st">';
+      for (var i = 0; i < 14; i++) stars += '<span style="left:' + Math.round(Math.random() * 100) + '%;top:' + Math.round(Math.random() * 260) + 'px;animation-delay:' + (Math.random() * 3).toFixed(1) + 's"></span>';
+      stars += '</div>';
+      var legal = 'Ao assinar você concorda com os Termos de Uso da Mimi. A cobrança é mensal e pode ser cancelada a qualquer momento. O badge de verificação é ativado imediatamente após o pagamento ser confirmado.';
+      root.innerHTML = '<main class="pp-m">' + stars + '<button class="pp-bk" data-pp-back aria-label="Voltar">' + ic('back', 22) + '</button>' +
+        (ativo ? buildActive(o) : buildFree(o) + '<p class="pp-legal">' + legal + '</p>') + '</main><div class="pp-tt"></div>';
+      if (!ativo && !o.semBotao && !o.oficial) {
+        var bar = document.createElement('div'); bar.className = 'pp-bar';
+        bar.innerHTML = '<button class="pp-btn" data-pp-sub>Assinar MIMI Plus</button>';
+        root.appendChild(bar);
+        bar.querySelector('button').onclick = function () { subscribe(this); };
+      }
+      document.body.appendChild(root);
+      root.querySelector('[data-pp-back]').onclick = function () { MimiPlus.close(); };
+      root.querySelectorAll('.pp-card').forEach(function (c) {
+        var w = c.parentNode;
+        c.onclick = function () { c.classList.toggle('fl'); };
+        w.onpointermove = function (e) { if (c.classList.contains('fl')) return; var r = c.getBoundingClientRect(); c.style.transform = 'rotateY(' + (((e.clientX - r.left) / r.width - .5) * 18) + 'deg) rotateX(' + (-((e.clientY - r.top) / r.height - .5) * 14) + 'deg)'; };
+        w.onpointerleave = function () { if (!c.classList.contains('fl')) c.style.transform = ''; };
+      });
+      if (ativo) bindActive();
+      void root.offsetWidth;
+      root.classList.add('in');
+    },
+    close: function () {
+      if (!root) return;
+      var r = root; root = null; H = null;
+      r.classList.remove('in');
+      setTimeout(function () { if (r.parentNode) r.parentNode.removeChild(r); }, 400);
+      if (typeof MimiPlus.onClose === 'function') { try { MimiPlus.onClose(); } catch (e) { console.error(e); } }
+    }
+  };
+  window.MimiPlus = MimiPlus;
+})();
+
 /* MIMI Plus — tela de assinatura animada (JS puro, sem dependências)
  * Uso:  tag script com src="mimi-plus.js"
  *       MimiPlus.open({ oficial: true, semBotao: true });   // oficial: card da conta oficial; semBotao: esconde o botão Assinar
