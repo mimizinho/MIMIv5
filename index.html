@@ -4933,7 +4933,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.03.02";
+var APP_VERSION = "2026.11.03.03";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -10390,8 +10390,9 @@ function stopPostsReactionPolling() {
   if (_postsReactionPollInterval) { clearInterval(_postsReactionPollInterval); _postsReactionPollInterval = null; }
 }
 function syncPostsReactionsFromServer() {
+  if (state.page !== "feed") return;
   if (!_idToken) return;
-  fsList("posts").then(function(docs) {
+  _fsListMerged("posts", { limit: Math.min(60, Math.max(POSTS_PAGE_SIZE, posts.length)) }).then(function(docs) {
     if (!docs || !docs.length) return;
     var changed = false;
     docs.forEach(function(d) {
