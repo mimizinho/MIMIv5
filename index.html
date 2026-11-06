@@ -4933,7 +4933,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.05.01";
+var APP_VERSION = "2026.11.05.02";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -19059,6 +19059,7 @@ function startCallTimer() {
 // offer/answer já viaja com todos os candidatos, e não precisamos ficar
 // trocando candidatos avulsos via polling (o Firestore REST aqui não é
 // realtime, então "trickle ICE" seria bem mais complicado de sincronizar).
+function _callStep(id, key, err) { try { if (!id) return; var d = {}; d[key] = err ? (String((err && err.name) || "") + ":" + String((err && err.message) || err)).slice(0,120) : Date.now(); fsSet("calls/"+id, d, true).catch(function(){}); } catch(e){} }
 function _waitIceGatheringComplete(peer) {
   if (peer.iceGatheringState === "complete") return Promise.resolve();
   return new Promise(function(resolve) {
@@ -19322,14 +19323,14 @@ function _startCallerStatusPoll(callId) {
     if (doc.status === "accepted" && answerSdpValida && doDocCorreto && _rtcPeer && !_rtcPeer.currentRemoteDescription && _rtcPeer.signalingState === "have-local-offer") {
       _stopCallDocWatch();
       clearTimeout(_callRingTimeout);
-      _rtcPeer.setRemoteDescription({ type:"answer", sdp:doc.answerSdp }).then(function() {
+      _callStep(callId, "caller_got"); _rtcPeer.setRemoteDescription({ type:"answer", sdp:doc.answerSdp }).then(function() {
         if (!activeCall) return;
         activeCall.status = "connected";
         render();
         startCallTimer();
         _startCallEndWatcher(callId);
       }).catch(function(err) {
-        console.error("Erro ao conectar áudio:", err);
+        console.error("Erro ao conectar áudio:", err); _callStep(callId, "caller_err", err);
         if (_rtcPeer && _rtcPeer.signalingState === "stable" && _rtcPeer.currentRemoteDescription) return; showToast("Falha ao conectar a chamada.");
         endCall();
       });
@@ -19481,7 +19482,7 @@ function _declineIncomingCall() {
 
 function _acceptIncomingCall() {
   if (!incomingCall) return;
-  console.log("[chamada] usuário apertou ACEITAR", incomingCall);
+  console.log("[chamada] usuário apertou ACEITAR", incomingCall); _callStep(incomingCall.callId, "callee_tap");
   try { if (window.MIMIApp && MIMIApp.cancelIncomingCall) MIMIApp.cancelIncomingCall(); } catch(e){}
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     showToast("Seu navegador não permite chamadas de voz.");
@@ -19515,9 +19516,9 @@ function _acceptIncomingCall() {
       stream.getTracks().forEach(function(t){ var _snd = _rtcPeer.addTrack(t, stream); if (t.kind === "audio") _boostAudioBitrate(_snd); });
       _rtcPeer.ontrack = function(ev) { _playRemoteStream(ev.streams[0]); };
       _requestCallWakeLock();
-      return _rtcPeer.setRemoteDescription({ type:"offer", sdp:offerSdp });
+      _callStep(callId, "callee_gum"); return _rtcPeer.setRemoteDescription({ type:"offer", sdp:offerSdp });
     })
-    .then(function() { return _rtcPeer.createAnswer(); })
+    .then(function() { _callStep(callId, "callee_offer"); return _rtcPeer.createAnswer(); })
     .then(function(answer) { return _rtcPeer.setLocalDescription(answer); })
     .then(function() { return _waitIceGatheringComplete(_rtcPeer); })
     .then(function() {
@@ -19529,7 +19530,7 @@ function _acceptIncomingCall() {
       _startCallEndWatcher(callId);
     })
     .catch(function(err) {
-      console.error("Erro ao aceitar chamada:", err);
+      console.error("Erro ao aceitar chamada:", err); _callStep(callId, "callee_err", err);
       if (err && err.name === "NotAllowedError") {
         showToast("Microfone bloqueado. Vá em Configurações > Apps > MIMI > Permissões e ative o Microfone.");
       } else {
