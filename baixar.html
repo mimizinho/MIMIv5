@@ -31,47 +31,7 @@ h1{margin:26px 0 6px;font-size:44px;font-weight:800;letter-spacing:2px}
 </head>
 <body>
 <div class="wrap">
-<img class="logo" src="icons/icon-512x512.png" alt="MIMI">
-<h1>MIMI</h1>
-<p class="tag">Conecte-se do seu jeito</p>
-<a class="btn" id="dl" href="https://github.com/mimizinho/MIMIv5/releases/latest/download/MIMI.apk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-5-5m5 5l5-5M5 21h14"/></svg><span id="lbl">Baixar para Android</span></a>
-</div>
-<div class="sheet" id="sheet">
-<h2>Download iniciado</h2>
-<ol>
-<li><b>1</b>Abra o arquivo MIMI.apk</li>
-<li><b>2</b>Toque em Instalar (permita se o Android pedir)</li>
-<li><b>3</b>Abra o MIMI e entre</li>
-</ol>
-<button id="ok">Entendi</button>
-</div>
-<script>
-(function(){
-var dl=document.getElementById("dl"),lbl=document.getElementById("lbl"),sheet=document.getElementById("sheet");
-dl.addEventListener("click",function(){
-lbl.textContent="Baixando...";
-setTimeout(function(){sheet.classList.add("show");lbl.textContent="Baixar de novo";},900);
-});
-document.getElementById("ok").addEventListener("click",function(){sheet.classList.remove("show");});
-if(!window.matchMedia("(prefers-reduced-motion: reduce)").matches){
-for(var i=0;i<9;i++){
-var h=document.createElement("div");h.className="heart";h.textContent="\u2665";
-h.style.left=(Math.random()*92+2)+"%";
-h.style.fontSize=(14+Math.random()*20)+"px";
-h.style.animationDuration=(7+Math.random()*7)+"s";
-h.style.animationDelay=(-Math.random()*10)+"s";
-document.body.appendChild(h);
-}
-}
-})();
-</script>
-</body>
-</html>
-</style>
-</head>
-<body>
-<div class="wrap">
-<img class="logo" src="icons/icon-512x512.png" alt="MIMI">
+<img class="logo" src="icons/icon-192x192.png" alt="MIMI">
 <h1>MIMI</h1>
 <p class="tag">Conecte-se do seu jeito</p>
 <a class="btn" id="dl" href="https://github.com/mimizinho/MIMIv5/releases/latest/download/MIMI.apk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-5-5m5 5l5-5M5 21h14"/></svg><span id="lbl">Baixar para Android</span></a>
