@@ -2,31 +2,108 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#ff6fa5">
 <title>Baixar o MIMI</title>
 <link rel="icon" href="icons/icon-192x192.png">
 <style>
-:root{--bg:#fff5f8;--card:#fff;--border:#ffe0ec;--accent:#ff6fa5;--pink:#ff4d8d;--text:#4a3b45;--sub:#b08a9c}
-@media (prefers-color-scheme:dark){:root{--bg:#1a1020;--card:#251830;--border:#3a2545;--text:#f0e0ea;--sub:#c49ab8}}
-*{box-sizing:border-box}
-body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-.card{width:100%;max-width:360px;background:var(--card);border:1px solid var(--border);border-radius:24px;padding:32px 24px;text-align:center;box-shadow:0 8px 30px rgba(255,111,165,.15)}
-.card img{width:96px;height:96px;border-radius:22px;box-shadow:0 6px 18px rgba(255,77,141,.3)}
-h1{margin:16px 0 4px;font-size:28px}
-p{margin:0 0 24px;color:var(--sub);font-size:15px}
-.btn{display:block;padding:15px;border-radius:16px;background:linear-gradient(135deg,var(--accent),var(--pink));color:#fff;font-weight:700;font-size:17px;text-decoration:none;box-shadow:0 6px 16px rgba(255,77,141,.35)}
-.btn:active{transform:scale(.98)}
-small{display:block;margin-top:18px;color:var(--sub);font-size:12.5px;line-height:1.5}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#fff;background:linear-gradient(160deg,#ff8fb8 0%,#ff4d8d 55%,#c2306f 100%);overflow:hidden}
+.wrap{position:relative;z-index:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;padding-top:calc(24px + env(safe-area-inset-top,0px));padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+.logo{width:116px;height:116px;border-radius:30px;border:4px solid rgba(255,255,255,.7);box-shadow:0 14px 40px rgba(120,10,60,.35);animation:float 4s ease-in-out infinite}
+h1{margin:26px 0 6px;font-size:44px;font-weight:800;letter-spacing:2px}
+.tag{margin:0 0 44px;font-size:17px;opacity:.92}
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;max-width:320px;padding:17px;border-radius:999px;background:#fff;color:#e63b80;font-size:18px;font-weight:800;text-decoration:none;box-shadow:0 10px 28px rgba(120,10,60,.3);transition:transform .15s}
+.btn:active{transform:scale(.96)}
+.btn svg{width:22px;height:22px}
+.heart{position:fixed;bottom:-40px;color:rgba(255,255,255,.4);opacity:0;pointer-events:none;animation:rise linear infinite}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:5;background:#fff;color:#4a3b45;border-radius:28px 28px 0 0;padding:26px 24px calc(24px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px rgba(120,10,60,.35);transform:translateY(105%);transition:transform .4s cubic-bezier(.2,.9,.3,1)}
+.sheet.show{transform:translateY(0)}
+.sheet h2{margin:0 0 12px;font-size:21px}
+.sheet ol{list-style:none;margin:0 0 18px;padding:0}
+.sheet li{display:flex;align-items:center;gap:12px;padding:8px 0;font-size:15px;text-align:left}
+.sheet li b{flex:none;width:28px;height:28px;border-radius:50%;background:#ffe0ec;color:#e63b80;display:flex;align-items:center;justify-content:center;font-size:14px}
+.sheet button{width:100%;padding:14px;border:0;border-radius:999px;background:linear-gradient(135deg,#ff6fa5,#ff4d8d);color:#fff;font-size:16px;font-weight:800}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes rise{0%{transform:translateY(0);opacity:0}15%{opacity:1}100%{transform:translateY(-115vh);opacity:0}}
 </style>
 </head>
 <body>
-<div class="card">
-<img src="icons/icon-192x192.png" alt="MIMI">
+<div class="wrap">
+<img class="logo" src="icons/icon-512x512.png" alt="MIMI">
 <h1>MIMI</h1>
-<p>Baixe o app para Android</p>
-<a class="btn" href="https://github.com/mimizinho/MIMIv5/releases/latest/download/MIMI.apk">Baixar o app</a>
-<small>Depois de baixar, abra o arquivo. Se o Android pedir, permita a instalação deste app.</small>
+<p class="tag">Conecte-se do seu jeito</p>
+<a class="btn" id="dl" href="https://github.com/mimizinho/MIMIv5/releases/latest/download/MIMI.apk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-5-5m5 5l5-5M5 21h14"/></svg><span id="lbl">Baixar para Android</span></a>
 </div>
+<div class="sheet" id="sheet">
+<h2>Download iniciado</h2>
+<ol>
+<li><b>1</b>Abra o arquivo MIMI.apk</li>
+<li><b>2</b>Toque em Instalar (permita se o Android pedir)</li>
+<li><b>3</b>Abra o MIMI e entre</li>
+</ol>
+<button id="ok">Entendi</button>
+</div>
+<script>
+(function(){
+var dl=document.getElementById("dl"),lbl=document.getElementById("lbl"),sheet=document.getElementById("sheet");
+dl.addEventListener("click",function(){
+lbl.textContent="Baixando...";
+setTimeout(function(){sheet.classList.add("show");lbl.textContent="Baixar de novo";},900);
+});
+document.getElementById("ok").addEventListener("click",function(){sheet.classList.remove("show");});
+if(!window.matchMedia("(prefers-reduced-motion: reduce)").matches){
+for(var i=0;i<9;i++){
+var h=document.createElement("div");h.className="heart";h.textContent="\u2665";
+h.style.left=(Math.random()*92+2)+"%";
+h.style.fontSize=(14+Math.random()*20)+"px";
+h.style.animationDuration=(7+Math.random()*7)+"s";
+h.style.animationDelay=(-Math.random()*10)+"s";
+document.body.appendChild(h);
+}
+}
+})();
+</script>
+</body>
+</html>
+</style>
+</head>
+<body>
+<div class="wrap">
+<img class="logo" src="icons/icon-512x512.png" alt="MIMI">
+<h1>MIMI</h1>
+<p class="tag">Conecte-se do seu jeito</p>
+<a class="btn" id="dl" href="https://github.com/mimizinho/MIMIv5/releases/latest/download/MIMI.apk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-5-5m5 5l5-5M5 21h14"/></svg><span id="lbl">Baixar para Android</span></a>
+</div>
+<div class="sheet" id="sheet">
+<h2>Download iniciado</h2>
+<ol>
+<li><b>1</b>Abra o arquivo MIMI.apk</li>
+<li><b>2</b>Toque em Instalar (permita se o Android pedir)</li>
+<li><b>3</b>Abra o MIMI e entre</li>
+</ol>
+<button id="ok">Entendi</button>
+</div>
+<script>
+(function(){
+var dl=document.getElementById("dl"),lbl=document.getElementById("lbl"),sheet=document.getElementById("sheet");
+dl.addEventListener("click",function(){
+lbl.textContent="Baixando...";
+setTimeout(function(){sheet.classList.add("show");lbl.textContent="Baixar de novo";},900);
+});
+document.getElementById("ok").addEventListener("click",function(){sheet.classList.remove("show");});
+if(!window.matchMedia("(prefers-reduced-motion: reduce)").matches){
+for(var i=0;i<9;i++){
+var h=document.createElement("div");h.className="heart";h.textContent="\u2665";
+h.style.left=(Math.random()*92+2)+"%";
+h.style.fontSize=(14+Math.random()*20)+"px";
+h.style.animationDuration=(7+Math.random()*7)+"s";
+h.style.animationDelay=(-Math.random()*10)+"s";
+document.body.appendChild(h);
+}
+}
+})();
+</script>
 </body>
 </html>
