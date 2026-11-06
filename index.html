@@ -4933,7 +4933,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.03.03";
+var APP_VERSION = "2026.11.05.01";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -19108,7 +19108,7 @@ window.mimiHangup = function() { if (activeCall) endCall(false); };
 window.mimiRingAction = function(act, cid, n) { n = n || 0; if (!cid) return; if (incomingCall && incomingCall.callId === cid) { if (act === "accept") _acceptIncomingCall(); else if (act === "decline") _declineIncomingCall(); else render(); return; } if (!_idToken || !ME_ID) { if (n < 100) setTimeout(function(){ window.mimiRingAction(act, cid, n + 1); }, 200); return; } fsGet("calls/" + cid).then(function(d) { if (!d || d.status !== "ringing" || activeCall) return; incomingCall = { callId: cid, callerId: d.callerId, convId: d.convId, offerSdp: d.offerSdp }; if (act === "accept") _acceptIncomingCall(); else if (act === "decline") _declineIncomingCall(); else render(); }).catch(function(){}); };
 var _callWakeLock = null;
 function _requestCallWakeLock() {
-  try { if (window.MIMIApp && MIMIApp.startCall) MIMIApp.startCall(); } catch(e){}
+  try { if (window.MIMIApp && MIMIApp.startCallV) { var _v = !!(activeCall && activeCall.type === "video"); if (activeCall) activeCall.speakerOn = _v; MIMIApp.startCallV(_v); } else if (window.MIMIApp && MIMIApp.startCall) MIMIApp.startCall(); } catch(e){}
   if (!("wakeLock" in navigator)) return; // navegador sem suporte — segue sem, sem quebrar nada
   navigator.wakeLock.request("screen").then(function(lock) {
     _callWakeLock = lock;
@@ -19610,7 +19610,10 @@ function bindCallScreen() {
     // setSinkId troca a saída de áudio pro alto-falante quando o navegador
     // suporta (Chrome desktop/Android recente). Sem suporte, avisamos e a
     // pessoa troca manualmente no controle de volume do sistema.
-    if (_remoteAudioEl && typeof _remoteAudioEl.setSinkId === "function") {
+    if (window.MIMIApp && MIMIApp.setSpeaker) {
+      try { MIMIApp.setSpeaker(activeCall.speakerOn); } catch(e){}
+      render();
+    } else if (_remoteAudioEl && typeof _remoteAudioEl.setSinkId === "function") {
       _remoteAudioEl.setSinkId(activeCall.speakerOn ? "default" : "").catch(function(){});
       render();
     } else {
