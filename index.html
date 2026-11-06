@@ -4933,7 +4933,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.05.02";
+var APP_VERSION = "2026.11.05.03";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -19232,7 +19232,7 @@ function startRealVoiceCall(conv) {
       var data = {
         callerId: ME_ID, calleeId: conv.userId, convId: conv.id, type: "audio",
         offerSdp: _rtcPeer.localDescription.sdp,
-        status: "ringing",
+        status: "ringing", callerVer: APP_VERSION,
         createdAt: new Date().toISOString()
       };
       return fsSet("calls/"+callId, data, false).then(function() {
@@ -19369,7 +19369,7 @@ function _handleIncomingCallCandidate(d) {
   if (_handledCallIds[d._id]) return;
   var age = Date.now() - new Date(d.createdAt||0).getTime();
   if (!(age > -20000 && age < 60000)) return; // ignora chamadas velhas/travadas
-  incomingCall = { callId: d._id, callerId: d.callerId, convId: d.convId, offerSdp: d.offerSdp };
+  incomingCall = { callId: d._id, callerId: d.callerId, convId: d.convId, offerSdp: d.offerSdp }; _callStep(d._id, "callee_ring"); setTimeout(function(){ _callStep(d._id, "callee_ver", APP_VERSION); }, 1500);
   try { if (window.MIMIApp && MIMIApp.showIncomingCall && document.hidden) MIMIApp.showIncomingCall(d._id, (USERS[d.callerId]||{}).name || "Alguém"); } catch(e){}
   backgroundRender();
 }
