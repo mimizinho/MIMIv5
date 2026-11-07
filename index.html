@@ -2964,7 +2964,7 @@ function _postEngagementScore(p) {
   var engagement = _postRawEngagement(p);
   // Mesmo boost de conteúdo novo das Vibes — resolve o mesmo problema
   // original (post recém-publicado, sem tempo de curtida, afundando).
-  var newBoost = ageHours < 2 ? 50 : (ageHours < 6 ? 20 : 0);
+  var newBoost = ageHours < 2 ? 50 : (ageHours < 6 ? 20 : (ageHours < 24 ? 10 : 0));
   return engagement * decay + newBoost;
 }
 
@@ -4933,7 +4933,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.05.05";
+var APP_VERSION = "2026.11.07.01";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
