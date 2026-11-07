@@ -4933,7 +4933,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.05.04";
+var APP_VERSION = "2026.11.05.05";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -11310,6 +11310,27 @@ var _callDocChannel = null;         // canal Realtime do doc da chamada ativa
 var _incomingCallChannel = null;    // canal Realtime esperando chamadas recebidas
 var _callRingTimeout = null;        // timeout de "sem resposta" pra quem está ligando
 var _handledCallIds = {};           // callIds já tratados (evita reabrir chamada recusada/encerrada)
+// TURN gratuito (Metered Open Relay) via Worker da Cloudflare: sem ele o áudio não passa quando a rota direta falha
+var TURN_API = "https://mimi-turn.franciscoviei123.workers.dev";
+function _loadTurn() {
+  try {
+    fetch(TURN_API, { cache: "no-store" }).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){
+      var l = Array.isArray(j) ? j : (j && j.iceServers);
+      if (!l || !l.length) return;
+      var s = [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" }];
+      l.forEach(function(x){
+        var u = (Array.isArray(x.urls) ? x.urls : [x.urls]).filter(function(a){ return !/:53(\?|$)/.test(a); });
+        if (!u.length) return;
+        var o = { urls: u }; if (x.username) o.username = x.username; if (x.credential) o.credential = x.credential;
+        s.push(o);
+      });
+      RTC_CONFIG.iceServers = s;
+    }).catch(function(){});
+  } catch(e){}
+}
+_loadTurn();
+setInterval(_loadTurn, 900000);
+
 var RTC_CONFIG = { iceServers: [
   { urls: "stun:stun.l.google.com:19302" },
   { urls: "stun:stun1.l.google.com:19302" }
@@ -19218,7 +19239,7 @@ function startRealVoiceCall(conv) {
       if (activeCall && activeCall.muted) {
         stream.getAudioTracks().forEach(function(t){ t.enabled = false; });
       }
-      _rtcPeer = new RTCPeerConnection(RTC_CONFIG);
+      _rtcPeer = new RTCPeerConnection(RTC_CONFIG); _loadTurn();
       _watchCallConnection(_rtcPeer);
       stream.getTracks().forEach(function(t){ var _snd = _rtcPeer.addTrack(t, stream); if (t.kind === "audio") _boostAudioBitrate(_snd); });
       _rtcPeer.ontrack = function(ev) { _playRemoteStream(ev.streams[0]); };
@@ -19511,7 +19532,7 @@ function _acceptIncomingCall() {
       if (activeCall && activeCall.muted) {
         stream.getAudioTracks().forEach(function(t){ t.enabled = false; });
       }
-      _rtcPeer = new RTCPeerConnection(RTC_CONFIG);
+      _rtcPeer = new RTCPeerConnection(RTC_CONFIG); _loadTurn();
       _watchCallConnection(_rtcPeer);
       stream.getTracks().forEach(function(t){ var _snd = _rtcPeer.addTrack(t, stream); if (t.kind === "audio") _boostAudioBitrate(_snd); });
       _rtcPeer.ontrack = function(ev) { _playRemoteStream(ev.streams[0]); };
