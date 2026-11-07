@@ -1691,6 +1691,9 @@ body.theme-dark .np .np-d,body.theme-purple .np .np-d,body.theme-dark .np [data-
   .ep { padding-top:6px; }
   .ep .edit-cover-preview { height:112px; border-radius:20px; margin-bottom:0; }
   .ep .edit-cover-btn { inset:auto; right:10px; bottom:10px; background:#fff; color:#B83E6C; border-radius:20px; padding:6px 12px; font-size:12.5px; opacity:1; }
+  .ep-id { pointer-events:none; }
+  .ep-av { pointer-events:auto; }
+  .ep .edit-cover-btn { z-index:3; }
   .ep-id { display:flex; align-items:flex-end; gap:14px; margin:-40px 6px 14px; position:relative; z-index:2; }
   .ep-av { position:relative; flex:none; border-radius:50%; box-shadow:0 0 0 4px var(--surface); background:var(--surface); }
   .ep-cam { position:absolute; right:-2px; bottom:2px; width:30px; height:30px; padding:0; border-radius:50%; background:var(--accent); border:3px solid var(--surface); display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:5; }
@@ -4933,7 +4936,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.07.01";
+var APP_VERSION = "2026.11.07.02";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
