@@ -4950,7 +4950,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.08.08";
+var APP_VERSION = "2026.11.08.09";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -15957,17 +15957,26 @@ var TRANSCRIBE_URL = "https://mimi-transcrever.franciscoviei123.workers.dev";
     ".tr-btn{border:0;border-radius:999px;padding:4px 12px;font-size:11px;font-weight:600;cursor:pointer;background:#fff0f6;color:var(--accent);font-family:inherit;}" +
     ".tr-me .tr-btn{background:rgba(255,255,255,.25);color:#fff;}" +
     ".tr-btn:disabled{opacity:.6;}" +
+    ".tr-btn{display:inline-flex;align-items:center;gap:6px;}" +
+    ".tr-foot{display:flex;align-items:center;gap:5px;margin-top:6px;font-size:11px;opacity:.8;}" +
     ".tr-btn{pointer-events:auto;position:relative;z-index:2;touch-action:manipulation;}" +
     ".tr-text{font-size:13px;line-height:1.35;white-space:pre-wrap;word-break:break-word;opacity:.95;}";
   document.head.appendChild(st);
 })();
 function _trGet(id) { try { return localStorage.getItem("mimi_tr_" + id) || ""; } catch (e) { return ""; } }
 function _trSet(id, t) { try { localStorage.setItem("mimi_tr_" + id, t); } catch (e) {} }
+var _TR_CROWN = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>';
+var _TR_LOCK = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+function _trPlus() { try { return !!isSubscriptionActive(ME_obj()); } catch (e) { return false; } }
+function _trTextHtml(t) {
+  return '<div class="tr-text">' + esc(t) + '</div><div class="tr-foot">' + _TR_CROWN + 'Transcrito com MIMI Plus</div>';
+}
 function _trHtml(m) {
-  var t = _trGet(m.id);
+  var plus = _trPlus();
+  var t = plus ? _trGet(m.id) : "";
   return '<div class="tr-wrap' + (m.me ? ' tr-me' : '') + '" data-tr-wrap="' + m.id + '">' +
-    (t ? '<div class="tr-text">' + esc(t) + '</div>'
-       : '<button class="tr-btn" data-tr-btn="' + m.id + '">Transcrever</button>') +
+    (t ? _trTextHtml(t)
+       : '<button class="tr-btn" data-tr-btn="' + m.id + '">' + (plus ? _TR_CROWN : _TR_LOCK) + 'Transcrever</button>') +
   '</div>';
 }
 function _trGetUrl(audioEl) {
@@ -15985,6 +15994,17 @@ function _trRun(btn) {
   if (!btn || btn.disabled) return;
   if (btn._trAt && Date.now() - btn._trAt < 1500) return;
   btn._trAt = Date.now();
+  if (!_trPlus()) {
+    state.paywallDialog = {
+      icon: "spark",
+      title: "Recurso exclusivo MIMI Plus", chips: ["Áudios"],
+      text: "Transcrever áudios em texto é um benefício de assinante. Assine o MIMI Plus e leia suas mensagens de voz sem precisar ouvir.",
+      confirmLabel: "Conhecer o MIMI Plus",
+      onConfirm: function() { state.subsOpen = true; }
+    };
+    render();
+    return;
+  }
   var id = btn.getAttribute("data-tr-btn");
   var audioEl = document.querySelector('[data-audio-el="' + id + '"]');
   if (!audioEl) { btn.textContent = "Erro: sem audio"; return; }
@@ -16004,7 +16024,7 @@ function _trRun(btn) {
       var t = d.text.trim();
       if (t) _trSet(id, t);
       var w = document.querySelector('[data-tr-wrap="' + id + '"]');
-      if (w) w.innerHTML = '<div class="tr-text">' + esc(t || "Sem fala detectada") + '</div>';
+      if (w) w.innerHTML = _trTextHtml(t || "Sem fala detectada");
     })
     .catch(function(err) {
       var b = document.querySelector('[data-tr-btn="' + id + '"]');
