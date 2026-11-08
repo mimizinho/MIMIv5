@@ -563,6 +563,12 @@
   .convo-action-menu-item:active { background:var(--surface); }
   .convo-action-menu-item.convo-action-menu-danger { color:#e0507a; font-weight:600; }
   .convo-action-menu-item svg { flex-shrink:0; color:inherit; }
+.chat-av-dot{position:absolute;right:-1px;bottom:-1px;width:12px;height:12px;border-radius:50%;background:#c9b3be;border:2px solid #fff;box-sizing:border-box}
+.chat-av-dot.on{background:#2fbf71}
+.chat-status{font-size:11px;display:flex;align-items:center;gap:5px;opacity:.8}
+.chat-st-dot{width:7px;height:7px;border-radius:50%;background:#c9b3be;flex:none}
+.chat-status.on{color:#1f8f55;opacity:1}
+.chat-status.on .chat-st-dot{background:#2fbf71}
 
   .chat-header { display:flex; align-items:center; gap:10px; padding:12px 16px; border-bottom:1px solid var(--border); background:var(--bg); position:sticky; top:0; z-index:5; }
   .chat-msgs { flex:1; overflow:auto; padding:16px 14px; display:flex; flex-direction:column; gap:12px; }
@@ -4978,7 +4984,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.08.14";
+var APP_VERSION = "2026.11.08.15";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -9918,7 +9924,8 @@ function patchOnlineStatusDom(otherId, online) {
     var conv = CONVOS.find(function(c){ return c.id === state.activeConvoId; });
     if (conv && conv.userId === otherId) {
       var indicator = appEl.querySelector("[data-online-indicator]");
-      if (indicator) indicator.textContent = online ? "Online agora" : "Offline";
+      if (indicator) { indicator.classList.toggle("on", !!online); var _t = indicator.querySelector("[data-online-text]"); if (_t) _t.textContent = online ? "Online" : "Offline"; }
+      var _dot = appEl.querySelector("[data-av-dot]"); if (_dot) _dot.classList.toggle("on", !!online);
     }
   }
   return true;
@@ -16179,9 +16186,9 @@ function renderChatView(conv) {
   var html = '<div class="chat-wrap'+_themedClass+'" data-chat-theme="'+esc(_theme.key)+'" style="display:flex;flex-direction:column;height:100vh;'+_themeVars+'">' +
     '<div class="chat-header">' +
       '<button class="icon-btn" data-back-msgs>'+icoSvg("back",22)+'</button>' +
-      '<div data-open-author="'+conv.userId+'" style="cursor:pointer;">'+avatarHtml(u.avatar, 38, conv.online, false, false, null, null, getUserFrame(u))+'</div>' +
+      '<div data-open-author="'+conv.userId+'" style="cursor:pointer;position:relative;">'+avatarHtml(u.avatar, 38, conv.online, false, false, null, null, getUserFrame(u))+'<span class="chat-av-dot'+(conv.online?' on':'')+'" data-av-dot></span></div>' +
       '<div class="grow" data-open-author="'+conv.userId+'" style="cursor:pointer;"><div style="font-weight:700;font-size:14px;">'+esc(u.name)+'</div>' +
-      '<div style="font-size:11px;opacity:.75;" data-online-indicator>'+(conv.online?"Online agora":"Offline")+'<span data-rt-indicator style="margin-left:6px;"></span></div></div>' +
+      '<div class="chat-status'+(conv.online?' on':'')+'" data-online-indicator><span class="chat-st-dot"></span><span data-online-text>'+(conv.online?"Online":"Offline")+'</span><span data-rt-indicator style="display:none;"></span></div></div>' +
       '<button class="icon-btn chat-theme-btn chat-hbtn" data-open-chat-theme title="Tema da conversa"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 2.8a9.2 9.2 0 100 18.4c1.3 0 2.1-1.1 1.7-2.2-.4-1.1.4-2.3 1.6-2.3h2.1a3.6 3.6 0 003.6-3.6C21 6.5 17 2.8 12 2.8z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7.9" cy="11.2" r="1.45" fill="#ff5fa8"/><circle cx="10.9" cy="7.1" r="1.45" fill="#ff9f43"/><circle cx="15.3" cy="7.3" r="1.45" fill="#2fc4e0"/><circle cx="17.1" cy="11.4" r="1.45" fill="#8a5cf2"/></svg></button>' +
       '<button class="icon-btn chat-hbtn" data-call="audio"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.02-.24c1.12.37 2.33.57 3.57.57a1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1.02l-2.2 2.2z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
       '<button class="icon-btn chat-hbtn" data-call="video"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="2" y="6" width="13.5" height="12" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 10.4l3.7-2.3a.9.9 0 011.3.8v6.2a.9.9 0 01-1.3.8L17 13.6z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
