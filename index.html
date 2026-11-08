@@ -4962,7 +4962,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.08.10";
+var APP_VERSION = "2026.11.08.11";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -16671,7 +16671,7 @@ function bindMsgsPage() {
     var tabs = STICKER_PACKS.map(function(p) {
       var locked = stickerPackLocked(p);
       return '<button class="sticker-tab'+(p.id===_stickerActivePack?" active":"")+(locked?" locked":"")+'" data-sticker-tab="'+esc(p.id)+'">' +
-        (locked ? icoSvg("lock",12,"currentColor",true) : '') + '<span>'+esc(p.name)+'</span>' +
+        (locked ? icoSvg("lock",12,"currentColor",true) : '') + '<span>'+esc(p.id==="mimi_exclusiva"?"Plus":p.name)+'</span>' +
       '</button>';
     }).join("");
     var pack = STICKER_PACKS.find(function(p){ return p.id === _stickerActivePack; }) || STICKER_PACKS[0];
