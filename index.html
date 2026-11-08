@@ -4984,7 +4984,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.08.17";
+var APP_VERSION = "2026.11.08.18";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -27751,7 +27751,7 @@ setTimeout(function () { BirthdayNotifier.init(); }, 2000);
     function ppCard(k) {
       if (k === 'none') return '<button class="pp-c" data-pp-fr="none"><div class="pp-th"><div class="pp-thc">' + ic('close', 14) + '</div></div><span class="pp-n">Nenhuma</span><span class="pp-d">&nbsp;</span></button>';
       var f = H.frames[k], st = ppFst(k);
-      return '<button class="pp-c' + (st.off ? ' off' : '') + '" data-pp-fr="' + k + '"' + (st.off ? ' data-pp-off="' + st.off + '"' : '') + '><div class="pp-th"><div class="pp-thc" style="background:#7b2a4a"></div>' + frameBox(k, 36) + (st.off ? '<span class="pp-lk">' + PP_LK + '</span>' : '') + '</div><span class="pp-n">' + esc(f.label) + '</span><span class="pp-d' + (st.t === 'live' ? ' live' : '') + '">' + (st.t === 'perm' ? PP_INF : PP_CLK) + st.txt + '</span></button>';
+      return '<button class="pp-c' + (st.off ? ' off' : '') + '" data-pp-fr="' + k + '"' + (st.off ? ' data-pp-off="' + st.off + '"' : '') + '><div class="pp-th">' + frameBox(k, 36) + (st.off ? '<span class="pp-lk">' + PP_LK + '</span>' : '') + '</div><span class="pp-n">' + esc(f.label) + '</span><span class="pp-d' + (st.t === 'live' ? ' live' : '') + '">' + (st.t === 'perm' ? PP_INF : PP_CLK) + st.txt + '</span></button>';
     }
     function build() {
       var perm = ['none'], live = [], other = [];
