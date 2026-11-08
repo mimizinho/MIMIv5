@@ -4950,7 +4950,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.08.05";
+var APP_VERSION = "2026.11.08.06";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -15933,12 +15933,12 @@ function renderChatBubbleContent(m) {
     var isB2Audio = typeof m.src === "string" && m.src.indexOf("convos/") === 0;
     var audioSrcAttr = isB2Audio ? "" : ' src="'+esc(m.src)+'"';
     var audioB2Attr = isB2Audio ? ' data-audio-b2path="'+esc(m.src)+'"' : "";
-    return '<div class="audio-msg">' +
+    return '<div class="audio-tr-wrap"><div class="audio-msg">' +
       '<button class="audio-play-btn" data-play-audio="'+m.id+'" style="background:'+(m.me?'rgba(255,255,255,.25)':'#fff0f6')+';color:'+(m.me?'#fff':'var(--accent)')+';">'+icoSvg("play",14,m.me?"#fff":C.accent,true)+'</button>' +
       '<div class="audio-wave" data-audio-wave="'+m.id+'" data-bar-color="'+(m.me?'rgba(255,255,255,.9)':'var(--accent)')+'">'+bars+'</div>' +
       '<span data-audio-time="'+m.id+'" data-full-duration="'+mm+':'+ss+'" style="font-size:11px;min-width:28px;text-align:right;color:'+(m.me?'rgba(255,255,255,.8)':'var(--muted)')+';">'+mm+':'+ss+'</span>' +
       '<audio data-audio-el="'+m.id+'"'+audioSrcAttr+audioB2Attr+' preload="auto"></audio>' +
-    '</div>';
+    '</div>' + _trHtml(m) + '</div>';
   }
   return esc(m.text);
 }
@@ -15948,6 +15948,71 @@ function renderChatBubbleContent(m) {
 // meio apagado), "sent" (confirmada, dois tiques cinza) ou "read"
 // (o outro utilizador já viu, dois tiques na cor de destaque — igual
 // à marca de "visto" do WhatsApp).
+// ── TRANSCRIÇÃO DE ÁUDIO (Whisper via Worker mimi-transcrever) ──
+var TRANSCRIBE_URL = "https://mimi-trans....franciscoviei123.workers.dev";
+(function() {
+  var st = document.createElement("style");
+  st.textContent =
+    ".tr-wrap{margin-top:6px;}" +
+    ".tr-btn{border:0;border-radius:999px;padding:4px 12px;font-size:11px;font-weight:600;cursor:pointer;background:#fff0f6;color:var(--accent);font-family:inherit;}" +
+    ".tr-me .tr-btn{background:rgba(255,255,255,.25);color:#fff;}" +
+    ".tr-btn:disabled{opacity:.6;}" +
+    ".tr-text{font-size:13px;line-height:1.35;white-space:pre-wrap;word-break:break-word;opacity:.95;}";
+  document.head.appendChild(st);
+})();
+function _trGet(id) { try { return localStorage.getItem("mimi_tr_" + id) || ""; } catch (e) { return ""; } }
+function _trSet(id, t) { try { localStorage.setItem("mimi_tr_" + id, t); } catch (e) {} }
+function _trHtml(m) {
+  var t = _trGet(m.id);
+  return '<div class="tr-wrap' + (m.me ? ' tr-me' : '') + '" data-tr-wrap="' + m.id + '">' +
+    (t ? '<div class="tr-text">' + esc(t) + '</div>'
+       : '<button class="tr-btn" data-tr-btn="' + m.id + '">Transcrever</button>') +
+  '</div>';
+}
+function _trGetUrl(audioEl) {
+  var p = audioEl.getAttribute("data-audio-b2path");
+  if (p) {
+    var ce = window._audioUrlCache && window._audioUrlCache[p];
+    if (ce && Date.now() - ce.t < 50 * 60 * 1000) return ce.p;
+    return AudioGateway.getPlaybackUrl(p, state.activeConvoId);
+  }
+  var s = audioEl.getAttribute("src") || "";
+  if (/^https:/.test(s)) return Promise.resolve(s);
+  return Promise.reject(new Error("sem url"));
+}
+document.addEventListener("click", function(e) {
+  var btn = e.target && e.target.closest ? e.target.closest("[data-tr-btn]") : null;
+  if (!btn) return;
+  e.stopPropagation();
+  e.preventDefault();
+  if (btn.disabled) return;
+  var id = btn.getAttribute("data-tr-btn");
+  var audioEl = document.querySelector('[data-audio-el="' + id + '"]');
+  if (!audioEl) return;
+  btn.disabled = true;
+  btn.textContent = "Transcrevendo...";
+  _trGetUrl(audioEl)
+    .then(function(url) {
+      return fetch(TRANSCRIBE_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: url })
+      });
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (!d || d.error || typeof d.text !== "string") throw new Error((d && d.error) || "falha");
+      var t = d.text.trim();
+      if (t) _trSet(id, t);
+      var w = document.querySelector('[data-tr-wrap="' + id + '"]');
+      if (w) w.innerHTML = '<div class="tr-text">' + esc(t || "Sem fala detectada") + '</div>';
+    })
+    .catch(function() {
+      var b = document.querySelector('[data-tr-btn="' + id + '"]');
+      if (b) { b.disabled = false; b.textContent = "Tentar de novo"; }
+    });
+}, true);
+
 function renderMsgStatusIcon(status) {
   if (status === "sending") {
     return '<span class="msg-ticks" title="Enviando..." style="display:inline-flex;vertical-align:middle;margin-left:4px;opacity:.55;">' +
