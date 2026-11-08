@@ -1089,10 +1089,10 @@
   .chat-send { background:linear-gradient(135deg,var(--accent),var(--accentL)); border:none; border-radius:50%; width:44px; height:44px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 4px 16px rgba(255,111,165,.4); transition:transform .15s; }
   .chat-send:active { transform:scale(.92); }
   .chat-tool-btn { background:none; border:none; cursor:pointer; color:var(--accent); padding:6px; display:flex; align-items:center; flex-shrink:0; }
-  .chat-input-hint { display:flex; align-items:center; justify-content:center; gap:5px; background:none; border:none; color:var(--accent); font-size:12px; font-weight:600; padding:6px 0 2px; cursor:pointer; width:100%; }
-  .chat-attach-menu { display:flex; gap:10px; padding:10px 2px 2px; overflow-x:auto; }
+  .chat-input-hint { display:flex; align-items:center; justify-content:center; gap:5px; width:max-content; margin:8px auto 0; padding:5px 12px 5px 9px; border:none; border-radius:14px; background:rgba(255,111,165,.14); color:var(--accent); font-size:12.5px; font-weight:700; cursor:pointer; } .chat-input-hint svg { transition:transform .2s; } .chat-input-hint.open svg { transform:rotate(180deg); }
+  .chat-attach-menu { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:14px 2px 4px; }
   .chat-attach-menu.hidden { display:none; }
-  .chat-attach-opt { display:flex; flex-direction:column; align-items:center; gap:5px; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:10px 18px; color:var(--accent); font-size:11px; font-weight:600; cursor:pointer; flex-shrink:0; }
+  .chat-attach-opt { display:flex; flex-direction:column; align-items:center; gap:6px; background:var(--surface); border:1.5px solid var(--border); border-radius:22px; padding:14px 6px; color:var(--accent); font-size:13.5px; font-weight:700; cursor:pointer; } .chat-attach-opt svg { width:26px; height:26px; } .chat-attach-opt:active { transform:scale(.95); }
 
   /* 🎮 MODAL "Jogos" — escolher entre Labirinto e Jogo da velha */
   .games-modal { position:fixed; inset:0; background:rgba(30,10,20,.55); backdrop-filter:blur(3px);
@@ -4977,7 +4977,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.08.20";
+var APP_VERSION = "2026.11.08.21";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -16229,7 +16229,7 @@ function renderChatView(conv) {
         '</div>' +
         '<button class="chat-send" data-send-msg>'+icoSvg("send",18,"#fff")+'</button>' +
       '</div>' +
-      '<button class="chat-input-hint" data-chat-more-toggle type="button">'+icoSvg("chevronUp",14,C.accent)+'<span>Deslize para cima para mais opções</span></button>' +
+      '<button class="chat-input-hint" data-chat-more-toggle type="button">'+icoSvg("chevronUp",14,C.accent)+'<span>Mais opções</span></button>' +
       '<div class="chat-attach-menu hidden" data-chat-attach-menu>' +
         '<button class="chat-attach-opt" data-chat-media="image">'+icoSvg("img",20,C.accent)+'<span>Foto</span></button>' +
         '<button class="chat-attach-opt" data-chat-media="video">'+icoSvg("video",20,C.accent)+'<span>Vídeo</span></button>' +
@@ -16489,6 +16489,8 @@ function bindMsgsPage() {
   function toggleAttachMenu() {
     if (!attachMenu) return;
     attachMenu.classList.toggle("hidden");
+    var _mt = appEl.querySelector("[data-chat-more-toggle]");
+    if (_mt) { var _op = !attachMenu.classList.contains("hidden"); _mt.classList.toggle("open", _op); var _sp = _mt.querySelector("span"); if (_sp) _sp.textContent = _op ? "Fechar" : "Mais opções"; }
     if (attachMenu.classList.contains("hidden")) _flushPendingBackgroundRender();
   }
   var plusBtn = appEl.querySelector("[data-chat-plus]");
@@ -16501,6 +16503,8 @@ function bindMsgsPage() {
     btn.addEventListener("click", function() {
       var kind = btn.getAttribute("data-chat-media");
       if (attachMenu) attachMenu.classList.add("hidden");
+      var _mt2 = appEl.querySelector("[data-chat-more-toggle]");
+      if (_mt2) { _mt2.classList.remove("open"); var _sp2 = _mt2.querySelector("span"); if (_sp2) _sp2.textContent = "Mais opções"; }
       _flushPendingBackgroundRender();
 
       if (kind === "image") {
