@@ -4984,7 +4984,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.08.15";
+var APP_VERSION = "2026.11.08.16";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -27611,6 +27611,33 @@ setTimeout(function () { BirthdayNotifier.init(); }, 2000);
     '.pp-th{position:relative;width:72px;height:72px;display:grid;place-items:center}',
     '.pp-thc{width:36px;height:36px;border-radius:50%;background:#3a2a30;display:grid;place-items:center;color:var(--mu)}',
     '.pp-o.on .pp-thc{outline:2px solid var(--ro);outline-offset:3px}',
+    '.pp-g{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}',
+    '.pp-g4{grid-template-columns:repeat(4,1fr)}',
+    '.pp-c{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 2px 9px;background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.08);border-radius:16px;color:var(--mu);font:inherit;font-size:11px;text-align:center}',
+    '.pp-c.on{border-color:var(--ro);color:#f7eef0;background:rgba(255,255,255,.07)}',
+    '.pp-c.off .pp-th{opacity:.45}',
+    '.pp-n{font-size:12px;font-weight:600;color:#f7eef0}',
+    '.pp-d{display:flex;align-items:center;gap:4px;font-size:10.5px}',
+    '.pp-d.live{color:var(--ro)}',
+    '.pp-lk{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.6);display:grid;place-items:center;color:#fff}',
+    '.pp-evb{background:linear-gradient(135deg,rgba(255,111,165,.14),rgba(255,179,107,.08));border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:12px 14px;margin:6px 0 10px}',
+    '.pp-evb div{display:flex;justify-content:space-between;font-weight:700;font-size:14px;color:#f7eef0}',
+    '.pp-evb small{color:var(--mu);font-size:12px}',
+    '.pp-evb i{display:block;height:5px;border-radius:5px;background:rgba(255,255,255,.1);margin-top:8px;overflow:hidden}',
+    '.pp-evb i b{display:block;height:100%;background:linear-gradient(90deg,#ff6fa5,#ffb36b)}',
+    '.pp-tabs{display:flex;gap:16px;border-bottom:1px solid rgba(255,255,255,.08);margin:10px 2px 0}',
+    '.pp-tb{background:none;border:0;padding:8px 0 10px;font-size:13px;color:var(--mu);border-bottom:2px solid transparent;margin-bottom:-1px}',
+    '.pp-tb.on{color:#f7eef0;font-weight:600;border-bottom-color:var(--ro)}',
+    '.pp-gl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}',
+    '.pp-fc{position:relative;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:8px 4px 9px;display:flex;flex-direction:column;align-items:center;color:#f7eef0;font-size:12px;text-align:center}',
+    '.pp-fc.on{border-color:var(--ro);background:rgba(255,255,255,.06)}',
+    '.pp-fc.off{opacity:.42}',
+    '.pp-fn{font-weight:600;margin-top:2px;line-height:1.2}',
+    '.pp-fd{font-size:11px;color:var(--mu);margin-top:2px}',
+    '.pp-fd.ev{color:#f5c26b}',
+    '.pp-ck{position:absolute;top:6px;right:6px;width:18px;height:18px;border-radius:50%;background:var(--ro);color:#2a0f18;display:grid;place-items:center;font-size:11px}',
+    '.pp-cta{width:100%;margin-top:14px;height:46px;border-radius:14px;border:0;background:var(--ro);color:#2a0f18;font-size:15px;font-weight:600}',
+    '.pp-cta.done{background:rgba(255,255,255,.08);color:#cdb8bf}',
     '.pp-gr2{display:grid;grid-template-columns:1fr 1fr;gap:10px}',
     '.pp-tile{background:var(--cd);border:1px solid var(--ln);border-radius:16px;padding:14px;font-size:13px;display:grid;gap:8px}',
     '.pp-tile svg{color:var(--ro)}.pp-tile em{font-style:normal;color:var(--mu);font-size:11px}',
@@ -27674,6 +27701,27 @@ setTimeout(function () { BirthdayNotifier.init(); }, 2000);
     return h;
   }
 
+  // Eventos de molduras: moldura sem evento = permanente. Para novo evento, adicione aqui (match = prefixo da chave).
+  var PP_FRAME_EVENTS = [
+    { label: 'Halloween', s: '2026-10-10', e: '2026-11-02', match: /^hw_/ },
+    { label: 'Natal', s: '2026-11-01', e: '2026-12-31', match: /^(xmas|natal)_/ },
+    { label: 'Ano Novo', s: '2026-12-26', e: '2027-01-05', match: /^(ny|anonovo)_/ },
+    { label: 'Pascoa', s: '2027-03-20', e: '2027-04-10', match: /^(pascoa|easter)_/ }
+  ];
+  var PP_INF = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 12c-2-3-3.5-4.5-5.5-4.5a4.5 4.5 0 000 9c2 0 3.5-1.5 5.5-4.5zm0 0c2 3 3.5 4.5 5.5 4.5a4.5 4.5 0 000-9c-2 0-3.5 1.5-5.5 4.5z"/></svg>';
+  var PP_CLK = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+  var PP_LK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>';
+  function ppFst(k) {
+    var e = null, j;
+    for (j = 0; j < PP_FRAME_EVENTS.length; j++) { if (PP_FRAME_EVENTS[j].match.test(k)) { e = PP_FRAME_EVENTS[j]; break; } }
+    if (!e) return { t: 'perm', txt: 'Permanente' };
+    var now = new Date(), a = new Date(e.s + 'T00:00:00'), z = new Date(e.e + 'T23:59:59');
+    var dd = function (d) { return ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2); };
+    if (now < a) return { t: 'soon', e: e, txt: 'Em breve', off: 'Disponivel a partir de ' + dd(a) };
+    if (now > z) return { t: 'end', e: e, txt: 'Encerrada', off: 'Evento encerrado' };
+    return { t: 'live', e: e, txt: 'Ate ' + dd(z), days: Math.ceil((z - now) / 864e5) };
+  }
+
   function bindActive() {
     var mn = root.querySelector('#pp-mn'), mb = root.querySelector('#pp-mb'), built = false;
     function frameBox(key, base) {
@@ -27698,22 +27746,38 @@ setTimeout(function () { BirthdayNotifier.init(); }, 2000);
       mb.querySelectorAll('[data-pp-fr]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-pp-fr') === fk); });
       mb.querySelectorAll('[data-pp-rg]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-pp-rg') === rk); });
     }
+    function ppCard(k) {
+      if (k === 'none') return '<button class="pp-c" data-pp-fr="none"><div class="pp-th"><div class="pp-thc">' + ic('close', 14) + '</div></div><span class="pp-n">Nenhuma</span><span class="pp-d">&nbsp;</span></button>';
+      var f = H.frames[k], st = ppFst(k);
+      return '<button class="pp-c' + (st.off ? ' off' : '') + '" data-pp-fr="' + k + '"' + (st.off ? ' data-pp-off="' + st.off + '"' : '') + '><div class="pp-th"><div class="pp-thc" style="background:#7b2a4a"></div>' + frameBox(k, 36) + (st.off ? '<span class="pp-lk">' + PP_LK + '</span>' : '') + '</div><span class="pp-n">' + esc(f.label) + '</span><span class="pp-d' + (st.t === 'live' ? ' live' : '') + '">' + (st.t === 'perm' ? PP_INF : PP_CLK) + st.txt + '</span></button>';
+    }
     function build() {
-      var h = '<div class="pp-mln"></div><div class="pp-lb">Moldura da foto</div><div class="pp-op"><button class="pp-o" data-pp-fr="none"><div class="pp-th"><div class="pp-thc">' + ic('close', 14) + '</div></div>Nenhuma</button>';
-      Object.keys(H.frames).forEach(function (k) {
-        h += '<button class="pp-o" data-pp-fr="' + k + '"><div class="pp-th"><div class="pp-thc" style="background:#7b2a4a"></div>' + frameBox(k, 36) + '</div>' + esc(H.frames[k].label) + '</button>';
-      });
-      h += '</div><div class="pp-lb">Brilho</div><div class="pp-op">';
+      var perm = ['none'], live = [], other = [];
+      Object.keys(H.frames).forEach(function (k) { var st = ppFst(k); (st.t === 'perm' ? perm : st.t === 'live' ? live : other).push(k); });
+      var h = '<div class="pp-mln"></div><div class="pp-lb">Permanentes</div><div class="pp-g">' + perm.map(ppCard).join('') + '</div>';
+      if (live.length) {
+        h += '<div class="pp-lb">Evento atual</div>';
+        var seen = {};
+        live.forEach(function (k) {
+          var st = ppFst(k), e = st.e; if (seen[e.label]) return; seen[e.label] = 1;
+          var a = new Date(e.s + 'T00:00:00'), z = new Date(e.e + 'T23:59:59');
+          var p = Math.max(0, Math.min(100, Math.round(100 * (new Date() - a) / (z - a))));
+          h += '<div class="pp-evb"><div><span>' + esc(e.label) + '</span><span>' + st.days + (st.days === 1 ? ' dia' : ' dias') + '</span></div><small>' + st.txt.replace('Ate', 'Disponivel ate') + '</small><i><b style="width:' + p + '%"></b></i></div>';
+        });
+        h += '<div class="pp-g">' + live.map(ppCard).join('') + '</div>';
+      }
+      if (other.length) h += '<div class="pp-lb">Outros eventos</div><div class="pp-g">' + other.map(ppCard).join('') + '</div>';
+      h += '<div class="pp-lb">Brilho</div><div class="pp-g pp-g4">';
       Object.keys(H.ringThemes).forEach(function (k) {
         var t = H.ringThemes[k];
-        h += '<button class="pp-o" data-pp-rg="' + k + '"><div class="pp-th"><div class="pp-thc" style="' + (t.colors ? 'background:conic-gradient(' + t.colors + ')' : '') + '">' + (t.colors ? '' : ic('close', 14)) + '</div></div>' + esc(t.label) + '</button>';
+        h += '<button class="pp-c" data-pp-rg="' + k + '"><div class="pp-th" style="width:56px;height:56px"><div class="pp-thc" style="width:44px;height:44px;' + (t.colors ? 'background:conic-gradient(' + t.colors + ')' : '') + '">' + (t.colors ? '' : ic('close', 14)) + '</div></div><span class="pp-n">' + esc(t.label) + '</span></button>';
       });
       mb.innerHTML = h + '</div>';
       built = true; paint();
     }
     mn.addEventListener('toggle', function () { if (mn.open && !built) build(); });
     mb.addEventListener('click', function (e) {
-      var b = e.target.closest('[data-pp-fr],[data-pp-rg]'); if (!b) return;
+      var b = e.target.closest('[data-pp-fr],[data-pp-rg]'); if (!b) return; if (b.hasAttribute('data-pp-off')) { toast(b.getAttribute('data-pp-off')); return; }
       if (b.hasAttribute('data-pp-fr')) { H.setFrame(b.getAttribute('data-pp-fr')); toast('Moldura atualizada'); }
       else { H.setRing(b.getAttribute('data-pp-rg')); toast('Brilho atualizado'); }
       paint();
