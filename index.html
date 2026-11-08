@@ -4950,7 +4950,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.08.06";
+var APP_VERSION = "2026.11.08.07";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -15957,6 +15957,7 @@ var TRANSCRIBE_URL = "https://mimi-trans....franciscoviei123.workers.dev";
     ".tr-btn{border:0;border-radius:999px;padding:4px 12px;font-size:11px;font-weight:600;cursor:pointer;background:#fff0f6;color:var(--accent);font-family:inherit;}" +
     ".tr-me .tr-btn{background:rgba(255,255,255,.25);color:#fff;}" +
     ".tr-btn:disabled{opacity:.6;}" +
+    ".tr-btn{pointer-events:auto;position:relative;z-index:2;touch-action:manipulation;}" +
     ".tr-text{font-size:13px;line-height:1.35;white-space:pre-wrap;word-break:break-word;opacity:.95;}";
   document.head.appendChild(st);
 })();
@@ -15980,15 +15981,13 @@ function _trGetUrl(audioEl) {
   if (/^https:/.test(s)) return Promise.resolve(s);
   return Promise.reject(new Error("sem url"));
 }
-document.addEventListener("click", function(e) {
-  var btn = e.target && e.target.closest ? e.target.closest("[data-tr-btn]") : null;
-  if (!btn) return;
-  e.stopPropagation();
-  e.preventDefault();
-  if (btn.disabled) return;
+function _trRun(btn) {
+  if (!btn || btn.disabled) return;
+  if (btn._trAt && Date.now() - btn._trAt < 1500) return;
+  btn._trAt = Date.now();
   var id = btn.getAttribute("data-tr-btn");
   var audioEl = document.querySelector('[data-audio-el="' + id + '"]');
-  if (!audioEl) return;
+  if (!audioEl) { btn.textContent = "Erro: sem audio"; return; }
   btn.disabled = true;
   btn.textContent = "Transcrevendo...";
   _trGetUrl(audioEl)
@@ -16007,10 +16006,36 @@ document.addEventListener("click", function(e) {
       var w = document.querySelector('[data-tr-wrap="' + id + '"]');
       if (w) w.innerHTML = '<div class="tr-text">' + esc(t || "Sem fala detectada") + '</div>';
     })
-    .catch(function() {
+    .catch(function(err) {
       var b = document.querySelector('[data-tr-btn="' + id + '"]');
-      if (b) { b.disabled = false; b.textContent = "Tentar de novo"; }
+      if (b) {
+        b.disabled = false;
+        b.textContent = "Tentar de novo (" + String((err && err.message) || err).slice(0, 24) + ")";
+      }
     });
+}
+var _trTouch = null;
+window.addEventListener("touchstart", function(e) {
+  var b = e.target && e.target.closest ? e.target.closest("[data-tr-btn]") : null;
+  var t = e.touches && e.touches[0];
+  _trTouch = (b && t) ? { x: t.clientX, y: t.clientY, b: b } : null;
+}, true);
+window.addEventListener("touchend", function(e) {
+  if (!_trTouch) return;
+  var t = e.changedTouches && e.changedTouches[0];
+  var tt = _trTouch;
+  _trTouch = null;
+  if (!t || Math.abs(t.clientX - tt.x) > 10 || Math.abs(t.clientY - tt.y) > 10) return;
+  try { e.preventDefault(); } catch (x) {}
+  e.stopPropagation();
+  _trRun(tt.b);
+}, true);
+window.addEventListener("click", function(e) {
+  var b = e.target && e.target.closest ? e.target.closest("[data-tr-btn]") : null;
+  if (!b) return;
+  e.stopPropagation();
+  e.preventDefault();
+  _trRun(b);
 }, true);
 
 function renderMsgStatusIcon(status) {
