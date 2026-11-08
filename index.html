@@ -4978,7 +4978,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.08.13";
+var APP_VERSION = "2026.11.08.14";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -16687,7 +16687,7 @@ function bindMsgsPage() {
     var tabs = STICKER_PACKS.map(function(p) {
       var locked = stickerPackLocked(p);
       return '<button class="sticker-tab'+(p.id===_stickerActivePack?" active":"")+(locked?" locked":"")+'" data-sticker-tab="'+esc(p.id)+'">' +
-        (locked ? icoSvg("lock",12,"currentColor",true) : '') + '<span>'+esc(p.id==="mimi_exclusiva"?"Plus":p.name)+'</span>' +
+        (locked ? '<svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z" fill="currentColor"/></svg>' : '') + '<span>'+esc(p.id==="mimi_exclusiva"?"Plus":p.name)+'</span>' +
       '</button>';
     }).join("");
     var pack = STICKER_PACKS.find(function(p){ return p.id === _stickerActivePack; }) || STICKER_PACKS[0];
