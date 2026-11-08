@@ -585,11 +585,12 @@
   .msg-wrapper {
     display:flex; flex-direction:column; gap:3px; max-width:80%;
   }
+  @font-face{font-family:"InterChat";src:url("fonts/inter.woff2") format("woff2");font-weight:100 900;font-display:swap;}
   .msg-card.sent .msg-wrapper { align-items:flex-end; }
   
   .msg-content {
     background:var(--surface); border:1px solid var(--border); border-radius:14px;
-    padding:6px 10px; color:var(--text); font-size:15px; line-height:1.4;
+    padding:6px 10px; color:var(--text); font-size:15px; line-height:1.4; font-family:"InterChat",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     display:inline-block; max-width:75vw; word-wrap:break-word; overflow-wrap:break-word;
     position:relative;
   }
@@ -4949,7 +4950,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.08.04";
+var APP_VERSION = "2026.11.08.05";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
