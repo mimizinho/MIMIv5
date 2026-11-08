@@ -1093,6 +1093,7 @@
   .chat-attach-menu { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:14px 2px 4px; }
   .chat-attach-menu.hidden { display:none; }
   .chat-attach-opt { display:flex; flex-direction:column; align-items:center; gap:6px; background:var(--surface); border:1.5px solid var(--border); border-radius:22px; padding:14px 6px; color:var(--accent); font-size:13.5px; font-weight:700; cursor:pointer; } .chat-attach-opt svg { width:26px; height:26px; } .chat-attach-opt:active { transform:scale(.95); }
+  .chat-attach-menu,.chat-attach-menu.hidden{display:grid !important;overflow:hidden;max-height:220px;opacity:1;transform:translateY(0);transition:max-height .26s cubic-bezier(.32,.72,0,1),opacity .2s ease,transform .26s cubic-bezier(.32,.72,0,1),padding .26s ease,visibility 0s;will-change:max-height,transform} .chat-attach-menu.hidden{max-height:0;opacity:0;transform:translateY(10px);padding-top:0;padding-bottom:0;visibility:hidden;pointer-events:none;transition:max-height .22s cubic-bezier(.32,.72,0,1),opacity .15s ease,transform .22s ease,padding .22s ease,visibility 0s .22s} .chat-input-hint span{display:none} .chat-input-hint{padding:4px 24px !important} .chat-input-hint svg{width:20px;height:20px;transition:transform .26s cubic-bezier(.32,.72,0,1)} .chat-input-hint.open svg{transform:rotate(180deg)}
 
   /* 🎮 MODAL "Jogos" — escolher entre Labirinto e Jogo da velha */
   .games-modal { position:fixed; inset:0; background:rgba(30,10,20,.55); backdrop-filter:blur(3px);
@@ -16497,7 +16498,7 @@ function bindMsgsPage() {
   if (plusBtn) plusBtn.addEventListener("click", toggleAttachMenu);
   var moreToggle = appEl.querySelector("[data-chat-more-toggle]");
   if (moreToggle) moreToggle.addEventListener("click", toggleAttachMenu);
-var _swRow=appEl.querySelector("[data-chat-input-row]");if(_swRow&&attachMenu){var _swY=0,_swX=0,_swOn=false;_swRow.style.touchAction="pan-x";_swRow.addEventListener("touchstart",function(e){_swOn=!e.target.closest("input,textarea");_swY=e.touches[0].clientY;_swX=e.touches[0].clientX;},{passive:true});_swRow.addEventListener("touchend",function(e){if(!_swOn)return;_swOn=false;var dy=e.changedTouches[0].clientY-_swY,dx=e.changedTouches[0].clientX-_swX;if(Math.abs(dy)<30||Math.abs(dy)<Math.abs(dx)*1.5)return;var ab=!attachMenu.classList.contains("hidden");if((dy<0&&!ab)||(dy>0&&ab))toggleAttachMenu();},{passive:true});}
+var _swRow=appEl.querySelector("[data-chat-input-row]");if(_swRow&&attachMenu){var _swY=0,_swX=0,_swOn=false;_swRow.style.touchAction="pan-x";_swRow.addEventListener("touchstart",function(e){_swOn=!e.target.closest("input,textarea");_swY=e.touches[0].clientY;_swX=e.touches[0].clientX;},{passive:true});_swRow.addEventListener("touchmove",function(e){if(!_swOn)return;var dy=e.touches[0].clientY-_swY,dx=e.touches[0].clientX-_swX;if(Math.abs(dy)<14||Math.abs(dy)<Math.abs(dx)*1.5)return;_swOn=false;var ab=!attachMenu.classList.contains("hidden");if((dy<0&&!ab)||(dy>0&&ab))toggleAttachMenu();},{passive:true});}
 
   // ✅ NOVO: Usar Cloudinary em vez de file input
   appEl.querySelectorAll("[data-chat-media]").forEach(function(btn) {
