@@ -4936,7 +4936,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.07.02";
+var APP_VERSION = "2026.11.07.03";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -19654,9 +19654,38 @@ function bindCallScreen() {
   });
 }
 
+// Toque de encerramento de chamada (3 notas descendentes), gerado por Web Audio
+var _mimiEndCtx = null;
+function _mimiEndCtxGet() {
+  var AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+  if (!_mimiEndCtx) _mimiEndCtx = new AC();
+  if (_mimiEndCtx.state === "suspended") _mimiEndCtx.resume();
+  return _mimiEndCtx;
+}
+["touchstart","click"].forEach(function(ev){
+  document.addEventListener(ev, function(){ try { _mimiEndCtxGet(); } catch(e){} }, { once:true, passive:true });
+});
+function mimiEndTone() {
+  try {
+    var c = _mimiEndCtxGet(); if (!c) return;
+    var t0 = c.currentTime + 0.02;
+    [[660,0,.09,.3],[520,.11,.09,.3],[390,.22,.18,.3]].forEach(function(n){
+      var o=c.createOscillator(), g=c.createGain(), s=t0+n[1], d=n[2];
+      o.type="sine"; o.frequency.setValueAtTime(n[0], s);
+      g.gain.setValueAtTime(0.0001, s);
+      g.gain.exponentialRampToValueAtTime(n[3], s+0.012);
+      g.gain.setValueAtTime(n[3], s+Math.max(0.013, d-0.04));
+      g.gain.exponentialRampToValueAtTime(0.0001, s+d);
+      o.connect(g); g.connect(c.destination);
+      o.start(s); o.stop(s+d+0.02);
+    });
+  } catch(e) {}
+}
 // endCall(remote) — remote=true quando quem encerrou foi a outra pessoa
 // (não precisamos escrever "ended" de volta nesse caso).
 function endCall(remote) {
+  if (activeCall) mimiEndTone();
   var callId = activeCall && activeCall.callId;
   var wasSimulated = activeCall && activeCall.simulated;
   if (callId && !remote && !wasSimulated) {
