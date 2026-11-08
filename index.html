@@ -1370,13 +1370,26 @@ body.theme-dark .np .np-d,body.theme-purple .np .np-d,body.theme-dark .np [data-
   .photo-viewer img { width:min(88vw,480px); height:min(88vw,480px); object-fit:cover; border-radius:50%; box-shadow:0 8px 40px rgba(0,0,0,.5); }
   .photo-viewer-close { position:absolute; top:16px; right:16px; background:rgba(255,255,255,.15); border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:2; }
 
-  .call-screen { position:fixed; inset:0; background:radial-gradient(circle at 50% 15%,#3a2247,#1c1024 65%,#150c1c); overflow:hidden; z-index:400; display:flex; flex-direction:column; align-items:center; justify-content:space-between; max-width:480px; margin:0 auto; color:#fff; padding:50px 24px 40px; }
-  .call-screen::before, .call-screen::after { content:""; position:absolute; bottom:-60px; width:220px; height:220px; border-radius:50%; background:radial-gradient(circle,rgba(179,77,255,.35),transparent 70%); z-index:0; }
-  .call-screen::before { left:-60px; }
-  .call-screen::after { right:-60px; }
+  .call-screen { position:fixed; inset:0; background:linear-gradient(180deg,#2a0b45 0%,#170727 55%,#10051c 100%); overflow:hidden; z-index:400; display:flex; flex-direction:column; align-items:center; justify-content:space-between; max-width:480px; margin:0 auto; color:#fff; padding:50px 24px 40px; }
+  /* Tela de chamada - estilo Aurora */
+  .call-screen::before, .call-screen::after { content:""; position:absolute; width:220px; height:220px; border-radius:50%; filter:blur(48px); opacity:.5; z-index:0; animation:callDrift 14s ease-in-out infinite alternate; pointer-events:none; }
+  .call-screen::before { background:#ff3d9a; left:-60px; top:18%; }
+  .call-screen::after { background:#8b4dff; right:-70px; top:42%; animation-delay:-5s; }
+  @keyframes callDrift { to { transform:translate(30px,-24px) scale(1.15); } }
+  .call-aura { position:relative; width:132px; height:132px; flex:none; }
+  .call-ring { position:absolute; inset:0; border-radius:50%; border:1.5px solid rgba(255,140,200,.55); animation:callRing 2.4s ease-out infinite; z-index:0; }
+  .call-ring.r2 { animation-delay:1.2s; }
+  .call-aura.slow .call-ring { animation-duration:4.4s; }
+  @keyframes callRing { from { transform:scale(1); opacity:.7; } to { transform:scale(1.75); opacity:0; } }
+  .call-aura-av { position:relative; z-index:1; width:100%; height:100%; border-radius:50%; overflow:hidden; border:3px solid rgba(255,255,255,.28); box-shadow:0 0 40px rgba(255,61,154,.35); }
+  .call-avatar-wrap { text-align:center; }
+  .call-controls.two { gap:64px; }
+  @media (prefers-reduced-motion:reduce) { .call-screen::before, .call-screen::after, .call-ring { animation:none; } }
+  
+  
   .call-toplabel { position:relative; text-align:center; margin-top:10px; display:flex; flex-direction:column; align-items:center; gap:8px; z-index:1; }
   .call-toplabel-text { font-size:12px; font-weight:700; letter-spacing:3px; color:#c9a6f0; margin:0; }
-  .call-status { text-align:center; margin-top:30px; }
+  .call-status { position:relative; z-index:1; text-align:center; margin-top:30px; }
   .call-name { font-size:26px; font-weight:700; margin:0 0 6px; }
   .call-sub { font-size:14px; opacity:.75; margin:0; }
   .call-sub-purple { font-size:15px; color:#c9a6f0; font-weight:600; margin:0; }
@@ -1393,10 +1406,10 @@ body.theme-dark .np .np-d,body.theme-purple .np .np-d,body.theme-dark .np [data-
   .call-controls { position:relative; z-index:1; display:flex; gap:28px; align-items:flex-start; }
   .call-btn-col { display:flex; flex-direction:column; align-items:center; gap:8px; }
   .call-btn-label { font-size:12px; color:rgba(255,255,255,.75); }
-  .call-ctrl-btn { width:58px; height:58px; border-radius:50%; border:1.5px solid rgba(255,255,255,.25); display:flex; align-items:center; justify-content:center; cursor:pointer; background:rgba(255,255,255,.06); color:#fff; }
+  .call-ctrl-btn { width:64px; height:64px; border-radius:50%; border:1px solid rgba(255,255,255,.18); display:flex; align-items:center; justify-content:center; cursor:pointer; background:rgba(255,255,255,.1); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); color:#fff; }
   .call-ctrl-btn.active { background:#fff; color:#2a1a30; border-color:#fff; }
-  .call-end-btn { width:72px; height:72px; border-radius:50%; border:none; background:linear-gradient(135deg,#ff4d8d,#b34dff); box-shadow:0 0 0 6px rgba(179,77,255,.15); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; transform:rotate(135deg); }
-  .call-accept-btn { background:#3fc06a; box-shadow:none; transform:rotate(0deg); animation:pulse 1.4s infinite; }
+  .call-end-btn { width:76px; height:76px; border-radius:50%; border:none; background:linear-gradient(135deg,#c24bf0,#ff3d9a); box-shadow:0 10px 30px rgba(255,61,154,.45); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; transform:rotate(135deg); }
+  .call-accept-btn { background:#34c76b; box-shadow:0 10px 30px rgba(52,199,107,.45); transform:rotate(0deg); animation:pulse 1.4s infinite; }
 
 
   .toast { position:fixed; bottom:calc(80px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); background:rgba(74,59,69,.92); color:#fff; padding:10px 18px; border-radius:20px; font-size:13px; font-weight:600; z-index:500; max-width:85%; text-align:center; pointer-events:none; }
@@ -4936,7 +4949,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.07.03";
+var APP_VERSION = "2026.11.08.01";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -19473,16 +19486,21 @@ function renderIncomingCallScreen() {
   var conv = CONVOS.find(function(c){ return c.userId === incomingCall.callerId; });
   var u = USERS[incomingCall.callerId] || { name:"Alguém", avatar:DEFAULT_AVATAR };
   return '<div class="call-screen fade-in">' +
-    '<div class="call-status"><p class="call-sub">Chamada de voz</p></div>' +
+    '<div class="call-toplabel">' +
+      icoSvg("waveform", 20, "#c9a6f0") +
+      '<p class="call-toplabel-text">CHAMADA DE VOZ</p>' +
+    '</div>' +
     '<div class="call-avatar-wrap">' +
-      '<div style="width:110px;height:110px;border-radius:50%;overflow:hidden;border:3px solid rgba(255,255,255,.3);animation:pulse 1.6s infinite;">' +
-        '<img '+imageTagAttrs(u.avatar)+' style="width:100%;height:100%;object-fit:contain;object-position:center;display:block;margin:0 auto;">' +
+      '<div class="call-aura"><i class="call-ring"></i><i class="call-ring r2"></i>' +
+        '<div class="call-aura-av">' +
+          '<img '+imageTagAttrs(u.avatar)+' style="width:100%;height:100%;object-fit:contain;object-position:center;display:block;margin:0 auto;">' +
+        '</div>' +
       '</div>' +
       '<div><p class="call-name">'+esc(u.name)+'</p><p class="call-sub">Chamada recebida…</p></div>' +
     '</div>' +
-    '<div class="call-controls">' +
-      '<button class="call-end-btn" data-decline-call>'+icoSvg("phone",26,"#fff",true)+'</button>' +
-      '<button class="call-end-btn call-accept-btn" data-accept-call>'+icoSvg("phone",26,"#fff",true)+'</button>' +
+    '<div class="call-controls two">' +
+      '<div class="call-btn-col"><button class="call-end-btn" data-decline-call>'+icoSvg("phone",26,"#fff",true)+'</button><span class="call-btn-label">Recusar</span></div>' +
+      '<div class="call-btn-col"><button class="call-end-btn call-accept-btn" data-accept-call>'+icoSvg("phone",26,"#fff",true)+'</button><span class="call-btn-label">Atender</span></div>' +
     '</div>' +
   '</div>';
 }
@@ -19593,19 +19611,12 @@ function renderCallScreen() {
       '<p class="call-toplabel-text">'+topLabel+'</p>' +
     '</div>' +
     '<div class="call-avatar-wrap">' +
-      '<div class="call-avatar-glowring">' +
-        '<span class="call-avatar-dot" style="top:6px;right:18px;"></span>' +
-        '<span class="call-avatar-dot" style="bottom:14px;left:2px;"></span>' +
-        '<div style="position:relative;width:120px;height:120px;border-radius:50%;overflow:hidden;border:3px solid rgba(199,140,255,.5);box-shadow:0 0 40px rgba(179,77,255,.35);'+(activeCall.status==="calling"?"animation:pulse 1.6s infinite;":"")+'">' +
+      '<div class="call-aura'+(activeCall.status==="calling"?"":" slow")+'"><i class="call-ring"></i><i class="call-ring r2"></i>' +
+        '<div class="call-aura-av">' +
           '<img '+imageTagAttrs(u.avatar)+' style="width:100%;height:100%;object-fit:contain;object-position:center;display:block;margin:0 auto;">' +
         '</div>' +
       '</div>' +
       '<div><p class="call-name">'+esc(u.name)+'</p><p class="call-sub-purple" data-call-timer>'+statusText+'</p></div>' +
-    '</div>' +
-    '<div class="call-badges">' +
-      '<span class="call-badge"><span class="call-badge-dot"></span>Conexão segura</span>' +
-      '<span class="call-badge-sep"></span>' +
-      '<span class="call-badge">'+icoSvg("lock",14,"#fff")+'Criptografia de ponta a ponta</span>' +
     '</div>' +
     '<div class="call-controls">' +
       '<div class="call-btn-col"><button class="call-ctrl-btn '+(activeCall.muted?"active":"")+'" data-toggle-mute>'+icoSvg(activeCall.muted?"micOff":"mic",24)+'</button><span class="call-btn-label">Silenciar</span></div>' +
