@@ -16497,6 +16497,7 @@ function bindMsgsPage() {
   if (plusBtn) plusBtn.addEventListener("click", toggleAttachMenu);
   var moreToggle = appEl.querySelector("[data-chat-more-toggle]");
   if (moreToggle) moreToggle.addEventListener("click", toggleAttachMenu);
+var _swRow=appEl.querySelector("[data-chat-input-row]");if(_swRow&&attachMenu){var _swY=0,_swX=0,_swOn=false;_swRow.style.touchAction="pan-x";_swRow.addEventListener("touchstart",function(e){_swOn=!e.target.closest("input,textarea");_swY=e.touches[0].clientY;_swX=e.touches[0].clientX;},{passive:true});_swRow.addEventListener("touchend",function(e){if(!_swOn)return;_swOn=false;var dy=e.changedTouches[0].clientY-_swY,dx=e.changedTouches[0].clientX-_swX;if(Math.abs(dy)<30||Math.abs(dy)<Math.abs(dx)*1.5)return;var ab=!attachMenu.classList.contains("hidden");if((dy<0&&!ab)||(dy>0&&ab))toggleAttachMenu();},{passive:true});}
 
   // ✅ NOVO: Usar Cloudinary em vez de file input
   appEl.querySelectorAll("[data-chat-media]").forEach(function(btn) {
