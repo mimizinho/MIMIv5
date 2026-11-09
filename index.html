@@ -793,6 +793,11 @@
   .bubble-time { font-size:10px; margin-top:3px; text-align:right; }
   .bubble-img { max-width:200px; border-radius:12px; display:block; margin-bottom:2px; }
   .bubble-video { max-width:200px; min-width:160px; min-height:110px; background:#000; border-radius:12px; display:block; margin-bottom:2px; }
+.msg-content:has(.vid-wrap){padding:4px !important;}
+.vid-wrap{position:relative;width:240px;max-width:62vw;border-radius:18px;overflow:hidden;background:#2a1a24;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.vid-wrap .bubble-video{width:100%;max-width:none;min-width:0;height:auto;min-height:140px;max-height:340px;object-fit:cover;display:block;margin:0;border-radius:0;background:#2a1a24;pointer-events:none;}
+.vid-dur{position:absolute;top:8px;left:8px;padding:2px 9px;border-radius:999px;background:rgba(0,0,0,.45);color:#fff;font-size:12px;}
+.vid-play{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;}
   .bubble.media { padding:6px; background:transparent !important; border:none !important; }
 
   /* 🧩 FIGURINHAS — bolha "solta", sem fundo/borda de balão de texto,
@@ -15941,7 +15946,7 @@ function renderChatBubbleContent(m) {
       ? '<img class="bubble-img" data-imgpath="'+esc(m.src)+'" src="" alt="">'
       : '<img class="bubble-img" src="'+esc(m.src)+'" alt="">';
   }
-  if (m.type === "video") return '<video class="bubble-video" preload="auto" src="'+esc(optimizeCloudinaryVideoUrl(m.src))+'" controls playsinline></video>';
+  if (m.type === "video") return '<div class="vid-wrap" onclick="openChatVideo(this)"><video class="bubble-video" preload="auto" src="'+esc(optimizeCloudinaryVideoUrl(m.src))+'" muted playsinline></video><span class="vid-dur"></span><span class="vid-play"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="#fff"/></svg></span></div>';
   if (m.type === "sticker") {
     return looksLikeImageSrc(m.src)
       ? '<img class="bubble-sticker" src="'+esc(m.src)+'" alt="">'
@@ -16588,7 +16593,7 @@ var _cbx=appEl.querySelector(".chat-msgs");if(_swRow&&_cbx&&window.ResizeObserve
           '<div class="msg-time">'+_relTime(createdAt)+'</div></div>';
       } else if (mediaType === "video") {
         msgCard.innerHTML = '<div class="msg-avatar" '+avatarDivAttrs+'></div>' +
-          '<div class="msg-wrapper"><div class="msg-content"><video class="bubble-video" preload="auto" src="' + esc(optimizeCloudinaryVideoUrl(src)) + '" controls playsinline></video></div>' +
+          '<div class="msg-wrapper"><div class="msg-content"><div class="vid-wrap" onclick="openChatVideo(this)"><video class="bubble-video" preload="auto" src="' + esc(optimizeCloudinaryVideoUrl(src)) + '" muted playsinline></video><span class="vid-dur"></span><span class="vid-play"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="#fff"/></svg></span></div></div>' +
           '<div class="msg-time">'+_relTime(createdAt)+'</div></div>';
       }
       
@@ -16863,7 +16868,7 @@ var _cbx=appEl.querySelector(".chat-msgs");if(_swRow&&_cbx&&window.ResizeObserve
         '<div class="msg-wrapper"><div class="msg-content">' +
         (kind === "image" 
           ? '<img class="bubble-img" src="'+esc(dataUrl)+'">'
-          : '<video class="bubble-video" src="'+esc(dataUrl)+'" controls playsinline></video>') +
+          : '<div class="vid-wrap" onclick="openChatVideo(this)"><video class="bubble-video" src="'+esc(dataUrl)+'" muted playsinline></video><span class="vid-dur"></span><span class="vid-play"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="#fff"/></svg></span></div>') +
         '</div><div class="msg-time">'+msgObj.time+'</div></div>';
       chatBox.appendChild(msgCard);
       hydrateImages(msgCard);
@@ -28584,5 +28589,9 @@ setTimeout(function () { BirthdayNotifier.init(); }, 2000);
 })();
 </script>
 <!-- MIMI-CAPA-FIM -->
+<script>
+document.addEventListener("loadedmetadata",function(e){var v=e.target;if(v.tagName!=="VIDEO"||!v.closest(".vid-wrap"))return;var d=Math.round(v.duration)||0,s=v.parentNode.querySelector(".vid-dur");if(s)s.textContent=Math.floor(d/60)+":"+("0"+d%60).slice(-2);try{v.currentTime=0.1}catch(x){}},true);
+function openChatVideo(w){var v=w.querySelector("video");if(!v)return;var o=document.createElement("div");o.style.cssText="position:fixed;inset:0;z-index:99999;background:#000;display:flex;align-items:center;justify-content:center";var p=document.createElement("video");p.src=v.src;p.controls=true;p.autoplay=true;p.setAttribute("playsinline","");p.style.cssText="max-width:100%;max-height:100%";var b=document.createElement("button");b.textContent="✕";b.style.cssText="position:absolute;top:14px;left:14px;width:42px;height:42px;border:0;border-radius:50%;background:rgba(255,255,255,.2);color:#fff;font-size:20px";b.onclick=function(){p.pause();o.remove();};o.appendChild(p);o.appendChild(b);document.body.appendChild(o);}
+</script>
 <script id="mimi-video-preto-js">(function(){var P="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";function fix(v){if(v.tagName==="VIDEO"&&!v.getAttribute("poster"))v.setAttribute("poster",P);}function scan(n){if(n.nodeType!==1)return;fix(n);if(n.querySelectorAll)n.querySelectorAll("video").forEach(fix);}scan(document.documentElement);new MutationObserver(function(m){m.forEach(function(r){r.addedNodes.forEach(scan);});}).observe(document.documentElement,{childList:true,subtree:true});})();</script></body>
 </html>
