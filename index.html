@@ -16490,6 +16490,7 @@ function bindMsgsPage() {
   function toggleAttachMenu() {
     if (!attachMenu) return;
     attachMenu.classList.toggle("hidden");
+    var _cb=appEl.querySelector(".chat-msgs");if(_cb&&(_cb.scrollHeight-_cb.scrollTop-_cb.clientHeight<140)){var _t0=Date.now();(function _kb(){_cb.scrollTop=_cb.scrollHeight;if(Date.now()-_t0<340)requestAnimationFrame(_kb);})();}
     var _mt = appEl.querySelector("[data-chat-more-toggle]");
     if (_mt) { var _op = !attachMenu.classList.contains("hidden"); _mt.classList.toggle("open", _op); var _sp = _mt.querySelector("span"); if (_sp) _sp.textContent = _op ? "Fechar" : "Mais opções"; }
     if (attachMenu.classList.contains("hidden")) _flushPendingBackgroundRender();
