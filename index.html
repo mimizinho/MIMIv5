@@ -792,7 +792,7 @@
   .bubble.them { background:var(--surface); border:1px solid var(--border); color:var(--text); }
   .bubble-time { font-size:10px; margin-top:3px; text-align:right; }
   .bubble-img { max-width:200px; border-radius:12px; display:block; margin-bottom:2px; }
-  .bubble-video { max-width:200px; border-radius:12px; display:block; margin-bottom:2px; }
+  .bubble-video { max-width:200px; min-width:160px; min-height:110px; background:#000; border-radius:12px; display:block; margin-bottom:2px; }
   .bubble.media { padding:6px; background:transparent !important; border:none !important; }
 
   /* 🧩 FIGURINHAS — bolha "solta", sem fundo/borda de balão de texto,
@@ -15941,7 +15941,7 @@ function renderChatBubbleContent(m) {
       ? '<img class="bubble-img" data-imgpath="'+esc(m.src)+'" src="" alt="">'
       : '<img class="bubble-img" src="'+esc(m.src)+'" alt="">';
   }
-  if (m.type === "video") return '<video class="bubble-video" preload="metadata" src="'+esc(optimizeCloudinaryVideoUrl(m.src))+'" controls playsinline></video>';
+  if (m.type === "video") return '<video class="bubble-video" preload="auto" src="'+esc(optimizeCloudinaryVideoUrl(m.src))+'" controls playsinline></video>';
   if (m.type === "sticker") {
     return looksLikeImageSrc(m.src)
       ? '<img class="bubble-sticker" src="'+esc(m.src)+'" alt="">'
@@ -16588,7 +16588,7 @@ var _cbx=appEl.querySelector(".chat-msgs");if(_swRow&&_cbx&&window.ResizeObserve
           '<div class="msg-time">'+_relTime(createdAt)+'</div></div>';
       } else if (mediaType === "video") {
         msgCard.innerHTML = '<div class="msg-avatar" '+avatarDivAttrs+'></div>' +
-          '<div class="msg-wrapper"><div class="msg-content"><video class="bubble-video" preload="metadata" src="' + esc(optimizeCloudinaryVideoUrl(src)) + '" controls playsinline></video></div>' +
+          '<div class="msg-wrapper"><div class="msg-content"><video class="bubble-video" preload="auto" src="' + esc(optimizeCloudinaryVideoUrl(src)) + '" controls playsinline></video></div>' +
           '<div class="msg-time">'+_relTime(createdAt)+'</div></div>';
       }
       
@@ -25707,6 +25707,8 @@ document.addEventListener("loadedmetadata", function(e) {
   if (!v || v.tagName !== "VIDEO" || !v.closest || !v.closest(".vibe-slide-ad")) return;
   if (v.videoWidth && v.videoHeight) v.style.objectFit = (v.videoWidth / v.videoHeight < 0.75) ? "cover" : "contain";
 }, true);
+document.addEventListener("error",function(e){var v=e.target;if(!v||v.tagName!=="VIDEO"||v._mimiRaw)return;var p=(v.currentSrc||v.src||"").split("/"),k=p.indexOf("upload"),m=k+1;if(k<0)return;while(m<p.length&&!/^v[0-9]+$/.test(p[m]))m++;if(m>=p.length||m===k+1)return;v._mimiRaw=true;v.src=p.slice(0,k+1).concat(p.slice(m)).join("/");try{v.load();}catch(x){}},true);
+document.addEventListener("error",function(e){var v=e.target;if(v&&v.tagName==="VIDEO"&&v.classList.contains("bubble-video")){showToast("Vídeo erro "+(v.error?v.error.code:"?")+" ..."+(v.currentSrc||"").slice(-60));}},true);
 var cloudinaryWidget = {
   // ══ ALTERAÇÃO 25/10/2026 — 2a CONTA CLOUDINARY SÓ PARA VÍDEO NOVO ══
   // Motivo: cota (25 créditos) da conta antiga quase estourada.
@@ -25919,7 +25921,7 @@ var cloudinaryWidget = {
       var copy = new File([buf], file.name || ("arquivo_" + Date.now()), { type: file.type || (mediaType === "video" ? "video/mp4" : "") });
       self.uploadDirectFile(copy, mediaType, callback);
     }).catch(function() {
-      showToast(toastWithIcon("Não consegui ler esse arquivo da galeria. Copie para a pasta Download ou grave de novo.", "error", "before"), true);
+      self.uploadDirectFile(file, mediaType, callback, function() { showToast(toastWithIcon("Não consegui ler esse arquivo da galeria. Copie para a pasta Download ou grave de novo.", "error", "before"), true); });
     });
   },
 
