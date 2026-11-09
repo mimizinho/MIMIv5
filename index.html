@@ -3489,6 +3489,7 @@ function showMessageContextMenu(messageId, messageText, targetEl) {
   var chat = chatHistories[convoId] || [];
   var msg = chat.find(function(m){ return m.id === messageId; });
   if (!msg || msg.deleted) return; // mensagem já apagada não tem mais o que fazer
+  var _cpTxt=(msg.text||msg.content||"");var copyItemHtml=_cpTxt?'<button class="convo-action-menu-item" data-msg-action-copy type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6.5A2.5 2.5 0 017.5 4H15"/></svg><span style="margin-left:12px;">Copiar</span></button>':'';
 
   var menu = document.createElement("div");
   menu.className = "convo-action-menu";
@@ -3528,7 +3529,7 @@ function showMessageContextMenu(messageId, messageText, targetEl) {
     '<div class="convo-action-menu-panel">' +
       reactionRow +
       '<div class="convo-action-menu-header">Opções da mensagem</div>' +
-      editItemHtml +
+      copyItemHtml + editItemHtml +
       items +
     '</div>';
 
@@ -3547,6 +3548,7 @@ function showMessageContextMenu(messageId, messageText, targetEl) {
   if (delMeBtn) delMeBtn.addEventListener("click", function(){ deleteMessageForMe(messageId); });
 
   var editBtn = menu.querySelector("[data-msg-action-edit]");
+  var copyBtn=menu.querySelector("[data-msg-action-copy]");if(copyBtn)copyBtn.addEventListener("click",function(){var t=_cpTxt;function ok(){closeMessageActionMenu();if(typeof showToast==="function")showToast("Mensagem copiada");}function fb(){var a=document.createElement("textarea");a.value=t;a.style.position="fixed";a.style.opacity="0";document.body.appendChild(a);a.select();try{document.execCommand("copy");}catch(e){}a.remove();ok();}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok,fb);}else fb();});
   if (editBtn) editBtn.addEventListener("click", function(){ showEditMessageModal(messageId); });
 
   var delAllBtn = menu.querySelector("[data-msg-action-delete-all]");
