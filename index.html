@@ -21449,7 +21449,7 @@ function renderProfileViewersBody(ownerId) {
   var html = "";
 
   if (!isPlus) {
-    html += '<div class="viewers-plus-banner" data-viewers-open-subs>' +
+    html += '<div style="margin:12px 20px 18px;border-radius:26px;padding:24px;background:linear-gradient(145deg,#ff86b3,#d6336c);color:#fff;" data-viewers-open-subs><div style="font-weight:700;font-size:12px;letter-spacing:1.2px;">VISITAS RECENTES</div><div style="display:flex;align-items:flex-end;gap:10px;margin-top:6px;"><div style="font-weight:800;font-size:64px;line-height:1;">'+(viewers?viewers.length:0)+'</div><div style="font-weight:500;font-size:16px;line-height:1.3;padding-bottom:8px;">pessoas viram<br>seu perfil</div></div><div style="margin-top:18px;height:48px;border-radius:14px;background:#fff;color:#b02a5f;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;gap:8px;">'+icoSvg("lock",16,"#b02a5f")+'Ver quantas vezes com MIMI Plus</div></div>' + '<div class="viewers-plus-banner" data-viewers-open-subs style="display:none;">' +
       '<div class="vpb-ic">'+icoSvg("lock",15,"#fff")+'</div>' +
       '<div class="vpb-txt"><b>Veja quantas vezes cada um visitou</b><span>Exclusivo do MIMI Plus</span></div>' +
       '<div class="vpb-go">Assinar '+icoSvg("chevronRight",13,"var(--pink)")+'</div>' +
@@ -21463,7 +21463,7 @@ function renderProfileViewersBody(ownerId) {
   } else {
     viewers.forEach(function(v) {
       var person = USERS[v.uid] || { name: v.name || "Usuário", username: v.username || "", avatar: v.avatar || DEFAULT_AVATAR, uid: v.uid };
-      html += '<div class="follow-row" data-viewerlist-person="'+v.uid+'">' + avatarHtml(person.avatar,46,false,false,false,null,null,getUserFrame(person)) +
+      html += '<div class="follow-row" style="background:var(--card,#fff);border-radius:18px;margin:0 20px 10px;padding:12px;border:0;box-shadow:0 2px 10px rgba(224,64,122,.08);" data-viewerlist-person="'+v.uid+'">' + avatarHtml(person.avatar,46,false,false,false,null,null,getUserFrame(person)) +
         '<div class="follow-row-info"><div class="follow-row-name">'+esc(person.name)+' '+userVerifiedBadge(person,17)+'</div>' +
         '<div class="follow-row-username">'+esc(person.username)+'</div></div>' +
         (isPlus
