@@ -16490,7 +16490,6 @@ function bindMsgsPage() {
   function toggleAttachMenu() {
     if (!attachMenu) return;
     attachMenu.classList.toggle("hidden");
-    var _cb=appEl.querySelector(".chat-msgs");if(_cb&&(_cb.scrollHeight-_cb.scrollTop-_cb.clientHeight<140)){var _t0=Date.now();(function _kb(){_cb.scrollTop=_cb.scrollHeight;if(Date.now()-_t0<340)requestAnimationFrame(_kb);})();}
     var _mt = appEl.querySelector("[data-chat-more-toggle]");
     if (_mt) { var _op = !attachMenu.classList.contains("hidden"); _mt.classList.toggle("open", _op); var _sp = _mt.querySelector("span"); if (_sp) _sp.textContent = _op ? "Fechar" : "Mais opções"; }
     if (attachMenu.classList.contains("hidden")) _flushPendingBackgroundRender();
@@ -16500,6 +16499,7 @@ function bindMsgsPage() {
   var moreToggle = appEl.querySelector("[data-chat-more-toggle]");
   if (moreToggle) moreToggle.addEventListener("click", toggleAttachMenu);
 var _swRow=appEl.querySelector("[data-chat-input-row]");if(_swRow&&attachMenu){var _swY=0,_swX=0,_swOn=false;_swRow.style.touchAction="pan-x";_swRow.addEventListener("touchstart",function(e){_swOn=!e.target.closest("input,textarea");_swY=e.touches[0].clientY;_swX=e.touches[0].clientX;},{passive:true});_swRow.addEventListener("touchmove",function(e){if(!_swOn)return;var dy=e.touches[0].clientY-_swY,dx=e.touches[0].clientX-_swX;if(Math.abs(dy)<14||Math.abs(dy)<Math.abs(dx)*1.5)return;_swOn=false;var ab=!attachMenu.classList.contains("hidden");if((dy<0&&!ab)||(dy>0&&ab))toggleAttachMenu();},{passive:true});}
+var _cbx=appEl.querySelector(".chat-msgs");if(_swRow&&_cbx&&window.ResizeObserver){new ResizeObserver(function(){var near=_cbx.scrollHeight-_cbx.scrollTop-_cbx.clientHeight<160;_cbx.style.paddingBottom=(_swRow.offsetHeight+12)+"px";if(near)_cbx.scrollTop=_cbx.scrollHeight;}).observe(_swRow);}
 
   // ✅ NOVO: Usar Cloudinary em vez de file input
   appEl.querySelectorAll("[data-chat-media]").forEach(function(btn) {
