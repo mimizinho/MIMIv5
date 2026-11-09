@@ -25921,7 +25921,8 @@ var cloudinaryWidget = {
       var copy = new File([buf], file.name || ("arquivo_" + Date.now()), { type: file.type || (mediaType === "video" ? "video/mp4" : "") });
       self.uploadDirectFile(copy, mediaType, callback);
     }).catch(function() {
-      self.uploadDirectFile(file, mediaType, callback, function() { showToast(toastWithIcon("Não consegui ler esse arquivo da galeria. Copie para a pasta Download ou grave de novo.", "error", "before"), true); });
+      window._rdErr = (arguments[0] && (arguments[0].name + ": " + arguments[0].message)) || "?";
+      self.uploadDirectFile(file, mediaType, callback, function() { showToast(toastWithIcon("Leitura: " + window._rdErr + ". Não consegui ler esse arquivo da galeria. Copie para a pasta Download ou grave de novo.", "error", "before"), true); });
     });
   },
 
