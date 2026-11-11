@@ -2094,6 +2094,10 @@ body.theme-dark .np .np-d,body.theme-purple .np .np-d,body.theme-dark .np [data-
 .ad-takeover .ad-cta-bar .ad-cta-txt span{color:rgba(90,16,52,.75)}
 .ad-takeover .ad-slide{border-radius:14px;border:none}
 </style>
+<style id="mimi-zoom-css">
+#mimi-zoom{position:fixed;inset:0;z-index:400;display:flex;align-items:center;justify-content:center;background:rgba(90,16,52,.62);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+#mimi-zoom img{border-radius:20px;box-shadow:0 20px 60px rgba(90,16,52,.45);object-fit:contain}
+</style>
 <style id="mimi-ad-v3">
 .ad-hero{position:relative;margin:6px 12px 10px;border-radius:24px;overflow:hidden;background:#fff5f9}
 .ad-hero .post-img{width:100%;display:block;border-radius:0;margin:0}
@@ -5059,7 +5063,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.11.02";
+var APP_VERSION = "2026.11.11.03";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -14060,11 +14064,48 @@ function openVibeFromProfile(vibeId) {
   });
 }
 
+// Zoom de imagem da publicação: toque pulsa e abre inteira
+var _zoomBusy = false;
+function mimiZoomImg(el) {
+  if (_zoomBusy) return;
+  var nw = el.naturalWidth, nh = el.naturalHeight;
+  if (!nw || !nh) return;
+  _zoomBusy = true;
+  var r = el.getBoundingClientRect();
+  var vw = window.innerWidth, vh = window.innerHeight;
+  var k = Math.min(vw * 0.92 / nw, vh * 0.82 / nh);
+  var W = nw * k, H = nh * k;
+  var sw = Math.min(r.width, r.height * nw / nh);
+  var cx = r.left + r.width / 2 - vw / 2, cy = r.top + r.height / 2 - vh / 2;
+  var from = "translate(" + cx + "px," + cy + "px) scale(" + (sw / W) + ")";
+  var pulse = el.animate([{ transform: "scale(1)" }, { transform: "scale(.94)" }, { transform: "scale(1.04)" }], { duration: 220, easing: "ease-out" });
+  pulse.onfinish = function() {
+    var ov = document.createElement("div");
+    ov.id = "mimi-zoom";
+    var big = document.createElement("img");
+    big.src = el.currentSrc || el.src;
+    big.style.width = W + "px"; big.style.height = H + "px";
+    ov.appendChild(big); document.body.appendChild(ov);
+    el.style.visibility = "hidden";
+    ov.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220 });
+    big.animate([{ transform: from }, { transform: "none" }], { duration: 380, easing: "cubic-bezier(.2,.9,.3,1.12)" });
+    ov.addEventListener("click", function() {
+      var a = big.animate([{ transform: "none" }, { transform: from }], { duration: 260, easing: "ease-in", fill: "forwards" });
+      ov.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, fill: "forwards" });
+      a.onfinish = function() { ov.remove(); el.style.visibility = ""; _zoomBusy = false; };
+    });
+  };
+}
+document.addEventListener("click", function(e) {
+  var el = e.target && e.target.closest ? e.target.closest("[data-zoom-img]") : null;
+  if (el) { e.stopPropagation(); mimiZoomImg(el); }
+});
+
 // Anúncio de imagem: imagem grande com painel (botão) por cima; demais: mídia + botão embaixo.
-function adHeroHtml(post, mediaHtml) {
+function adHeroHtml(post, mediaHtml, full) {
   var bar = adCtaBarHtml(post);
   if (!bar) return mediaHtml;
-  if (post.isAd && post.img && !(post.imgs && post.imgs.length > 1) && !post.video && !post.audio) {
+  if (post.isAd && post.img && !(post.imgs && post.imgs.length > 1) && !post.video && !post.audio && !full) {
     return '<div class="ad-hero">' + mediaHtml + '<div class="ad-hero-panel">' + bar + '</div></div>';
   }
   return mediaHtml + bar;
@@ -14078,7 +14119,7 @@ function renderPostCard(post, opts) {
     mediaHtml = renderTrackPlayer(post);
   }
   else if (post.imgs && post.imgs.length > 1) mediaHtml = renderPhotoStack(post);
-  else if (post.img) mediaHtml = '<img class="post-img" '+imageTagAttrs(post.img)+' alt="" data-open-post-media="'+post.id+'">';
+  else if (post.img) mediaHtml = '<img class="post-img" '+imageTagAttrs(post.img)+' alt="" '+(opts.commentsOpen ? 'data-zoom-img' : 'data-open-post-media="'+post.id+'"')+'>';
 
   var locHtml = post.loc ? '<div class="post-loc">'+sparkleIcon("loc",18)+' '+esc(post.loc)+'</div>' : "";
   var liked = postIsLiked(post);
@@ -14106,7 +14147,7 @@ function renderPostCard(post, opts) {
     '</div>' +
     '<p class="post-text" '+(opts.noOpenText?"":'data-open-post="'+post.id+'" style="cursor:pointer;"')+'>'+renderTextWithHashtags(post.text)+'</p>' +
     locHtml +
-    adHeroHtml(post, mediaHtml) +
+    adHeroHtml(post, mediaHtml, !!opts.commentsOpen) +
     '<div class="post-actions">' +
       '<button class="act-btn '+(liked?"liked":"")+'" data-like="'+post.id+'">'+cuteFaceSvg(24,liked?C.pink:"var(--sub)",liked)+' <span data-like-count="'+post.id+'">'+fmtNum(postLikeCount(post))+'</span></button>' +
       (post.isAd ? "" : '<button class="act-btn '+(fired?"fired":"")+'" data-fire="'+post.id+'">'+fireSvg(24,"var(--sub)",fired)+' <span data-fire-count="'+post.id+'">'+fmtNum(postFireCount(post))+'</span></button>') +
