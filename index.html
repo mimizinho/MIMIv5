@@ -4985,7 +4985,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.10.01";
+var APP_VERSION = "2026.11.10.02";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -13017,13 +13017,13 @@ function hasOpenOverlay() {
 // .bak_conta2, .bak_coment (ficam em ~/MIMIv5, não vão pro app).
 function optimizeCloudinaryVideoUrl(src) {
   if (!src || src.indexOf("res.cloudinary.com") === -1) return src;
-  if (src.indexOf("/upload/q_auto") !== -1 || src.indexOf("/upload/f_auto") !== -1) return src;
+  if (src.indexOf("/upload/q_auto") !== -1 || src.indexOf("/upload/f_auto") !== -1) return src.replace("res.cloudinary.com", "mimi-videos.gcorecdn.com");
   // FIX (perf/armazenamento): além de qualidade/formato automáticos, agora
   // também cap de resolução em 720p — vídeo vertical de celular não precisa
   // de mais que isso, e o Cloudinary entrega (e cacheia) essa versão menor
   // sem reprocessar nada no upload, então isso vale tanto pra vídeos novos
   // quanto pros que já estavam salvos antes dessa mudança.
-  return src.replace("/upload/", "/upload/q_auto,f_auto,w_720,c_limit/");
+  return src.replace("/upload/", "/upload/q_auto,f_auto,w_720,c_limit/").replace("res.cloudinary.com", "mimi-videos.gcorecdn.com");
 }
 function renderMimiPlayer(src, postId, ratio) {
   var optimizedSrc = optimizeCloudinaryVideoUrl(src);
@@ -13472,6 +13472,9 @@ class AdvancedVideoPlayer {
     if (!this._fallbackSrcs) {
       var cur = (this.video && (this.video.currentSrc || this.video.src)) || "";
       this._fallbackSrcs = [];
+      var viaGcore = cur.indexOf("mimi-videos.gcorecdn.com") !== -1;
+      cur = cur.replace("mimi-videos.gcorecdn.com", "res.cloudinary.com");
+      if (viaGcore) this._fallbackSrcs.push(cur);
       if (cur.indexOf("res.cloudinary.com") !== -1) {
         var orig = cur.replace("/upload/q_auto,f_auto,w_720,c_limit/", "/upload/");
         if (orig !== cur) this._fallbackSrcs.push(orig);
