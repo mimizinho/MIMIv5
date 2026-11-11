@@ -4985,7 +4985,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.10.02";
+var APP_VERSION = "2026.11.10.03";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -13016,6 +13016,7 @@ function hasOpenOverlay() {
 // commit desejado. Backups locais: index.html.bak_pid, .bak_opt, .bak_vibe,
 // .bak_conta2, .bak_coment (ficam em ~/MIMIv5, não vão pro app).
 function optimizeCloudinaryVideoUrl(src) {
+  if (src) src = src.replace("/nglzrxwd/video/", "/fwepltd3/video/");
   if (!src || src.indexOf("res.cloudinary.com") === -1) return src;
   if (src.indexOf("/upload/q_auto") !== -1 || src.indexOf("/upload/f_auto") !== -1) return src.replace("res.cloudinary.com", "mimi-videos.gcorecdn.com");
   // FIX (perf/armazenamento): além de qualidade/formato automáticos, agora
@@ -19881,6 +19882,7 @@ var profileTab = "posts";
 // pra usar como capa/miniatura real na grade de mídia, em vez de deixar a
 // célula vazia com só o ícone de câmera.
 function videoThumbUrl(url) {
+  if (url) url = url.replace("/nglzrxwd/video/", "/fwepltd3/video/");
   if (!url || url.indexOf("res.cloudinary.com") === -1 || url.indexOf("/video/upload/") === -1) return "";
   return url.replace("/video/upload/", "/video/upload/so_0/").replace(/\.[a-z0-9]+(\?.*)?$/i, ".jpg$1");
 }
@@ -25774,8 +25776,8 @@ var cloudinaryWidget = {
   // incoming transformation q_auto,c_limit,w_720.
   // PARA VOLTAR À CONTA ANTIGA: videoCloudName = "nglzrxwd" e
   // videoPreset = "video_upload".
-  videoCloudName: "qwqq67kj",
-  videoPreset: "mimi_unsigned",
+  videoCloudName: "fwepltd3",
+  videoPreset: "mimi_videos",
   cloudName: "nglzrxwd",
   apiKey: "322258179494869",
   
