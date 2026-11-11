@@ -2094,6 +2094,17 @@ body.theme-dark .np .np-d,body.theme-purple .np .np-d,body.theme-dark .np [data-
 .ad-takeover .ad-cta-bar .ad-cta-txt span{color:rgba(90,16,52,.75)}
 .ad-takeover .ad-slide{border-radius:14px;border:none}
 </style>
+<style id="mimi-ad-v3">
+.ad-hero{position:relative;margin:6px 12px 10px;border-radius:24px;overflow:hidden;background:#fff5f9}
+.ad-hero .post-img{width:100%;display:block;border-radius:0;margin:0}
+.ad-hero-panel{position:absolute;left:0;right:0;bottom:0;padding-top:54px;background:linear-gradient(to top,rgba(90,16,52,.8),rgba(90,16,52,0))}
+.ad-hero .ad-cta-bar{margin:0 12px 12px;border-radius:20px;background:rgba(255,255,255,.22);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.5)}
+.ad-hero .ad-cta-bar .ad-cta-txt b{color:#fff}
+.ad-hero .ad-cta-bar .ad-cta-txt span{color:rgba(255,255,255,.88)}
+.ad-hero .ad-cta-go{background:#fff;color:#c2336b;box-shadow:none}
+.ad-hero .ad-cta-go svg{stroke:#c2336b}
+.ad-hero .ad-slide{margin:0 12px 12px;border-radius:999px;background:rgba(255,255,255,.22);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.5);color:#fff}
+</style>
 </head>
 <body>
 <div id="app"></div>
@@ -5048,7 +5059,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.11.01";
+var APP_VERSION = "2026.11.11.02";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -14049,6 +14060,15 @@ function openVibeFromProfile(vibeId) {
   });
 }
 
+// Anúncio de imagem: imagem grande com painel (botão) por cima; demais: mídia + botão embaixo.
+function adHeroHtml(post, mediaHtml) {
+  var bar = adCtaBarHtml(post);
+  if (!bar) return mediaHtml;
+  if (post.isAd && post.img && !(post.imgs && post.imgs.length > 1) && !post.video && !post.audio) {
+    return '<div class="ad-hero">' + mediaHtml + '<div class="ad-hero-panel">' + bar + '</div></div>';
+  }
+  return mediaHtml + bar;
+}
 function renderPostCard(post, opts) {
   opts = opts || {};
   var author = USERS[post.authorId] || { name: "Usuário", username: "@usuario", avatar: DEFAULT_AVATAR, verified: false };
@@ -14079,14 +14099,14 @@ function renderPostCard(post, opts) {
           '<span class="post-sub">'+esc(post.time)+'</span>' +
         '</div>' +
         (post.music && post.music.url ? renderPostMusicLine(post) : "") +
-        (post.isAd ? '<div class="post-ad-label" style="display:inline-flex;align-items:center;gap:3px;margin-top:3px;padding:2px 8px;border-radius:20px;background:#e9fbf3;color:#1abc9c;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;">'+icoSvg("megaphone",11,"#1abc9c",true)+' Anúncio</div>' : "") +
+        "" +
       '</div>' +
+      (post.isAd ? '<span style="margin-right:4px;flex-shrink:0;">'+adBadgeHtml(0)+'</span>' : "") +
       '<button class="icon-btn" data-open-sheet="'+post.id+'" style="color:var(--muted);">'+icoSvg("more",20)+'</button>' +
     '</div>' +
     '<p class="post-text" '+(opts.noOpenText?"":'data-open-post="'+post.id+'" style="cursor:pointer;"')+'>'+renderTextWithHashtags(post.text)+'</p>' +
     locHtml +
-    mediaHtml +
-    adCtaBarHtml(post) +
+    adHeroHtml(post, mediaHtml) +
     '<div class="post-actions">' +
       '<button class="act-btn '+(liked?"liked":"")+'" data-like="'+post.id+'">'+cuteFaceSvg(24,liked?C.pink:"var(--sub)",liked)+' <span data-like-count="'+post.id+'">'+fmtNum(postLikeCount(post))+'</span></button>' +
       (post.isAd ? "" : '<button class="act-btn '+(fired?"fired":"")+'" data-fire="'+post.id+'">'+fireSvg(24,"var(--sub)",fired)+' <span data-fire-count="'+post.id+'">'+fmtNum(postFireCount(post))+'</span></button>') +
