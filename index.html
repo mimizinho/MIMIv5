@@ -4985,7 +4985,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.10.03";
+var APP_VERSION = "2026.11.10.04";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -7868,6 +7868,7 @@ var FB = {
       docs.forEach(function(d){
         if (d._createdAt && (!oldest || d._createdAt < oldest)) oldest = d._createdAt;
       });
+      try { _mimiDiag("posts", docs, "video"); } catch(e) {}
       var fsPosts = docs.map(function(d) {
         d.id = d._id;
         d._fromFs = true;
@@ -8244,6 +8245,7 @@ var FB = {
       // moderação (3.1): mesmo critério do loadPosts — some da lista dos
       // outros, mas o autor continua vendo a própria vibe.
       var missing = fullDocs.filter(function(d){ return d.chunked && !d.videoUrl; }).length;
+      try { _mimiDiag("vibes", fullDocs, "videoUrl"); } catch(e) {}
       if (missing > 0 && typeof showToast === "function") {
         showToast(toastWithIcon(missing + " vibe(s) não puderam ser carregadas (vídeo não encontrado).", "warning", "before"), true);
       }
@@ -13015,6 +13017,32 @@ function hasOpenOverlay() {
 // Para DESFAZER: git log --oneline (commits de 25/10/2026) e git revert do
 // commit desejado. Backups locais: index.html.bak_pid, .bak_opt, .bak_vibe,
 // .bak_conta2, .bak_coment (ficam em ~/MIMIv5, não vão pro app).
+// DIAGNÓSTICO (10/11/2026): contador de publicações do Feed e das Vibes.
+// Sem interface: só console (F12) e window.__mimiDiag. Conta posts/vibes
+// únicos já carregados, quantos têm vídeo, quantos NÃO têm (nas Vibes todo
+// item deveria ter vídeo; no Feed, texto/foto também entra em semVideo) e
+// de qual conta Cloudinary vem cada vídeo (fora = não é link Cloudinary).
+function _mimiDiag(tipo, docs, campo) {
+  var D = window.__mimiDiag = window.__mimiDiag || { _ids: {} };
+  var mapa = D._ids[tipo] = D._ids[tipo] || {};
+  (docs || []).forEach(function(x) {
+    var id = x && (x._id || x.id);
+    if (!id) return;
+    mapa[id] = (x[campo] && typeof x[campo] === "string") ? x[campo] : "";
+  });
+  var r = { total: 0, comVideo: 0, semVideo: 0, fora: 0, contas: {} };
+  Object.keys(mapa).forEach(function(id) {
+    var u = mapa[id];
+    r.total++;
+    if (!u) { r.semVideo++; return; }
+    r.comVideo++;
+    var m = u.match(/(?:res\.cloudinary\.com|gcorecdn\.com)\/([^\/]+)\/video\//);
+    if (m) r.contas[m[1]] = (r.contas[m[1]] || 0) + 1; else r.fora++;
+  });
+  r.atualizado = new Date().toISOString();
+  D[tipo] = r;
+  console.log("[DIAG " + tipo + "] total=" + r.total + " comVideo=" + r.comVideo + " semVideo=" + r.semVideo + " fora=" + r.fora + " contas=" + JSON.stringify(r.contas));
+}
 function optimizeCloudinaryVideoUrl(src) {
   if (src) src = src.replace("/nglzrxwd/video/", "/fwepltd3/video/");
   if (!src || src.indexOf("res.cloudinary.com") === -1) return src;
