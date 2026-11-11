@@ -2080,7 +2080,21 @@ body.theme-dark .np .np-d,body.theme-purple .np .np-d,body.theme-dark .np [data-
 }
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Manrope:wght@500;700;800&display=swap">
-<style id="mimi-video-preto">video{background:#000}</style></head>
+<style id="mimi-video-preto">video{background:#000}</style><style id="mimi-ad-v2">
+.ad-cta-bar{background:linear-gradient(135deg,#fff5f9,#ffe3ef);border-top:1px solid #ffd6e6;border-bottom:1px solid #ffd6e6}
+.ad-cta-bar:active{background:#ffd6e6}
+.ad-cta-bar .ad-cta-txt b{color:#d6336c}
+.ad-cta-go{display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,#ff8fb8,#ff6fa3);color:#fff;font-weight:800;font-size:12.5px;padding:8px 14px;border-radius:999px;box-shadow:0 4px 12px rgba(255,111,163,.35)}
+.ad-slide{position:relative;height:50px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#d6336c;background:linear-gradient(135deg,#fff5f9,#ffe3ef);border-top:1px solid #ffd6e6;border-bottom:1px solid #ffd6e6;overflow:hidden;user-select:none;-webkit-user-select:none}
+.ad-slide-knob{position:absolute;left:6px;top:6px;width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#ffd0e3,#ff6fa3);display:flex;align-items:center;justify-content:center;touch-action:none;animation:adSlideHint 2.6s ease-in-out infinite}
+@keyframes adSlideHint{0%,55%{transform:translateX(0)}75%{transform:translateX(14px)}100%{transform:translateX(0)}}
+.ad-slide.drag .ad-slide-knob{animation:none}
+.ad-takeover .ad-cta-bar{background:linear-gradient(135deg,#ffd0e3,#ff8fb8)}
+.ad-takeover .ad-cta-bar .ad-cta-txt b{color:#5a1034}
+.ad-takeover .ad-cta-bar .ad-cta-txt span{color:rgba(90,16,52,.75)}
+.ad-takeover .ad-slide{border-radius:14px;border:none}
+</style>
+</head>
 <body>
 <div id="app"></div>
 
@@ -2848,12 +2862,16 @@ function adCtaBarHtml(p) {
   var url = adLinkOf(p);
   if (!url) return "";
   var host = adLinkHost(url);
+  if (p && p.adType === "slide") {
+    return '<div class="ad-slide" data-ad-slide="'+esc(url)+'"><span>Deslize para acessar</span>' +
+      '<div class="ad-slide-knob"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5a1034" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></div></div>';
+  }
   return '<div class="ad-cta-bar" data-ad-link="'+esc(url)+'">' +
       '<div class="ad-cta-txt">' +
         '<b>'+esc(adCtaLabel(p))+'</b>' +
         (host ? '<span>'+esc(host)+'</span>' : "") +
       '</div>' +
-      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1abc9c" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>' +
+      '<span class="ad-cta-go">Visitar<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></span>' +
     '</div>';
 }
 // Liga o clique da faixa em qualquer trecho de DOM já renderizado.
@@ -2868,12 +2886,57 @@ function bindAdCtaBars(root) {
       openAdLink(el.getAttribute("data-ad-link"));
     });
   });
+  root.querySelectorAll("[data-ad-slide]").forEach(function(el) {
+    if (el._adSlideBound) return;
+    el._adSlideBound = true;
+    var knob = el.querySelector(".ad-slide-knob");
+    if (!knob) return;
+    var startX = 0, dx = 0, max = 0, dragging = false;
+    el.addEventListener("click", function(ev) { ev.stopPropagation(); });
+    knob.addEventListener("pointerdown", function(ev) {
+      ev.stopPropagation();
+      dragging = true; startX = ev.clientX; dx = 0;
+      max = el.clientWidth - knob.offsetWidth - 12;
+      el.classList.add("drag");
+      try { knob.setPointerCapture(ev.pointerId); } catch (e) {}
+    });
+    knob.addEventListener("pointermove", function(ev) {
+      if (!dragging) return;
+      dx = Math.max(0, Math.min(max, ev.clientX - startX));
+      knob.style.transform = "translateX(" + dx + "px)";
+    });
+    function fim() {
+      if (!dragging) return;
+      dragging = false;
+      el.classList.remove("drag");
+      var ok = dx >= max * 0.8;
+      knob.style.transition = "transform .2s";
+      knob.style.transform = "";
+      setTimeout(function() { knob.style.transition = ""; }, 220);
+      dx = 0;
+      if (ok) openAdLink(el.getAttribute("data-ad-slide"));
+    }
+    knob.addEventListener("pointerup", fim);
+    knob.addEventListener("pointercancel", fim);
+  });
 }
+// Seletor "Tipo de botão" do Novo anúncio (DOM direto, sem render)
+document.addEventListener("click", function(ev) {
+  var b = ev.target && ev.target.closest ? ev.target.closest("[data-ad-type]") : null;
+  if (!b) return;
+  compose.adType = b.getAttribute("data-ad-type") === "slide" ? "slide" : "site";
+  b.parentNode.querySelectorAll("[data-ad-type]").forEach(function(x) {
+    var on = x === b;
+    x.style.background = on ? "linear-gradient(135deg,#ff8fb8,#ff6fa3)" : "transparent";
+    x.style.color = on ? "#fff" : "var(--muted)";
+    x.style.borderColor = on ? "#ff6fa3" : "var(--border)";
+  });
+});
 
 
 // Selo "Anúncio" reutilizado em Feed, Stories, Vibes e Banner.
 function adBadgeHtml(marginTop) {
-  return '<div style="display:inline-flex;align-items:center;gap:3px;margin-top:'+(marginTop||2)+'px;padding:1px 7px;border-radius:20px;background:#e9fbf3;color:#1abc9c;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;">'+icoSvg("megaphone",10,"#1abc9c",true)+' Anúncio</div>';
+  return '<div style="display:inline-flex;align-items:center;gap:5px;margin-top:'+(marginTop||2)+'px;padding:2px 9px;border-radius:20px;background:#ffe3ef;color:#e0457f;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.9px;"><span style="width:6px;height:6px;border-radius:50%;background:#ff6fa3;display:inline-block;"></span>Anúncio</div>';
 }
 // Anúncios que devem aparecer nos Stories / nas Vibes.
 function adsForPlace(where) {
@@ -4985,7 +5048,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.10.04";
+var APP_VERSION = "2026.11.11.01";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -7830,6 +7893,7 @@ var FB = {
       adPlaces:  postData.adPlaces || null,
       adLink:    postData.adLink || null,
       adCta:     postData.adCta || null,
+      adType:    postData.adType || null,
       likedBy:   [],
       fireTotal: 0,
       // Estado de moderação (3.1): todo post nasce "published". Denúncias
@@ -22718,6 +22782,14 @@ function renderCreatePost() {
         '</div>' +
         '<div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-bottom:8px;">Cria um botão clicável embaixo do anúncio que leva pro seu site.</div>' +
         '<input type="url" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" data-ad-link-input placeholder="www.seusite.com" value="'+esc(compose.adLink||"")+'" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);font-size:13.5px;color:var(--text);">' +
+        '<div style="font-size:11.5px;color:var(--muted);margin:10px 0 6px;font-weight:700;">Tipo de botão</div>' +
+        '<div class="row" style="gap:6px;margin-bottom:4px;">' +
+          [["site","Site"],["slide","Deslizar"]].map(function(o) {
+            var on = (compose.adType || "site") === o[0];
+            return '<button type="button" data-ad-type="'+o[0]+'" style="flex:1;padding:8px 12px;border-radius:20px;font-size:12px;font-weight:800;cursor:pointer;border:1px solid '+(on?"#ff6fa3":"var(--border)")+';background:'+(on?"linear-gradient(135deg,#ff8fb8,#ff6fa3)":"transparent")+';color:'+(on?"#fff":"var(--muted)")+';">'+o[1]+'</button>';
+          }).join("") +
+        '</div>' +
+        '<div style="font-size:11px;color:var(--muted);margin-bottom:2px;">Nos dois casos o link abre fora do aplicativo.</div>' +
         '<div style="font-size:11.5px;color:var(--muted);margin:10px 0 6px;font-weight:700;">Texto do botão</div>' +
         '<div class="row" style="gap:6px;flex-wrap:wrap;">' +
           Object.keys(AD_CTA_LABELS).map(function(k) {
@@ -23012,6 +23084,7 @@ function bindCreatePost() {
         } : null,
         adLink: compose.isAd ? (normalizeAdLink(compose.adLink) || null) : null,
         adCta: compose.isAd ? (compose.adCta || "saiba") : null,
+        adType: compose.isAd ? (compose.adType || "site") : null,
         likedBy:[], saved:false, time:"agora",
       };
       posts.unshift(newPost);
