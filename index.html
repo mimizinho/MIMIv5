@@ -5064,7 +5064,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.11.07";
+var APP_VERSION = "2026.11.11.08";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -14071,7 +14071,6 @@ function mimiZoomImg(el) {
   if (document.getElementById("mimi-zoom")) return;
   if (_zoomBusy && Date.now() - _zoomT < 700) return;
   _zoomBusy = true; _zoomT = Date.now();
-  showToast("zoom: toque"); // DEBUGZOOM
   var r = el.getBoundingClientRect(), t0 = Date.now();
   el.animate([{ transform: "scale(1)" }, { transform: "scale(.95)" }, { transform: "scale(1.02)" }], { duration: 160, easing: "ease-out" });
   var big = new Image(), opened = false, queued = false;
@@ -14088,7 +14087,6 @@ function mimiZoomImg(el) {
     big.style.cssText = "width:" + W + "px;height:" + H + "px;will-change:transform";
     ov.appendChild(big); document.body.appendChild(ov);
     el.style.visibility = "hidden";
-    showToast("zoom: abriu"); // DEBUGZOOM
     ov.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160 });
     big.animate([{ transform: from }, { transform: "none" }], { duration: 340, easing: "cubic-bezier(.2,.9,.3,1.08)" });
     var closing = false;
