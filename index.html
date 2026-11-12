@@ -5071,7 +5071,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.12.01";
+var APP_VERSION = "2026.11.12.02";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -15455,7 +15455,6 @@ function buildExploreBodyHtml(q) {
     if (p.isAd) return; // anúncio nunca entra na grade do Explorar
     if (p.img) html += '<div class="explore-cell" data-open-post="'+p.id+'" style="cursor:pointer;"><img '+imageTagAttrs(p.img)+' alt=""></div>';
   });
-  EXPLORE_IMGS.forEach(function(id) { html += '<div class="explore-cell"><img src="https://images.unsplash.com/'+id+'?w=300&q=80" alt=""></div>'; });
   html += '</div>' + renderAppAdBanner("explore") + '<div style="height:16px;"></div>';
   return html;
 }
