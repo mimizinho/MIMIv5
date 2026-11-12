@@ -2108,6 +2108,13 @@ body.theme-dark .np .np-d,body.theme-purple .np .np-d,body.theme-dark .np [data-
 .ad-hero .ad-cta-bar .ad-cta-txt span{color:rgba(255,255,255,.88)}
 .ad-hero .ad-cta-go{background:#fff;color:#c2336b;box-shadow:none}
 .ad-hero .ad-cta-go svg{stroke:#c2336b}
+.ad-hero.ad-stack .ad-hero-panel{position:static;padding:10px 0 0;background:#ffe3ef}
+.ad-hero.ad-stack .ad-cta-bar{margin:0 10px 10px;background:rgba(255,255,255,.75);border:1px solid #fff}
+.ad-hero.ad-stack .ad-cta-txt b{color:#d6336c}
+.ad-hero.ad-stack .ad-cta-txt span{color:#8a4a66}
+.ad-hero.ad-stack .ad-cta-go{background:linear-gradient(135deg,#ff8fb8,#ff6fa3);color:#fff}
+.ad-hero.ad-stack .ad-cta-go svg{stroke:#fff}
+.ad-hero.ad-stack .ad-slide{margin:0 10px 10px;background:rgba(255,255,255,.75);border-color:#fff;color:#c2336b}
 .ad-hero .ad-slide{margin:0 12px 12px;border-radius:999px;background:rgba(255,255,255,.22);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.5);color:#fff}
 </style>
 </head>
@@ -5064,7 +5071,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.11.08";
+var APP_VERSION = "2026.11.11.09";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -14120,6 +14127,13 @@ function adHeroHtml(post, mediaHtml, full) {
   }
   return mediaHtml + bar;
 }
+document.addEventListener("load",function(e){
+  var t=e.target;
+  if(!t||t.tagName!=="IMG"||!t.closest)return;
+  var h=t.closest(".ad-hero");
+  if(!h||String(t.className).indexOf("post-img")<0)return;
+  h.classList.toggle("ad-stack",t.clientHeight<220);
+},true);
 function renderPostCard(post, opts) {
   opts = opts || {};
   var author = USERS[post.authorId] || { name: "Usuário", username: "@usuario", avatar: DEFAULT_AVATAR, verified: false };
