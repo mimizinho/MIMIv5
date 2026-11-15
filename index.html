@@ -5038,7 +5038,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.15.18";
+var APP_VERSION = "2026.11.15.19";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -7291,8 +7291,9 @@ function _bumpVibeEngagementAggregate(vibeId, eventType, value) {
     // dá pra carregar ela inteira no início do loadUserVibes sem custo.
     // Não conta afinidade com o próprio autor (ver vídeo próprio não
     // deveria inflar preferência por si mesmo).
-    if (v.userId && v.userId !== ME_ID) {
-      _bumpAuthorAffinity(v.userId, eventType, value);
+    var _affAuthor = v.authorId || v.userId;
+    if (_affAuthor && _affAuthor !== ME_ID) {
+      _bumpAuthorAffinity(_affAuthor, eventType, value);
     }
   }).catch(function() {});
 }
