@@ -5038,7 +5038,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.15.04";
+var APP_VERSION = "2026.11.15.05";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -12426,9 +12426,7 @@ function bindStoriesEvents() {
         }
         cloudinaryWidget.uploadDirectFile(file, "video", function(url) { publishStoryItem("video", url); });
       } else {
-        compressImageToDataUrl(file, 1280, 0.75).then(function(dataUrl) {
-          publishStoryItem("image", dataUrl);
-        }).catch(function() {
+        ImageGateway.upload(file, "post", { fileName: file.name || "story.jpg" }).then(function(filePath) { publishStoryItem("image", filePath); }).catch(function() { return compressImageToDataUrl(file, 1280, 0.75).then(function(dataUrl) { publishStoryItem("image", dataUrl); }); }).catch(function() {
           showToast(toastWithIcon("Não foi possível processar essa imagem.", "warning", "before"), true);
         });
       }
