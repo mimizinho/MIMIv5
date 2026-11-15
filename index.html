@@ -5038,7 +5038,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.15.02";
+var APP_VERSION = "2026.11.15.03";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -9989,6 +9989,7 @@ function startPresence() {
   clearInterval(_presenceInterval);
   _presenceInterval = setInterval(pollGuard(function() {
     if (!_idToken || !_fbUid || _deletingAccount) { clearInterval(_presenceInterval); return; }
+    if (document.hidden) return;
     fsSet("users/"+_fbUid, { online: true, lastSeen: new Date().toISOString() }).catch(function(){});
   }), jitterMs(30000));
   // Ao fechar/sair marca offline
@@ -13365,6 +13366,7 @@ document.addEventListener("visibilitychange", function() {
     startNotifPolling();
     startStoryPolling();
     startPostsReactionPolling();
+    if (!_deletingAccount) fsSet("users/"+_fbUid, { online: true, lastSeen: new Date().toISOString() }).catch(function(){});
   }
 });
 
