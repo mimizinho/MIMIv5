@@ -5038,7 +5038,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.15.13";
+var APP_VERSION = "2026.11.15.14";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -9667,6 +9667,7 @@ function sigPollGuard(key, every, fn) {
   var guarded = pollGuard(fn), n = 0;
   _sigTicks[key] = guarded;
   return function () {
+    if (!MimiSignals.isLive() && !document.hidden) { try { MimiSignals.start(); } catch (e) {} }
     if (MimiSignals.isLive() && (++n % every) !== 0) return;
     guarded();
   };
