@@ -5038,7 +5038,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.15.19";
+var APP_VERSION = "2026.11.15.20";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -9071,7 +9071,8 @@ var FB = {
   logEvent: function(contentId, eventType, value) {
     if (!_idToken || !contentId) return;
     var id = uid();
-    fsSet("interaction_events/" + id, {
+    // Evento bruto desligado: o servidor recusa interaction_events (403). Para religar: window.MIMI_RAW_EVENTS = true.
+    if (window.MIMI_RAW_EVENTS === true) fsSet("interaction_events/" + id, {
       userId: ME_ID,
       contentId: contentId,
       eventType: eventType,
