@@ -5038,7 +5038,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.15.07";
+var APP_VERSION = "2026.11.15.08";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -9610,6 +9610,73 @@ function markUiAnimating(ms) { _uiAnimBusyUntil = Date.now() + (ms || 300); }
 function uiAnimBusy() { return Date.now() < _uiAnimBusyUntil; }
 // Envolve o corpo de um poll: se a UI está animando, reagenda pro instante
 // seguinte ao fim da animação em vez de rodar agora.
+// ── SINAL EM TEMPO REAL (Supabase Realtime, tabela "signals") ──────────
+// Em vez de perguntar ao servidor a cada poucos segundos se algo mudou, o app
+// escuta só um carimbo de horário por categoria (chat, notifs, stories,
+// reações). Quando o carimbo muda, roda na hora o MESMO código do polling
+// daquela categoria. O polling antigo fica como rede de segurança lenta.
+var _sigTicks = {};
+function sigPollGuard(key, every, fn) {
+  var guarded = pollGuard(fn), n = 0;
+  _sigTicks[key] = guarded;
+  return function () {
+    if (MimiSignals.isLive() && (++n % every) !== 0) return;
+    guarded();
+  };
+}
+var MimiSignals = (function () {
+  var client = null, channel = null, live = false, curUid = null;
+  var last = {}, timers = {};
+  var MAP = { chat: "convos", notifs: "notifs", stories: "stories", reactions: "reactions" };
+  function fire(col) {
+    if (timers[col]) return;
+    timers[col] = setTimeout(function () {
+      timers[col] = null;
+      var f = _sigTicks[MAP[col]];
+      if (f) { try { f(); } catch (e) {} }
+    }, 1200);
+  }
+  function seed(row) {
+    Object.keys(MAP).forEach(function (col) { if (row[col]) last[col] = row[col]; });
+  }
+  function onRow(row) {
+    if (!row) return;
+    Object.keys(MAP).forEach(function (col) {
+      var v = row[col];
+      if (v && v !== last[col]) { last[col] = v; fire(col); }
+    });
+  }
+  function catchUp(me) {
+    try {
+      var seeded = Object.keys(last).length > 0;
+      client.from("signals").select("*").in("uid", [me, "_global"]).then(function (r) {
+        ((r && r.data) || []).forEach(function (row) { if (seeded) onRow(row); else seed(row); });
+      }, function () {});
+    } catch (e) {}
+  }
+  function stop() {
+    live = false; curUid = null;
+    try { if (channel && client) client.removeChannel(channel); } catch (e) {}
+    channel = null;
+  }
+  function start() {
+    if (!_fbUid || !window.supabase || !window.supabase.createClient) return;
+    if (channel && curUid === _fbUid) return;
+    stop();
+    try {
+      if (!client) client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
+      var me = _fbUid; curUid = me;
+      channel = client.channel("sig-" + me)
+        .on("postgres_changes", { event: "*", schema: "public", table: "signals", filter: "uid=in.(" + me + ",_global)" }, function (p) { onRow(p && p.new); })
+        .subscribe(function (status) {
+          live = (status === "SUBSCRIBED");
+          if (live) catchUp(me);
+        });
+    } catch (e) { live = false; }
+  }
+  return { start: start, stop: stop, isLive: function () { return live; } };
+})();
+
 function pollGuard(fn) {
   return function() {
     if (uiAnimBusy() || _publishSheetAnimating) {
@@ -9871,7 +9938,8 @@ var _convoListPollInterval = null;
 function startConvoListPolling() {
   stopConvoListPolling();
   if (!_idToken || !_fbUid) return;
-  _convoListPollInterval = setInterval(pollGuard(function() {
+  MimiSignals.start();
+  _convoListPollInterval = setInterval(sigPollGuard("convos", 3, function() {
     if (!_idToken || !_fbUid) { stopConvoListPolling(); return; }
     refreshConvoList();
   }), jitterMs(10000));
@@ -10437,7 +10505,7 @@ function startNotifPolling() {
   _lastNotifCheck = new Date().toISOString();
 
   // ✅ FIX 5a: Aumentar de 12s para 20s, passa _lastNotifCheck para busca incremental
-  _notifPollInterval = setInterval(pollGuard(function() {
+  _notifPollInterval = setInterval(sigPollGuard("notifs", 6, function() {
     if (!_idToken || !_fbUid) { stopNotifPolling(); return; }
     FB.loadNotifs(_lastNotifCheck).then(function(docs) {
       if (!docs || !docs.length) return;
@@ -10526,7 +10594,7 @@ function startStoryPolling() {
   stopStoryPolling();
   if (!_idToken || !_fbUid) return;
   // ✅ FIX 5b: Aumentar de 8s para 15s, passa _lastStoryCheck para busca incremental
-  _storyPollInterval = setInterval(pollGuard(function() {
+  _storyPollInterval = setInterval(sigPollGuard("stories", 6, function() {
     if (!_idToken || !_fbUid) { stopStoryPolling(); return; }
     FB.loadStories(_lastStoryCheck).then(function(){ 
       _lastStoryCheck = new Date().toISOString();
@@ -10554,7 +10622,7 @@ var _postsReactionPollInterval = null;
 function startPostsReactionPolling() {
   stopPostsReactionPolling();
   if (!_idToken || !_fbUid) return;
-  _postsReactionPollInterval = setInterval(pollGuard(function() {
+  _postsReactionPollInterval = setInterval(sigPollGuard("reactions", 6, function() {
     if (!_idToken || !_fbUid) { stopPostsReactionPolling(); return; }
     syncPostsReactionsFromServer();
   }), jitterMs(15000));
@@ -13379,6 +13447,7 @@ document.addEventListener("visibilitychange", function() {
     stopNotifPolling();
     stopStoryPolling();
     stopPostsReactionPolling();
+    MimiSignals.stop();
   } else if (_idToken && _fbUid) {
     startConvoListPolling();
     startNotifPolling();
