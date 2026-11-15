@@ -5038,7 +5038,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.15.12";
+var APP_VERSION = "2026.11.15.13";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -6874,7 +6874,7 @@ var SupabaseDB = (function () {
         window.__gwD.i = setInterval(function () {
           var c = window.__gwD.c, ks = Object.keys(c).sort(function (a, b) { return c[b] - c[a]; }), tot = 0, i;
           for (i = 0; i < ks.length; i++) tot += c[ks[i]];
-          var msg = "DIAG 2min total " + tot + ": " + ks.slice(0, 5).map(function (k) { return k + " x" + c[k]; }).join(" | ");
+          var msg = "DIAG sinal=" + (MimiSignals.isLive() ? "ON" : "OFF") + " " + (window.__sigSt || "-") + " | 2min total " + tot + ": " + ks.slice(0, 5).map(function (k) { return k + " x" + c[k]; }).join(" | ");
           window.__gwD.c = {};
           try { showToast(msg); } catch (e) {}
         }, 120000);
@@ -9717,6 +9717,13 @@ var MimiSignals = (function () {
         .on("postgres_changes", { event: "*", schema: "public", table: "signals", filter: "uid=in.(" + me + ",_global)" }, function (p) { onRow(p && p.new); })
         .subscribe(function (status) {
           live = (status === "SUBSCRIBED");
+          window.__sigSt = status;
+          if (!live && curUid === me && !window.__sigRetry) {
+            window.__sigRetry = setTimeout(function () {
+              window.__sigRetry = null;
+              if (!live && curUid === me && !document.hidden) { stop(); start(); }
+            }, 5000);
+          }
           if (live) catchUp(me);
         });
     } catch (e) { live = false; }
