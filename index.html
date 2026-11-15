@@ -5038,7 +5038,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.15.01";
+var APP_VERSION = "2026.11.15.02";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -6534,6 +6534,47 @@ var AudioGateway = (function () {
 // imagem por vez — não precisa ser por tipo.
 var _imgUploadBusy = false;
 
+// Reduz (máx. 1080 px) e converte a imagem pra WebP antes do upload.
+// Qualquer falha devolve o arquivo original, então o envio nunca quebra.
+function _mimiPrepImage(blob, fileName, maxDim) {
+  maxDim = maxDim || 1080;
+  fileName = fileName || "image.jpg";
+  var pass = { blob: blob, fileName: fileName };
+  return new Promise(function (resolve) {
+    var url = null;
+    function finish(r) { try { if (url) URL.revokeObjectURL(url); } catch (e) {} resolve(r); }
+    try {
+      var t = (blob && blob.type) || "";
+      if (!/^image\/(jpeg|png|webp)$/i.test(t)) { resolve(pass); return; }
+      url = URL.createObjectURL(blob);
+      var img = new Image();
+      img.onload = function () {
+        try {
+          var w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+          if (!w || !h) { finish(pass); return; }
+          var scale = Math.min(1, maxDim / Math.max(w, h));
+          var cw = Math.max(1, Math.round(w * scale)), ch = Math.max(1, Math.round(h * scale));
+          var c = document.createElement("canvas"); c.width = cw; c.height = ch;
+          c.getContext("2d").drawImage(img, 0, 0, cw, ch);
+          var base = String(fileName).replace(/\.[^.]+$/, "");
+          var done = function (b, ext) {
+            if (!b || (scale === 1 && b.size >= blob.size)) { finish(pass); return; }
+            finish({ blob: b, fileName: base + ext });
+          };
+          c.toBlob(function (b) {
+            if (b && b.type === "image/webp") { done(b, ".webp"); return; }
+            var c2 = document.createElement("canvas"); c2.width = cw; c2.height = ch;
+            var x2 = c2.getContext("2d"); x2.fillStyle = "#fff"; x2.fillRect(0, 0, cw, ch); x2.drawImage(img, 0, 0, cw, ch);
+            c2.toBlob(function (b2) { done(b2, ".jpg"); }, "image/jpeg", 0.82);
+          }, "image/webp", 0.8);
+        } catch (e) { finish(pass); }
+      };
+      img.onerror = function () { finish(pass); };
+      img.src = url;
+    } catch (e) { finish(pass); }
+  });
+}
+
 var ImageGateway = (function () {
   "use strict";
 
@@ -6614,7 +6655,10 @@ var ImageGateway = (function () {
     // opts.convoId é obrigatório.
     upload: function (blob, scope, opts) {
       opts = opts || {};
-      return blobToBase64(blob).then(function (b64) {
+      return _mimiPrepImage(blob, opts.fileName).then(function (prep) {
+        blob = prep.blob; opts = { convoId: opts.convoId, fileName: prep.fileName };
+        return blobToBase64(blob);
+      }).then(function (b64) {
         return call({
           op: "upload",
           scope: scope,
