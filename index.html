@@ -5038,7 +5038,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.15.11";
+var APP_VERSION = "2026.11.15.12";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -6307,7 +6307,13 @@ function flushAllPendingWrites() {
   var chain = Promise.resolve();
   queue.forEach(function(item){
     chain = chain.then(function(){
-      return _flushOne(item).catch(function(){ toKeep.push(item); });
+      return _flushOne(item).catch(function(err){
+        var st = err && err.status;
+        var velho = item.ts && (Date.now() - item.ts) > 172800000;
+        var recusada = st >= 400 && st < 500 && st !== 401 && st !== 408 && st !== 429;
+        if (velho || recusada) { console.warn("🗑️ Pendência descartada:", item.path, st || "velha"); return; }
+        toKeep.push(item);
+      });
     });
   });
   return chain.then(function(){
