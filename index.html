@@ -2189,7 +2189,7 @@ window.addEventListener("unhandledrejection", function(e) {
   // Falhas de fetch/rede são comuns em conexões móveis instáveis (sinal fraco,
   // 3G, etc.) e não indicam um bug do app — evitamos assustar quem está numa
   // rede ruim com o painel vermelho de diagnóstico; só registramos no console.
-  if (msg && /Failed to fetch|NetworkError|Load failed|network error/i.test(msg)) {
+  if (msg && /Failed to fetch|NetworkError|Load failed|network error|The play\(\) request was interrupted/i.test(msg)) {
     return;
   }
   _mimiShowFatalError("Promise: " + msg);
@@ -5038,7 +5038,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.15.06";
+var APP_VERSION = "2026.11.15.07";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
