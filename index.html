@@ -5038,7 +5038,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.15.10";
+var APP_VERSION = "2026.11.15.11";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -6860,6 +6860,21 @@ var SupabaseDB = (function () {
   // renova o idToken (mesmo mecanismo do fsFetch pro Firebase) e repete
   // a chamada UMA vez antes de desistir.
   function callGateway(payload) {
+    try {
+      var _dk = (payload.op || "?") + " " + String(payload.path || payload.collection || "").split("/").map(function (x) { return x.length > 14 || /^\\d+$/.test(x) ? "*" : x; }).join("/") + (payload.field ? " " + payload.field : "");
+      window.__gwD = window.__gwD || { c: {}, t: 0 };
+      window.__gwD.c[_dk] = (window.__gwD.c[_dk] || 0) + 1;
+      if (!window.__gwD.i) {
+        window.__gwD.i = setInterval(function () {
+          var c = window.__gwD.c, ks = Object.keys(c).sort(function (a, b) { return c[b] - c[a]; }), tot = 0, i;
+          for (i = 0; i < ks.length; i++) tot += c[ks[i]];
+          var msg = "DIAG 2min total " + tot + ": " + ks.slice(0, 5).map(function (k) { return k + " x" + c[k]; }).join(" | ");
+          window.__gwD.c = {};
+          try { showToast(msg); } catch (e) {}
+        }, 120000);
+      }
+    } catch (e) {}
+
     function attempt() {
       return fetchWithTimeout(SUPABASE_FUNCTION_URL, {
         method: "POST",
