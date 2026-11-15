@@ -5038,7 +5038,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.15.03";
+var APP_VERSION = "2026.11.15.04";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -13357,6 +13357,7 @@ document.addEventListener("visibilitychange", function() {
 // ficar visível (e o usuário ainda está logado).
 document.addEventListener("visibilitychange", function() {
   if (document.hidden) {
+    if (_idToken && _fbUid && !_deletingAccount) fsSet("users/"+_fbUid, { online: false, lastSeen: new Date().toISOString() }).catch(function(){});
     stopConvoListPolling();
     stopNotifPolling();
     stopStoryPolling();
