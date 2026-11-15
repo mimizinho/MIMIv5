@@ -5038,7 +5038,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.15.17";
+var APP_VERSION = "2026.11.15.18";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -16269,7 +16269,7 @@ function renderChatBubbleContent(m) {
       ? '<img class="bubble-img" data-imgpath="'+esc(m.src)+'" src="" alt="">'
       : '<img class="bubble-img" src="'+esc(m.src)+'" alt="">';
   }
-  if (m.type === "video") return '<div class="vid-wrap" onclick="openChatVideo(this)"><video class="bubble-video" preload="auto" src="'+esc(optimizeCloudinaryVideoUrl(m.src))+'" muted playsinline></video><span class="vid-dur"></span><span class="vid-play"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="#fff"/></svg></span></div>';
+  if (m.type === "video") return '<div class="vid-wrap" onclick="openChatVideo(this)"><video class="bubble-video" preload="metadata" src="'+esc(optimizeCloudinaryVideoUrl(m.src))+'#t=0.1" muted playsinline></video><span class="vid-dur"></span><span class="vid-play"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="#fff"/></svg></span></div>';
   if (m.type === "sticker") {
     return looksLikeImageSrc(m.src)
       ? '<img class="bubble-sticker" src="'+esc(m.src)+'" alt="">'
@@ -16916,7 +16916,7 @@ var _cbx=appEl.querySelector(".chat-msgs");if(_swRow&&_cbx&&window.ResizeObserve
           '<div class="msg-time">'+_relTime(createdAt)+'</div></div>';
       } else if (mediaType === "video") {
         msgCard.innerHTML = '<div class="msg-avatar" '+avatarDivAttrs+'></div>' +
-          '<div class="msg-wrapper"><div class="msg-content"><div class="vid-wrap" onclick="openChatVideo(this)"><video class="bubble-video" preload="auto" src="' + esc(optimizeCloudinaryVideoUrl(src)) + '" muted playsinline></video><span class="vid-dur"></span><span class="vid-play"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="#fff"/></svg></span></div></div>' +
+          '<div class="msg-wrapper"><div class="msg-content"><div class="vid-wrap" onclick="openChatVideo(this)"><video class="bubble-video" preload="metadata" src="' + esc(optimizeCloudinaryVideoUrl(src)) + '#t=0.1" muted playsinline></video><span class="vid-dur"></span><span class="vid-play"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="#fff"/></svg></span></div></div>' +
           '<div class="msg-time">'+_relTime(createdAt)+'</div></div>';
       }
       
