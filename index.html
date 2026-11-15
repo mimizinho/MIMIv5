@@ -5038,7 +5038,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.15.08";
+var APP_VERSION = "2026.11.15.09";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -6736,10 +6736,36 @@ var ImageGateway = (function () {
 // resolvido nesta passada — troca o filePath do ImageKit por uma URL
 // assinada de verdade. Chamado no fim de render() e depois de qualquer
 // backgroundRender() que possa ter introduzido imagens novas na tela.
+var _mimiLazyIO = null;
+function _mimiLazyFilter(list) {
+  var out = [], k;
+  if (!('IntersectionObserver' in window)) { for (k = 0; k < list.length; k++) out.push(list[k]); return out; }
+  if (!_mimiLazyIO) {
+    _mimiLazyIO = new IntersectionObserver(function (es) {
+      for (var a = 0; a < es.length; a++) {
+        if (!es[a].isIntersecting) continue;
+        var t = es[a].target;
+        _mimiLazyIO.unobserve(t);
+        t.setAttribute('data-lazyok', '1');
+        try { hydrateImages(t.parentNode || appEl); } catch (e) {}
+      }
+    }, { rootMargin: '800px 0px' });
+  }
+  for (k = 0; k < list.length; k++) {
+    var el = list[k];
+    if (el.getAttribute('data-lazyok')) { out.push(el); continue; }
+    var r = el.getBoundingClientRect();
+    if (r.bottom > -800 && r.top < (window.innerHeight || 800) + 800) out.push(el);
+    else _mimiLazyIO.observe(el);
+  }
+  return out;
+}
+
 function hydrateImages(root) {
   root = root || appEl;
   if (!root) return;
   var imgs = root.querySelectorAll('img[data-imgpath]:not([data-hydrated])');
+  imgs = _mimiLazyFilter(imgs);
   for (var i = 0; i < imgs.length; i++) {
     (function (el) {
       var filePath = el.getAttribute('data-imgpath');
