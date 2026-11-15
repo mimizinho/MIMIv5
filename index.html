@@ -5038,7 +5038,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.15.05";
+var APP_VERSION = "2026.11.15.06";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -6628,7 +6628,26 @@ var ImageGateway = (function () {
   // vez que a mesma imagem é renderizada de novo (ex.: scroll do feed).
   // Guarda por 5 min a menos que o prazo real, pra nunca servir uma URL
   // vencida por causa do cache.
-  var _urlCache = {}; // filePath -> { url, expiresAt }
+  var _urlCache = (function () {
+    var o = {};
+    try {
+      var raw = JSON.parse(localStorage.getItem("mimi_img_urls_v1") || "{}"), now = Math.floor(Date.now() / 1000);
+      Object.keys(raw).forEach(function (k) { if (raw[k] && raw[k].url && raw[k].expiresAt - 300 > now) o[k] = raw[k]; });
+    } catch (e) {}
+    return o;
+  })(); // filePath -> { url, expiresAt } (persistido no localStorage pra reaproveitar a mesma URL entre aberturas)
+  var _persistTimer = null;
+  function _persistUrlCache() {
+    if (_persistTimer) return;
+    _persistTimer = setTimeout(function () {
+      _persistTimer = null;
+      try {
+        var keys = Object.keys(_urlCache).sort(function (a, b) { return _urlCache[b].expiresAt - _urlCache[a].expiresAt; }).slice(0, 500);
+        var out = {}; keys.forEach(function (k) { out[k] = _urlCache[k]; });
+        localStorage.setItem("mimi_img_urls_v1", JSON.stringify(out));
+      } catch (e) {}
+    }, 1500);
+  }
   var _inflight = {}; // filePath -> Promise (evita pedidos duplicados em paralelo)
 
   function firstString(obj, keys) {
@@ -6687,12 +6706,12 @@ var ImageGateway = (function () {
       var cached = _urlCache[filePath];
       if (cached && cached.expiresAt - 300 > now) return Promise.resolve(cached.url);
       if (_inflight[filePath]) return _inflight[filePath];
-      var p = call({ op: "getUrl", filePath: filePath, expireSeconds: expireSeconds }).then(function (d) {
+      var p = call({ op: "getUrl", filePath: filePath, expireSeconds: expireSeconds || (String(filePath).indexOf("users/") === 0 ? 7 * 24 * 3600 : undefined) }).then(function (d) {
         var url = firstString(d, ["url", "signedUrl", "signedURL"]);
         if (!url) throw new Error("O ImageKit não devolveu uma URL de exibição.");
         var expiresAt = Number((d && (d.expiresAt || d.expires_at)) || (now + (expireSeconds || 3600)));
         if (expiresAt > 1000000000000) expiresAt = Math.floor(expiresAt / 1000);
-        _urlCache[filePath] = { url: url, expiresAt: expiresAt };
+        _urlCache[filePath] = { url: url, expiresAt: expiresAt }; _persistUrlCache();
         delete _inflight[filePath];
         return url;
       }).catch(function (e) { delete _inflight[filePath]; throw e; });
