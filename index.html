@@ -5038,7 +5038,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.15.24";
+var APP_VERSION = "2026.11.16.01";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -11669,7 +11669,7 @@ function pushNavSnapshot() {
     page: state.page,
     postDetailId: state.postDetailId,
     viewProfileId: state.viewProfileId,
-    scrollY: window.scrollY
+    scrollY: window.scrollY, anchor: _feedAnchor()
   });
   try { history.pushState({ mimiNav: _navSnapshots.length }, "", location.href); } catch(e) {}
 }
@@ -11687,6 +11687,31 @@ function _restoreScrollY(y, attempts) {
     }, 70);
   }
 }
+var _anchorCancel = false;
+function _feedAnchor() {
+  if (state.page !== "feed" || state.postDetailId || state.viewProfileId) return null;
+  var cs = document.querySelectorAll(".post-card[data-post-id]");
+  for (var i = 0; i < cs.length; i++) {
+    var r = cs[i].getBoundingClientRect();
+    if (r.bottom > 60) return { id: cs[i].getAttribute("data-post-id"), top: r.top };
+  }
+  return null;
+}
+function _restoreAnchor(a, y, n) {
+  if (_anchorCancel) return;
+  var el = document.querySelector('.post-card[data-post-id="' + a.id + '"]');
+  if (!el) { _restoreScrollY(y); return; }
+  var d = el.getBoundingClientRect().top - a.top;
+  if (Math.abs(d) > 2) window.scrollBy(0, d);
+  if (n < 20) setTimeout(function () { _restoreAnchor(a, y, n + 1); }, 100);
+}
+function _restoreAnchorStart(a, y) {
+  if (!a) { _restoreScrollY(y || 0); return; }
+  _anchorCancel = false;
+  window.addEventListener("touchstart", function () { _anchorCancel = true; }, { once: true, passive: true });
+  _restoreAnchor(a, y, 0);
+}
+
 window.addEventListener("popstate", function() {
   if (activeCall && !activeCall.minimized && activeCall.histPushed) { activeCall.minimized = true; activeCall.histPushed = false; render(); return; }
   var snap = _navSnapshots.pop();
@@ -11695,7 +11720,7 @@ window.addEventListener("popstate", function() {
   state.postDetailId = snap.postDetailId;
   state.viewProfileId = snap.viewProfileId;
   render();
-  requestAnimationFrame(function() { _restoreScrollY(snap.scrollY || 0); });
+  requestAnimationFrame(function() { _restoreAnchorStart(snap.anchor, snap.scrollY || 0); });
 });
 try { history.replaceState({ mimiNav: 0 }, "", location.href); } catch(e) {}
 
@@ -14499,7 +14524,7 @@ function bindFeedPage() {
     var _io = new IntersectionObserver(function(entries) {
       if (entries[0].isIntersecting) {
         _io.disconnect();
-        state.feedRenderLimit += 20;
+        state.feedRenderLimit += 20; var _anc = _feedAnchor(); if (_anc) setTimeout(function () { _restoreAnchorStart(_anc, window.scrollY); }, 0);
         // ✅ PAGINAÇÃO REAL DO FEED (set/2026): além de estender quantos
         // posts já carregados são renderizados, busca mais posts do
         // servidor quando chega perto do fim do que já está em memória
