@@ -5053,7 +5053,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.16.06";
+var APP_VERSION = "2026.11.16.07";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -12390,11 +12390,12 @@ function bindGlobalHandlers() {
       // badge continuava mostrando o valor antigo (0) pra sempre, mesmo
       // com visitas de verdade acontecendo.
       if (target === "profile" && _idToken && ME_ID) {
+        try { var _mc = JSON.parse(localStorage.getItem("mimiMeUser:" + ME_ID) || "null"); if (_mc) USERS[ME_ID] = Object.assign({}, _mc, USERS[ME_ID] || {}); } catch (e) {}
         fsGet("users/" + ME_ID).then(function(u) {
           if (u) {
             delete u._id;
             u.uid = ME_ID;
-            USERS[ME_ID] = u;
+            USERS[ME_ID] = u; try { localStorage.setItem("mimiMeUser:" + ME_ID, JSON.stringify(u)); } catch (e) {}
             if (state.page === "profile") render();
           }
         }).catch(function(){});
