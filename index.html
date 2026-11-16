@@ -5038,7 +5038,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.15.20";
+var APP_VERSION = "2026.11.15.21";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -6023,7 +6023,7 @@ function fsGet(path) {
         merged._synced = true;
         var toSave = {};
         Object.keys(merged).forEach(function(k){ if (k !== "_id") toSave[k] = merged[k]; });
-        fsSet(path, toSave, true).catch(function(){});
+        if (path === "users/"+ME_ID) fsSet(path, toSave, true).catch(function(){});
         return merged;
       }).catch(function(){ return doc; });
     }
