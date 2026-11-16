@@ -5038,7 +5038,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.16.03";
+var APP_VERSION = "2026.11.16.04";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -11869,7 +11869,7 @@ function render() {
   }
   try {
     var _rk = state.page + "|" + (state.postDetailId || "") + "|" + (state.viewProfileId || "");
-    var _fAnc = (state.page === "feed" && _rk === _anchorPrevKey) ? _feedAnchor() : null;
+    var _fAnc = (state.page === "feed" && _rk === _anchorPrevKey && window.scrollY > 50) ? _feedAnchor() : null;
     _renderImpl();
     _anchorPrevKey = _rk;
     if (_fAnc) { _anchorSync(_fAnc); _restoreAnchorStart(_fAnc, window.scrollY, true); }
@@ -14918,6 +14918,7 @@ setTimeout(function() { if (!window._shareTodos && window.MIMIApp && MIMIApp.get
           var _cn = _ct.firstChild;
           _cl.replaceWith(_cn);
           bindCommentEvents(_cn);
+          try { hydrateImages(_cn); } catch (e) {}
         }).catch(function(err) {
           console.error("Erro ao carregar comentários:", err);
         });
