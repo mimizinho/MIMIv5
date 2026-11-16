@@ -5038,7 +5038,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.16.04";
+var APP_VERSION = "2026.11.16.05";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -28922,7 +28922,7 @@ setTimeout(function () { BirthdayNotifier.init(); }, 2000);
 <!-- MIMI-PLUS:FIM -->
 <!-- MIMI-CAPA-INICIO -->
 <style>
-.profile-cover.cv-on{isolation:isolate;transition:height .25s ease}
+.profile-cover.cv-on{isolation:isolate}
 .profile-cover .cv-wrap{position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;z-index:-1;pointer-events:none}
 .profile-cover .cv-bd{position:absolute;top:-24px;left:-24px;right:-24px;bottom:-24px;background-size:cover;background-position:center;background-repeat:no-repeat;filter:blur(22px) saturate(1.15)}
 .profile-cover .cv-fg{position:absolute;top:0;left:0;right:0;bottom:0;background-repeat:no-repeat}
@@ -29026,6 +29026,7 @@ setTimeout(function () { BirthdayNotifier.init(); }, 2000);
     el._cvKey = key;
     el.classList.add("cv-on");
     el.style.height = H + "px";
+    try { localStorage.setItem("mimiCvH:" + (el.getAttribute("data-bgpath") || el._cvUrl), H); } catch (e) {}
     var bd = w.firstChild, fg = w.lastChild;
     fg.style.backgroundImage = el._cvUrlRaw;
     fg.style.backgroundSize = dw + "px " + dh + "px";
@@ -29045,6 +29046,7 @@ setTimeout(function () { BirthdayNotifier.init(); }, 2000);
       return;
     }
     el._cvUrl = url; el._cvUrlRaw = raw; el._cvInfo = null; el._cvKey = "";
+    try { var _ch = localStorage.getItem("mimiCvH:" + (el.getAttribute("data-bgpath") || url)); if (_ch) { el.style.height = _ch + "px"; el.classList.add("cv-on"); } } catch (e) {}
     analyze(url, function (info) {
       if (el._cvUrl !== url || !info) return;
       el._cvInfo = info;
