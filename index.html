@@ -5038,7 +5038,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.16.01";
+var APP_VERSION = "2026.11.16.02";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -11687,7 +11687,7 @@ function _restoreScrollY(y, attempts) {
     }, 70);
   }
 }
-var _anchorCancel = false;
+var _anchorCancel = false, _anchorPrevKey = "", _anchorLastY = -1, _anchorRun = 0;
 function _feedAnchor() {
   if (state.page !== "feed" || state.postDetailId || state.viewProfileId) return null;
   var cs = document.querySelectorAll(".post-card[data-post-id]");
@@ -11697,19 +11697,25 @@ function _feedAnchor() {
   }
   return null;
 }
-function _restoreAnchor(a, y, n) {
-  if (_anchorCancel) return;
+function _anchorSync(a) {
   var el = document.querySelector('.post-card[data-post-id="' + a.id + '"]');
-  if (!el) { _restoreScrollY(y); return; }
+  if (!el) return false;
   var d = el.getBoundingClientRect().top - a.top;
   if (Math.abs(d) > 2) window.scrollBy(0, d);
-  if (n < 20) setTimeout(function () { _restoreAnchor(a, y, n + 1); }, 100);
+  _anchorLastY = window.scrollY;
+  return true;
 }
-function _restoreAnchorStart(a, y) {
-  if (!a) { _restoreScrollY(y || 0); return; }
-  _anchorCancel = false;
+function _restoreAnchor(a, y, n, fb, run) {
+  if (_anchorCancel || run !== _anchorRun) return;
+  if (_anchorLastY >= 0 && Math.abs(window.scrollY - _anchorLastY) > 40) return;
+  if (!_anchorSync(a)) { if (fb) _restoreScrollY(y); return; }
+  if (n < 8) setTimeout(function () { _restoreAnchor(a, y, n + 1, fb, run); }, 100);
+}
+function _restoreAnchorStart(a, y, soft) {
+  if (!a) { if (!soft) _restoreScrollY(y || 0); return; }
+  _anchorRun++; _anchorCancel = false; _anchorLastY = -1;
   window.addEventListener("touchstart", function () { _anchorCancel = true; }, { once: true, passive: true });
-  _restoreAnchor(a, y, 0);
+  _restoreAnchor(a, y, 0, !soft, _anchorRun);
 }
 
 window.addEventListener("popstate", function() {
@@ -11862,7 +11868,11 @@ function render() {
     }
   }
   try {
+    var _rk = state.page + "|" + (state.postDetailId || "") + "|" + (state.viewProfileId || "");
+    var _fAnc = (state.page === "feed" && _rk === _anchorPrevKey) ? _feedAnchor() : null;
     _renderImpl();
+    _anchorPrevKey = _rk;
+    if (_fAnc) { _anchorSync(_fAnc); _restoreAnchorStart(_fAnc, window.scrollY, true); }
   } finally {
     _isRendering = false;
     _messageIdToPreserve = null; // Limpar após usar
@@ -14524,7 +14534,7 @@ function bindFeedPage() {
     var _io = new IntersectionObserver(function(entries) {
       if (entries[0].isIntersecting) {
         _io.disconnect();
-        state.feedRenderLimit += 20; var _anc = _feedAnchor(); if (_anc) setTimeout(function () { _restoreAnchorStart(_anc, window.scrollY); }, 0);
+        state.feedRenderLimit += 20;
         // ✅ PAGINAÇÃO REAL DO FEED (set/2026): além de estender quantos
         // posts já carregados são renderizados, busca mais posts do
         // servidor quando chega perto do fim do que já está em memória
