@@ -5038,7 +5038,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.15.21";
+var APP_VERSION = "2026.11.15.22";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -8225,7 +8225,7 @@ var FB = {
 
       // ✅ FIX 8: Limpa stories expirados (documento + partes), mas com limite para não sobrecarregar
       // Processa no máximo 5 stories expirados de uma vez (evita explosão de queries)
-      var toClean = expired.slice(0, 5);
+      var toClean = expired.filter(function(d){ return (d.authorId || d.userId) === ME_ID; }).slice(0, 5);
       toClean.forEach(function(d){
         fsDelete("stories/" + d._id).catch(function(){});
         if (d.chunked) {
