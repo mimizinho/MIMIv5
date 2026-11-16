@@ -5053,7 +5053,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.16.07";
+var APP_VERSION = "2026.11.16.08";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -6790,6 +6790,7 @@ function hydrateImages(root) {
   for (var i = 0; i < imgs.length; i++) {
     (function (el) {
       var filePath = el.getAttribute('data-imgpath');
+      var _cu0 = filePath && ImageGateway.peekUrl(filePath); if (_cu0 && el.parentNode && el.parentNode.classList && el.parentNode.classList.contains('book-cover')) { el.setAttribute('data-hydrated', '1'); el.src = _cu0; el.removeAttribute('data-image-error'); return; }
       el.setAttribute('data-hydrated', '1');
       if (!filePath) return;
       ImageGateway.getUrl(filePath).then(function (url) {
@@ -20848,7 +20849,7 @@ function bookCoverHtml(book, extraAttr) {
   if (book.coverUrl) {
     var isFp = ImageGateway.isFilePath(book.coverUrl);
     var imgAttrs = isFp
-      ? 'data-imgpath="'+esc(book.coverUrl)+'" src=""'
+      ? 'data-imgpath="'+esc(book.coverUrl)+'" src="'+esc(ImageGateway.peekUrl(book.coverUrl)||"")+'"'
       : 'src="'+book.coverUrl+'"';
     return '<div class="book-cover" style="padding:0;background:#222;" '+(extraAttr||"")+'>' +
       '<img '+imgAttrs+' alt="" style="width:100%;height:100%;object-fit:cover;display:block;">' +
