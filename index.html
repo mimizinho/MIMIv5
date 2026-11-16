@@ -2148,7 +2148,7 @@ body.theme-dark .np .np-d,body.theme-purple .np .np-d,body.theme-dark .np [data-
   var lastTouchEnd = 0;
   document.addEventListener('touchend', function(e){
     var now = Date.now();
-    if (now - lastTouchEnd <= 300 && !(e.target && e.target.closest && e.target.closest("[data-zoom-img],#mimi-zoom"))) e.preventDefault();
+    if (now - lastTouchEnd <= 300 && !(e.target && e.target.closest && e.target.closest("[data-zoom-img],#mimi-zoom,[data-toggle-comments]"))) e.preventDefault();
     lastTouchEnd = now;
   }, { passive:false });
 
@@ -5038,7 +5038,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.16.02";
+var APP_VERSION = "2026.11.16.03";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -14910,7 +14910,14 @@ setTimeout(function() { if (!window._shareTodos && window.MIMIApp && MIMIApp.get
       if (opening && !state.loadedComments[pid] && typeof FB !== "undefined" && FB.loadComments) {
         FB.loadComments(pid).then(function() {
           state.loadedComments[pid] = true;
-          render();
+          var _cl = appEl.querySelector('[data-comments-list="' + pid + '"]');
+          if (!_cl) { render(); return; }
+          var _cp = posts.find(function(p){ return p.id === pid; });
+          var _ct = document.createElement("div");
+          _ct.innerHTML = renderCommentsList(pid, !!(_cp && _cp.authorId === ME_ID));
+          var _cn = _ct.firstChild;
+          _cl.replaceWith(_cn);
+          bindCommentEvents(_cn);
         }).catch(function(err) {
           console.error("Erro ao carregar comentários:", err);
         });
