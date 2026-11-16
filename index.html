@@ -5038,7 +5038,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.15.22";
+var APP_VERSION = "2026.11.15.23";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -23739,6 +23739,10 @@ function renderSettingsPage() {
   '</div>') : "") +
 
   // Ferramentas
+  '<div class="cfg-item">' +
+    '<div class="cfg-item-icon" style="background:#fff0f6;">'+_icoL('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>')+'</div>' +
+    '<div class="grow"><div class="cfg-item-label">Versão do site: '+APP_VERSION+'</div></div>' +
+  '</div>' +
   '<div class="cfg-item" data-open-blocked style="cursor:pointer;">' +
     '<div class="cfg-item-icon" style="background:#fff0f6;">'+_icoL('<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>')+'</div>' +
     '<div class="grow"><div class="cfg-item-label">Usuários bloqueados</div></div>' +
