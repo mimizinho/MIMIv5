@@ -5038,7 +5038,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.15.23";
+var APP_VERSION = "2026.11.15.24";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -12107,6 +12107,24 @@ function handleDeepLinkFromUrl() {
     var params = new URLSearchParams(window.location.search);
     var pid = params.get("post");
     var uidParam = params.get("profile");
+    var vibeParam = params.get("vibe");
+    if (vibeParam) {
+      _deepLinkHandled = true;
+      openVibeFromProfile(vibeParam);
+      var _vTries = 0, _vIv = setInterval(function() {
+        _vTries++;
+        var _vi = VibesModule.vibes.findIndex(function(v){ return v.id === vibeParam; });
+        if (_vi !== -1) {
+          clearInterval(_vIv);
+          var _vel = appEl.querySelector('[data-vibe-idx="'+_vi+'"]');
+          if (_vel && _vel.scrollIntoView) _vel.scrollIntoView({ block: "start" });
+        } else if (_vTries >= 20) clearInterval(_vIv);
+      }, 600);
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState({}, "", window.location.origin + window.location.pathname);
+      }
+      return;
+    }
 
     if (pid) {
       var post = posts.find(function(p){ return p.id === pid; });
@@ -26868,7 +26886,7 @@ var VibesModule = {
               sparkleIcon("comment",34,"#fff") +
               '<span class="comment-count">'+fmtNum(getComments(vibe.id).length)+'</span>' +
             '</button>' +
-            '<button class="vibe-share-btn">' +
+            '<button class="vibe-share-btn" data-vibe-share-idx="'+idx+'">' +
               sparkleIcon("share",34,"#fff") +
             '</button>' +
             '<button class="vibe-save-btn">' +
@@ -27171,6 +27189,30 @@ var VibesModule = {
           };
           render();
         }
+      });
+    });
+
+    // Compartilhar vibe: folha do APK, menu nativo ou copiar link
+    appEl.querySelectorAll(".vibe-share-btn[data-vibe-share-idx]").forEach(function(btn) {
+      btn.addEventListener("click", function(e) {
+        e.stopPropagation();
+        var vibe = self.vibes[parseInt(btn.getAttribute("data-vibe-share-idx"))];
+        if (!vibe) return;
+        var shareUrl = "https://mimizinho.github.io/MIMIv5/?vibe=" + encodeURIComponent(vibe.id);
+        var shareText = "Olha essa Vibe no MIMI!";
+        if (window.MIMIApp && MIMIApp.getShareApps) { abrirCompartilhar(shareUrl, shareText, function(){}); return; }
+        if (navigator.share) {
+          navigator.share({ title: "MIMI", text: shareText, url: shareUrl }).catch(function(err) {
+            if (err && err.name === "AbortError") return;
+            fallbackCopyToClipboard(shareUrl);
+          });
+          return;
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(shareUrl).then(function() {
+            showToast(toastWithIcon("Link copiado!", "link"), true);
+          }).catch(function() { fallbackCopyToClipboard(shareUrl); });
+        } else { fallbackCopyToClipboard(shareUrl); }
       });
     });
 
