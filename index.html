@@ -5053,7 +5053,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.16.16";
+var APP_VERSION = "2026.11.16.18";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -14506,16 +14506,6 @@ function renderCommentItem(pid, c, allCmts, isPostOwner, depth) {
 // não aparecem mais no Feed. Pra reativar no futuro, basta voltar isto
 // pra "true".
 var FEED_MUSIC_POSTS_ENABLED = false;
-var _feedGateOpen = false, _feedGateTimer = null;
-function _feedReady() {
-  if (_feedGateOpen || !ME_ID) return true;
-  ensureMyAffinityLoaded();
-  if (!_feedGateTimer) _feedGateTimer = setTimeout(function() { _feedGateOpen = true; if (state.page === "feed") backgroundRender(); }, 3000);
-  if (_myAffinityCache === null) return false;
-  for (var i = 0; i < posts.length; i++) { if (posts[i].authorId && !USERS[posts[i].authorId]) return false; }
-  _feedGateOpen = true;
-  return true;
-}
 function renderFeedPage() {
   // Carrega autores desconhecidos do Firebase em background
   if (_idToken) {
@@ -14539,9 +14529,7 @@ function renderFeedPage() {
   '</div>' +
   '<div style="background:var(--surface);border-bottom:1px solid var(--border);padding-top:12px;">' + renderStories() + '</div>' +
   '<div data-feed-posts>';
-  var _fr = _feedReady();
-  if (!_fr) html += "<div style=\"padding:40px;text-align:center;color:#999;font-size:13px;\">Carregando...</div>";
-  var _feedOrdered = _fr ? getFeedOrder(posts).filter(function(p) { return FEED_MUSIC_POSTS_ENABLED || !p.audio; }) : [];
+  var _feedOrdered = getFeedOrder(posts).filter(function(p) { return FEED_MUSIC_POSTS_ENABLED || !p.audio; });
   var _feedSlice = _feedOrdered.slice(0, state.feedRenderLimit);
   _feedSlice.forEach(function(p) { html += renderPostCard(p); });
   html += '</div>';
@@ -25966,7 +25954,17 @@ function checkAgeVerificationLinkFromUrl() {
   // cache de uma visita anterior — o app mostra esse perfil na hora,
   // sem esperar a rede, enquanto valida o token e busca os dados
   // atualizados por baixo dos panos (e re-renderiza quando eles chegarem).
-  setTimeout(hideSplash, 600);
+  (function() {
+    var _hasCache = false;
+    try { _hasCache = !!(localStorage.getItem("mimi_cached_posts") && localStorage.getItem("mimi_cached_user")); } catch(e) {}
+    if (!_hasCache) { setTimeout(hideSplash, 600); return; }
+    var _t0 = Date.now(), _okAt = 0;
+    var _iv = setInterval(function() {
+      var _el = Date.now() - _t0;
+      if (!_okAt && window._mimiPostsLive && _myAffinityCache !== null) _okAt = Date.now();
+      if ((_okAt && Date.now() - _okAt > 350 && _el > 600) || _el > 3000) { clearInterval(_iv); hideSplash(); }
+    }, 100);
+  })();
 
   // Link de redefinição de senha tem prioridade sobre o resto do boot.
   checkPasswordResetLinkFromUrl();
@@ -26677,7 +26675,6 @@ function ensureMyAffinityLoaded() {
   }).catch(function() {
     _myAffinityCache = {}; // não trava tentando de novo pra sempre
     _myAffinityLoading = false;
-    if (state.page === "feed" || state.page === "vibes") render();
   });
 }
 
