@@ -5053,7 +5053,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.16.10";
+var APP_VERSION = "2026.11.16.11";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -29032,6 +29032,7 @@ setTimeout(function () { BirthdayNotifier.init(); }, 2000);
     var iw = info.w, ih = info.h, r = iw / ih;
     var maxH = Math.min(340, Math.round(W * 0.68));
     var H = Math.round(clamp(W / r, MINH, maxH));
+    try { var _k = "mimiCvH:" + (el.getAttribute("data-bgpath") || el._cvUrl), _sv = parseInt(localStorage.getItem(_k), 10); if (_sv && Math.abs(_sv - H) < 80) H = _sv; } catch (e) {}
     var sc = Math.min(W / iw, H / ih);   // foto inteira dentro da moldura
     var sv = Math.max(W / iw, H / ih);   // moldura toda preenchida
     var s = Math.max(sc, Math.min(sv, sc / (1 - MAXCROP)));
