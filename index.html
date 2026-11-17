@@ -5053,7 +5053,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.16.18";
+var APP_VERSION = "2026.11.16.19";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -20296,7 +20296,7 @@ var profileTab = "posts";
 function videoThumbUrl(url) {
   if (url) url = url.replace("/nglzrxwd/video/", "/fwepltd3/video/");
   if (!url || url.indexOf("res.cloudinary.com") === -1 || url.indexOf("/video/upload/") === -1) return "";
-  return url.replace("/video/upload/", "/video/upload/so_0/").replace(/\.[a-z0-9]+(\?.*)?$/i, ".jpg$1");
+  return url.replace("res.cloudinary.com", "mimi-videos.gcorecdn.com").replace("/video/upload/", "/video/upload/so_0/").replace(/\.[a-z0-9]+(\?.*)?$/i, ".jpg$1");
 }
 // Se a miniatura JPG do Cloudinary não carregar (arquivo ainda processando,
 // formato incomum, etc.), troca a <img> por um <video preload="metadata">
