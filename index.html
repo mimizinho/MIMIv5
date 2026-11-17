@@ -19711,23 +19711,31 @@ function _cleanupCallResources() {
 // (ver o listener de visibilitychange logo abaixo).
 window.mimiHangup = function() { if (activeCall) endCall(false); };
 window.mimiNativeFlush = function() {
+  function dg(m) { try { MIMIApp.show("MIMI debug", String(m)); } catch (e) {} }
   try {
-    if (!(window.MIMIApp && MIMIApp.takeActions) || !_idToken || !ME_ID) return;
+    if (!(window.MIMIApp && MIMIApp.takeActions)) return;
+    if (!_idToken || !ME_ID) return;
     var list = JSON.parse(MIMIApp.takeActions() || "[]");
+    if (!list.length) return;
+    dg("recebi " + list.length + " ação(ões): " + list[0].type);
     list.forEach(function(a) {
       if (Date.now() - (a.t || 0) > 86400000) return;
-      var conv = CONVOS.find(function(c) { return c.id === a.cid; });
-      if (!conv) { try { MIMIApp.requeueAction(JSON.stringify(a)); } catch (e) {} return; }
+      var conv = CONVOS.find(function(c) { return String(c.id) === String(a.cid); });
+      if (!conv && a.type === "reply") {
+        dg("conversa não achada: " + a.cid + " (CONVOS=" + CONVOS.length + ")");
+        try { MIMIApp.requeueAction(JSON.stringify(a)); } catch (e) {}
+        return;
+      }
       var now = new Date().toISOString();
       var f = {}; f["lastRead_" + ME_ID] = now;
-      conv.myLastRead = now; conv.unread = 0;
-      fsSet("convos/" + a.cid, f, true).catch(function(){});
+      if (conv) { conv.myLastRead = now; conv.unread = 0; }
+      fsSet("convos/" + a.cid, f, true).then(function() { dg("lida OK"); }, function(e) { dg("lida ERRO: " + (e && e.message || e)); });
       if (a.type === "reply" && a.text) {
-        fsSet("convos/" + a.cid + "/messages/" + uid(), { senderId: ME_ID, type: "text", createdAt: now, content: a.text, members: [ME_ID, conv.userId] }, false).catch(function(){});
+        fsSet("convos/" + a.cid + "/messages/" + uid(), { senderId: ME_ID, type: "text", createdAt: now, content: a.text, members: [ME_ID, conv.userId] }, false).then(function() { dg("resposta OK"); }, function(e) { dg("resposta ERRO: " + (e && e.message || e)); });
         fsSet("convos/" + a.cid, { lastMsg: a.text, lastTime: now, lastSenderId: ME_ID }).catch(function(){});
       }
     });
-  } catch (e) {}
+  } catch (e) { dg("erro: " + (e && e.message || e)); }
 };
 setInterval(function() { window.mimiNativeFlush(); }, 4000);
 window.mimiRingAction = function(act, cid, n) { n = n || 0; if (!cid) return; if (incomingCall && incomingCall.callId === cid) { if (act === "accept") _acceptIncomingCall(); else if (act === "decline") _declineIncomingCall(); else render(); return; } if (!_idToken || !ME_ID) { if (n < 100) setTimeout(function(){ window.mimiRingAction(act, cid, n + 1); }, 200); return; } fsGet("calls/" + cid).then(function(d) { if (!d || d.status !== "ringing" || activeCall) return; incomingCall = { callId: cid, callerId: d.callerId, convId: d.convId, offerSdp: d.offerSdp }; (function(c2){ function _ringEnd2(){ _handledCallIds[c2] = true; try { if (window.MIMIApp && MIMIApp.cancelIncomingCall) MIMIApp.cancelIncomingCall(); } catch(e){} _stopCallDocWatch(); incomingCall = null; render(); } _watchCallDoc(c2, function(doc){ if (!incomingCall || incomingCall.callId !== c2) { _stopCallDocWatch(); return; } if (doc && (doc.status === "missed" || doc.status === "ended" || doc.status === "declined")) _ringEnd2(); }); setTimeout(function(){ if (incomingCall && incomingCall.callId === c2) _ringEnd2(); }, 45000); })(cid); if (act === "accept") _acceptIncomingCall(); else if (act === "decline") _declineIncomingCall(); else render(); }).catch(function(){}); };
