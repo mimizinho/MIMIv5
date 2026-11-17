@@ -299,7 +299,7 @@
      ADVANCED VIDEO PLAYER STYLES - NOVO PLAYER PROFISSIONAL
      ═════════════════════════════════════════════════════════════ */
   
-  .advanced-player { position:relative; width:100%; background:#000; border-radius:8px; overflow:hidden; aspect-ratio:16/9; max-width:100%; max-height:78vh; }
+  .advanced-player { position:relative; width:100%; background:#000; border-radius:0; overflow:hidden; aspect-ratio:16/9; max-width:100%; max-height:78vh; }
   .advanced-player video { width:100%; height:100%; display:block; background:#000; object-fit:contain; }
 
   .player-overlay { position:absolute; top:0; left:0; right:0; bottom:0; display:flex; flex-direction:column; justify-content:space-between; opacity:0; transition:opacity .3s ease; pointer-events:none !important; }
@@ -5053,7 +5053,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.16.19";
+var APP_VERSION = "2026.11.16.20";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
