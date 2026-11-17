@@ -5053,7 +5053,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.16.12";
+var APP_VERSION = "2026.11.16.13";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -20573,7 +20573,7 @@ function renderProfilePage(userId) {
       '<button class="btn btn-sm btn-secondary" data-message-user="'+userId+'">'+icoSvg("msg",15)+'</button>';
 
   var postCount = userPosts(userId).length + userVibes(userId).length;
-  try { var _pk = "mimiPC:" + userId; if (window._mimiPostsLive) { localStorage.setItem(_pk, String(postCount)); } else { var _pc = parseInt(localStorage.getItem(_pk), 10); if (_pc > postCount) postCount = _pc; } } catch (e) {}
+  try { if (userId === ME_ID) { var _pk = "mimiPC:" + userId, _ok = window._mimiPostsLive && VibesModule._userLoaded; if (_ok) { localStorage.setItem(_pk, String(postCount)); } else { var _pc = parseInt(localStorage.getItem(_pk), 10); if (_pc > postCount) postCount = _pc; } } } catch (e) {}
   var isPlus = isSubscriptionActive(u);
   var ringThemeKey = getRingThemeKey(u);
   var showGlow = isPlus && ringThemeKey !== "none";
