@@ -5053,7 +5053,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.16.09";
+var APP_VERSION = "2026.11.16.10";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -20559,7 +20559,7 @@ function renderProfilePage(userId) {
   var coverIsFp = !!(u.cover && !isCoverVideo && ImageGateway.isFilePath(u.cover));
   var coverStyle = (u.cover && !isCoverVideo && !coverIsFp) ? 'background-image:url('+u.cover+');background-size:cover;background-position:center;' : '';
   var coverBgPathAttr = coverIsFp ? ' data-bgpath="'+esc(u.cover)+'"' : '';
-  if (coverIsFp) { try { var _cvh = localStorage.getItem("mimiCvH:" + u.cover); if (_cvh) coverStyle += "height:" + parseInt(_cvh, 10) + "px;"; } catch (e) {} }
+  if (u.cover && !isCoverVideo) { try { var _cvh = localStorage.getItem("mimiCvH:" + u.cover); if (_cvh) coverStyle += "height:" + parseInt(_cvh, 10) + "px;"; } catch (e) {} }
   var coverVideoHtml = isCoverVideo ? '<video src="'+optimizeCloudinaryVideoUrl(u.cover)+'" autoplay muted loop playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"></video>' : '';
   var backBtn = !isMe ? '<button class="icon-btn" data-back-profile style="position:absolute;top:12px;left:12px;background:rgba(255,255,255,.35);border-radius:50%;color:#fff;z-index:2;">'+icoSvg("back",20,"#fff")+'</button>' : "";
   var coverBtn = '<button class="icon-btn" data-open-profile-sheet="'+userId+'" style="position:absolute;top:12px;right:12px;background:rgba(255,255,255,.35);border-radius:50%;color:#fff;z-index:2;">'+icoSvg("more",20,"#fff")+'</button>';
