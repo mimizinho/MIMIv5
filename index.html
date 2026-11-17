@@ -5053,7 +5053,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.16.11";
+var APP_VERSION = "2026.11.16.12";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -28942,6 +28942,7 @@ setTimeout(function () { BirthdayNotifier.init(); }, 2000);
 <!-- MIMI-CAPA-INICIO -->
 <style>
 .profile-cover.cv-on{isolation:isolate}
+.profile-cover{background-size:cover;background-position:center;background-repeat:no-repeat}
 .profile-cover .cv-wrap{position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;z-index:-1;pointer-events:none}
 .profile-cover .cv-bd{position:absolute;top:-24px;left:-24px;right:-24px;bottom:-24px;background-size:cover;background-position:center;background-repeat:no-repeat;filter:blur(22px) saturate(1.15)}
 .profile-cover .cv-fg{position:absolute;top:0;left:0;right:0;bottom:0;background-repeat:no-repeat}
