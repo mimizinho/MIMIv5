@@ -5053,7 +5053,7 @@ document.addEventListener("loadedmetadata", function(e) {
   else { var nb = document.querySelector(".bottom-nav"), nh = nb ? nb.offsetHeight : 0; if (nh) { v.style.height = "calc(100% - " + nh + "px)"; v.style.marginBottom = nh + "px"; } }
 }, true);
 
-var APP_VERSION = "2026.11.16.20";
+var APP_VERSION = "2026.11.17.5";
 var MIMI_OFFICIAL_UID = "TFx29sDBDzLpcTXf9fbqv8sMXuo2";
 
 // ─── AUTO-ATUALIZAÇÃO ───────────────────────────────────────
@@ -19738,6 +19738,7 @@ window.mimiNativeFlush = function() {
   } catch (e) { dg("erro: " + (e && e.message || e)); }
 };
 setInterval(function() { window.mimiNativeFlush(); }, 4000);
+setInterval(function() { try { if (window.MIMIApp && MIMIApp.setSession && _refreshToken && ME_ID) MIMIApp.setSession(_refreshToken, String(ME_ID)); } catch (e) {} }, 5000);
 setTimeout(function() { try { MIMIApp.show("MIMI debug", "site 2026.11.17.3 | takeActions=" + (window.MIMIApp ? typeof MIMIApp.takeActions : "sem MIMIApp") + " | token=" + !!_idToken + " | me=" + ME_ID); } catch (e) {} }, 8000);
 window.mimiRingAction = function(act, cid, n) { n = n || 0; if (!cid) return; if (incomingCall && incomingCall.callId === cid) { if (act === "accept") _acceptIncomingCall(); else if (act === "decline") _declineIncomingCall(); else render(); return; } if (!_idToken || !ME_ID) { if (n < 100) setTimeout(function(){ window.mimiRingAction(act, cid, n + 1); }, 200); return; } fsGet("calls/" + cid).then(function(d) { if (!d || d.status !== "ringing" || activeCall) return; incomingCall = { callId: cid, callerId: d.callerId, convId: d.convId, offerSdp: d.offerSdp }; (function(c2){ function _ringEnd2(){ _handledCallIds[c2] = true; try { if (window.MIMIApp && MIMIApp.cancelIncomingCall) MIMIApp.cancelIncomingCall(); } catch(e){} _stopCallDocWatch(); incomingCall = null; render(); } _watchCallDoc(c2, function(doc){ if (!incomingCall || incomingCall.callId !== c2) { _stopCallDocWatch(); return; } if (doc && (doc.status === "missed" || doc.status === "ended" || doc.status === "declined")) _ringEnd2(); }); setTimeout(function(){ if (incomingCall && incomingCall.callId === c2) _ringEnd2(); }, 45000); })(cid); if (act === "accept") _acceptIncomingCall(); else if (act === "decline") _declineIncomingCall(); else render(); }).catch(function(){}); };
 var _callWakeLock = null;
